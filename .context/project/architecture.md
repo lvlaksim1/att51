@@ -1,3 +1,13 @@
-# Project architecture
+# Архитектура исследования
 
-Capture the stable high-level architecture, major components, state boundaries, and important integration contracts.
+Принятая структура репозитория:
+- `research/` — проверенные статические находки и протоколы;
+- `tools/` — собственные инструменты воспроизводимого чтения и составления перечней файлов;
+- `scripts/`, `.github/workflows/`, `.gitignore` — эталонная политика хранения из `repo-factory`;
+- `.context/` — установленный фабрикой Project Manager.
+
+Внешний объект исследования: установщик Inno Setup. SHA-256: `941e82cd07815861a10d7c77c9c47b94dcad799b6d7408e78bd3749d4eb2cfcc`.
+
+Предварительная архитектура ПО по статическим признакам: модули Visual Basic 6, интеграция с Microsoft Word, документы OLE/Word, элементы управления ActiveX и средства Microsoft Jet. Подробности и пределы доказательности — `research/components.md` и `research/pe-module-map.md`.
+
+Исходный пакет и распакованные двоичные данные анализируются локально, не являются содержимым Git.
