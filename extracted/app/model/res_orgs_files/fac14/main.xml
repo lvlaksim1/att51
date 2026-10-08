@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Document name="" date="31.01.2022">
+<info>
+<UNC id="p1_1_res" value="12 %"/>
+<UNC id="p1_2_res" value="9"/>
+<UNC id="p1_3_res" value="9"/>
+<UNC id="p2_1_res" value="1"/>
+<UNC id="p2_2_res" value="1"/>
+<UNC id="p2_3_res" value="2"/>
+<UNC id="p3_1_res" value="12 %"/>
+<UNC id="p3_2_res" value="3"/>
+<UNC id="p3_3_res" value="3"/>
+<UNC id="p4_1_res" value="0.5"/>
+<UNC id="p5_1_res" value="12 %"/>
+<UNC id="p5_2_res" value="3"/>
+<UNC id="p6_1_res" value="1"/>
+<UNC id="p7_1_res" value="1"/>
+<UNC id="p7_2_res" value="0.5"/>
+<UNC id="p7_3_res" value="0.5"/>
+<UNC id="p8_1_res" value="0.12"/>
+</info>
+</Document>

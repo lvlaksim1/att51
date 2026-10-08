@@ -1,0 +1,128 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+   <xs:simpleType name="bit">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="0"/>
+      <xs:enumeration value="1"/>
+      <xs:enumeration value="False"/>
+      <xs:enumeration value="True"/>
+      <xs:enumeration value="false"/>
+      <xs:enumeration value="true"/>
+      <xs:enumeration value="FALSE"/>
+      <xs:enumeration value="TRUE"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="NonEmptyString">
+    <xs:restriction base="xs:string">
+      <xs:pattern value=".+"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="SchemeVersion_">
+    <!--Версия XSD-схемы-->
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="1"/>
+      <xs:enumeration value="1.0.1"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="Protocol">
+    <xs:annotation>
+      <xs:documentation>Протокол</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="FileInfo" minOccurs="1" maxOccurs="1">
+          <!--Информация о XML-файле-->
+          <xs:complexType>
+            <xs:all>
+              <xs:element name="SchemeVersion" type="SchemeVersion_" minOccurs="1" maxOccurs="1"/>
+              <!--Версия XSD-схемы-->
+              <xs:element name="DataSource" type="NonEmptyString" minOccurs="1" maxOccurs="1"/>
+              <!--Источник данных, из которого получили XML-файл-->
+              <xs:element name="CreatedDate" type="xs:date" minOccurs="0" maxOccurs="1"/>
+              <!--Дата создания XML-файла-->
+              <xs:element name="DateSent" type="xs:date" minOccurs="0" maxOccurs="1"/>
+              <!--Дата отправки файла в АКОТ-->
+            </xs:all>
+          </xs:complexType>
+        </xs:element>
+        <xs:element type="NonEmptyString" name="ProtocolNumber" minOccurs="1" maxOccurs="1"/>
+        <xs:element type="xs:date" name="ProtocolDate" minOccurs="1" maxOccurs="1"/>
+        <xs:element name="Organization" minOccurs="1" maxOccurs="1">
+          <xs:annotation>
+            <xs:documentation>Организация</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:all>
+              <xs:element type="xs:string" name="Inn" minOccurs="1" maxOccurs="1"/>
+              <xs:element type="xs:string" name="Ogrn" minOccurs="1" maxOccurs="1"/>
+              <xs:element type="xs:string" name="Title" minOccurs="1" maxOccurs="1"/>
+              <xs:element type="xs:string" name="Address" minOccurs="1" maxOccurs="1"/>
+              <xs:element type="xs:string" name="Kpp" minOccurs="0" maxOccurs="1"/>
+            </xs:all>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Workplaces" minOccurs="1" maxOccurs="1">
+          <xs:annotation>
+            <xs:documentation>Рабочие места</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Workplace" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:all>
+                    <xs:element type="xs:nonNegativeInteger" name="ReportId" minOccurs="1" maxOccurs="1"/>
+                    <xs:element type="NonEmptyString" name="Title" minOccurs="1" maxOccurs="1"/>
+                    <xs:element type="NonEmptyString" name="OldNumber" minOccurs="1" maxOccurs="1"/>
+                    <xs:element type="NonEmptyString" name="NewNumber" minOccurs="1" maxOccurs="1"/>
+                    <xs:element type="bit" name="IsLiquidated" minOccurs="1" maxOccurs="1"/>
+                    <xs:element type="xs:string" name="OldTitle" minOccurs="0" maxOccurs="1"/>
+                    <xs:element type="xs:string" name="UnitTitle" minOccurs="0" maxOccurs="1"/>
+                    <xs:element type="xs:string" name="ProfessionCode" minOccurs="0" maxOccurs="1"/>
+                  </xs:all>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Comission" minOccurs="1" maxOccurs="1">
+          <xs:annotation>
+            <xs:documentation>Комиссия</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Chairman" minOccurs="0" maxOccurs="1">
+                <xs:complexType>
+                  <xs:all>
+                    <xs:element type="NonEmptyString" name="LastName" minOccurs="1" maxOccurs="1"/>
+                    <xs:element type="NonEmptyString" name="FirstName" minOccurs="1" maxOccurs="1"/>
+                    <xs:element type="xs:string" name="MiddleName" minOccurs="0" maxOccurs="1"/>
+                    <xs:element type="NonEmptyString" name="Position" minOccurs="1" maxOccurs="1"/>
+                  </xs:all>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="Members" minOccurs="1" maxOccurs="1">
+              <xs:annotation>
+                <xs:documentation>Члены комиссии</xs:documentation>
+              </xs:annotation>
+              <xs:complexType>
+                <xs:sequence>
+                  <xs:element name="Member" minOccurs="0" maxOccurs="unbounded">
+                    <xs:complexType>
+                      <xs:all>
+                      <xs:element type="xs:string" name="LastName" minOccurs="1" maxOccurs="1"/>
+                      <xs:element type="xs:string" name="FirstName" minOccurs="1" maxOccurs="1"/>
+                      <xs:element type="xs:string" name="MiddleName" minOccurs="1" maxOccurs="1"/>
+                      <xs:element type="xs:string" name="Position" minOccurs="1" maxOccurs="1"/>
+                      </xs:all>
+                    </xs:complexType>
+                  </xs:element>
+                </xs:sequence>
+              </xs:complexType>
+            </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

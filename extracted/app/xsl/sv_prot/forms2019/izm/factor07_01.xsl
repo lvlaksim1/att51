@@ -1,0 +1,681 @@
+﻿<?xml version = "1.0" encoding = "UTF-8" ?>
+<xsl:stylesheet version = "1.0"	xmlns:xsl = "http://www.w3.org/1999/XSL/Transform">
+  <!-- глобальные переменные -->
+  <xsl:variable name="co_pers">
+    <xsl:value-of select="count(Document/pers_exp/pers)"/>
+  </xsl:variable>
+  <xsl:variable name="show_podrs">
+    <xsl:value-of select="Document/@show_podrs"/>
+  </xsl:variable>
+
+  <xsl:template match ="/">    
+
+	<html>
+	<head>
+	    <title>Сводный протокол измерений параметров общей вибрации</title>
+      <style>
+      /* Style Definitions */
+      body
+      {
+      font-size:10.0pt;
+      font-family:"Times New Roman";
+      text-align:left;
+      }
+      p
+      {
+      margin-bottom:0cm;
+      margin-top:0cm;
+      }
+      p.razdel
+      {
+      font-size:11.0pt;
+      font-weight: bold;
+      margin-top:0.1cm;
+      margin-bottom:0.1cm;
+      }
+      .razdel2
+      {
+      font-size:11.0pt;
+      font-weight: bold;
+      }
+
+      .underline
+      {
+      text-decoration: underline;
+      }
+
+
+      table
+      {
+      font-size:10.0pt;
+      font-family:"Times New Roman";
+      text-align:center;
+      }
+      table,th,td {
+      border:1px solid black;border-collapse:collapse;padding:0 5px 0 5px;
+      }
+      tr.prot {
+      font-weight: bold;
+      }
+      tr.zone {
+      font-style:italic;
+      }
+      tr.param {
+      font-size:9.0pt;
+      }
+      tr.param_header {
+      font-size:9.0pt;
+      font-weight: bold;
+      }
+
+      .prim
+      {
+      font-size:9.0pt;
+      margin-bottom:0cm;
+      margin-top:0cm;
+      }
+
+      .prot
+      {
+      font-size:12.0pt;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom:0.2cm;
+      margin-top:0.2cm;
+      }
+      table.header
+      {
+      font-size:9.0pt;
+      border:1px solid black;border-collapse:collapse;padding:0 0px 0 5px;
+      }
+
+      table.empty
+      {
+      margin-bottom:0cm;
+      margin-top:0cm;
+      }
+
+      table.empty,table.empty th,table.empty td
+      {
+      font-size:9.0pt;
+      text-align:center;
+      border:none;
+      background:none;
+      padding:0 5px 0 5px;
+      }
+      table.empty td.sign {
+      border-bottom: 1px solid black;
+      }
+      .small 
+      {
+      font-size:8.0pt;
+      }
+    </style>	
+  </head>
+	<body>
+      <xsl:apply-templates/>
+	</body>
+	</html>
+  </xsl:template>
+
+  <xsl:template match ="Document">
+    <!--  Шапка протокола и сведения о работадателе -->
+    <xsl:apply-templates select="org_data"/>
+    <!--  Сведения о СИ -->
+    <p class="razdel">
+      2. Сведения о применяемых средствах измерения (СИ):
+    </p>
+    <xsl:apply-templates select="si_data"/>
+    <p class="razdel">
+      3. Сведения о средствах измерений параметров окружающей среды и вспомогательном оборудовании:
+    </p>
+    <xsl:apply-templates select="si_os_data"/>
+    <p class="razdel">
+      4. Нормативные документы, устанавливающие метод и требования проведения к проведению измерений:
+    </p>
+    <xsl:apply-templates select="nd_data_izm"/>
+    <p class="razdel">
+      5. Измеряемые показатели и методы контроля (СИ, НД):
+    </p>
+    <xsl:apply-templates select="si_nd_data"/>
+    <p class="razdel">
+      6. Нормативные документы, регламентирующие предельно допустимые уровни вредного фактора:
+    </p>
+    <xsl:apply-templates select="nd_data_ctl"/>
+    <p class="razdel">
+      7. Фактические и нормативные значения измеряемых параметров по рабочим местам:
+    </p>
+    <p class="prim">
+      Условные обозначения: ПДУ – предельно-допустимый уровень; U095 – значение расширенной неопределенности; ОТКЛ - отклонение;
+      t - температура воздуха; p - атмосферное давление; φ - относительная влажность; υ – скорость движения воздуха;
+      m – интервал измерения в соответствии с МИ ОВ.ИНТ-05.01-2018; Tm,i – приведенное к 480 мин время интервала m по наблюдениям; Тm – среднее приведенное время интервала m.
+    </p>
+    <xsl:apply-templates select="prot"/>
+    <p class="razdel">
+      8. Сведения о лицах проводивших измерения:
+    </p>
+    <xsl:apply-templates select="pers_izm"/>
+    <!-- Ответсвенное лицо - заполняется опционально (если имеется в протоколах на РМ) -->
+    <xsl:if test="pers_boss">
+      <p class="razdel">
+        9. Ответственное лицо организации:
+      </p>
+      <xsl:apply-templates select="pers_boss"/>
+    </xsl:if>
+  </xsl:template>
+
+  <xsl:template match ="org_data">
+    <!--  Шапка протокола -->
+    <table width="100%" class="header">
+      <tr>
+        <td colspan="3">
+          <xsl:value-of select="@org_info" />
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3">
+          <sup>
+            (полное наименование организации, проводящей специальную оценку условий труда,
+            регистрационный номер записи в реестре организаций, проводящих специальную оценку условий труда)
+          </sup>
+        </td>
+      </tr>
+      <tr>
+        <td width="60%">
+          Уникальный номер записи об аккредитации в реестре аккредитованных лиц
+        </td>
+        <td width="20%">Дата получения</td>
+        <td width="20%">Дата окончания </td>
+      </tr>
+      <xsl:for-each select="//Document/org_data/lab">
+        <tr>
+          <td>
+            <xsl:value-of select="@license"/>
+          </td>
+          <td>
+            <xsl:value-of select="@beg_date"/>
+          </td>
+          <td>
+            <xsl:value-of select="@end_date"/>
+          </td>
+        </tr>
+      </xsl:for-each>
+    </table>
+
+    <!--  Наименование протокола -->
+    <p class="prot">
+      ПРОТОКОЛ<br/>измерений параметров общей вибрации
+    </p>
+
+    <!--  Таблица для номера протокола -->
+    <table align="center" class="empty">
+      <tr>
+        <td>№</td>
+        <td class="sign">
+          <xsl:value-of select="../@num_prot"/>
+        </td>
+        <td width="5%">
+          <span style='display:none'>~$~$~</span>
+        </td>
+        <td class="sign">
+          <xsl:value-of select="../@fill_date"/>
+        </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>
+          <sup>(идентификационный номер протокола)</sup>
+        </td>
+        <td></td>
+        <td>
+          <sup>(дата)</sup>
+        </td>
+      </tr>
+    </table>
+    <!--  Сведения о работдателе -->
+    <p class="razdel">
+      1. Сведения о работодателе:
+    </p>
+    <p>
+      1.1. Наименование работодателя: <span class="underline"><xsl:value-of select="@rbtd_name"/></span>
+      <br/>
+      1.2. Место нахождения и место осуществления деятельности работодателя: <span class="underline"><xsl:value-of select="@rbtd_adr"/>
+      </span>
+    </p>
+  </xsl:template>
+
+  <xsl:template match ="pers_izm">
+    
+  </xsl:template>
+
+  <xsl:template match ="nd_data_izm|nd_data_ctl">
+    <table width="100%">
+      <tr>
+        <td width="5%">№</td>
+        <td width="95%">Наименование нормативного документа (НД)</td>
+      </tr>
+      <xsl:apply-templates select="nd"/>
+    </table>
+  </xsl:template>
+
+  <xsl:template match ="nd">
+    <tr>
+      <td>
+        <xsl:value-of select="@num"/>
+      </td>
+      <td align="left">
+        <xsl:value-of select="@name"/>
+      </td>
+    </tr>
+  </xsl:template>
+
+
+  <xsl:template match ="si_data|si_os_data">
+    <table>
+      <tr>
+        <td width="5%">№</td>
+        <td width="30%">Наименование средства измерения</td>
+        <td width="10%">Заводской номер</td>
+        <td width="10%">Сведения о поверке</td>
+        <td width="10%">Действие поверки</td>
+        <td width="15%">Погрешность измерения</td>
+        <td width="20%">Условия эксплуатации</td>
+      </tr>
+      <xsl:apply-templates select="si"/>
+    </table>
+  </xsl:template>
+
+  <xsl:template match ="si">
+    <tr>
+      <td>
+        <xsl:value-of select="@num"/>
+      </td>
+      <td>
+        <xsl:value-of select="@name"/>
+      </td>
+      <td>
+        <xsl:value-of select="@factory_num"/>
+      </td>
+      <td>
+        <xsl:value-of select="@num_doc2"/>
+      </td>
+      <td>
+        <xsl:value-of select="@begin_date"/>-<xsl:value-of select="@end_date"/>
+      </td>
+      <td>
+        <xsl:value-of select="@si_err"/>
+      </td>
+      <td>
+        <xsl:value-of select="@si_cond"/>
+      </td>
+    </tr>
+  </xsl:template>
+  
+  <xsl:template match ="podr">
+    <tr>
+      <td colspan="6">
+        <xsl:value-of select="@name"/>
+      </td>
+    </tr>
+  </xsl:template>
+
+  <!-- В данном блоке находится специфика по каждому фактору -->
+  <xsl:template match ="prot">
+    <p>
+      <span class="razdel2"><xsl:value-of select="count(preceding-sibling::prot)+1"/>) Рабочее место № <xsl:value-of select="@code"/>:</span>
+      <br/>
+      <b>Наименование</b>: <xsl:value-of select="@name"/>; <b>Код по ОК 016-94</b>: <xsl:value-of select="@ok016"/>
+      <xsl:if test="$show_podrs='true'">
+        <br/>
+        <b>Наименование структурного подразделения</b>: <xsl:value-of select="@podr"/>
+      </xsl:if>
+      <br/>
+      <b>Дата измерения</b>: <xsl:value-of select="@izm_date"/>
+    </p>
+    <p>
+      <b>Сведения об условиях проведения измерений:</b>
+    </p>
+    <xsl:apply-templates select="os_data"/>
+    <p>
+      <b>Интервалы проведения измерений параметров вибрации</b>
+    </p>
+    <xsl:apply-templates select="table"/>
+    
+    <xsl:apply-templates select="table4"/>
+    <p>
+      <b>Результаты измерений уровня виброускорения:</b>
+    </p>
+    <xsl:apply-templates select="table2"/>
+    <p>
+      <b>Результат оценки вредных и (или) опасных производственных факторов:</b>
+    </p>
+    <xsl:apply-templates select="table3"/>
+    <p>
+      <b>Заключение</b>:
+      <br/>
+      <xsl:value-of select="@zakl"/>
+    </p>
+  </xsl:template>
+
+  <xsl:template match ="table">
+    <table>
+      <tr>
+        <td width="6%">№ m</td>
+        <td width="32%">Место проведения измерения (рабочая операция)</td>
+        <td width="10%">Дата измерения</td>
+        <td width="37%">Краткое описание операции (источников вибрации)</td>
+        <td width="10%">Tm,<i>i</i>, мин</td>
+        <td width="5%">Tm, мин</td>
+      </tr>
+      <xsl:apply-templates select="param"/>
+    </table>
+  </xsl:template>
+  
+  <xsl:template match ="param">
+    <tr>
+      <!-- СТРОКИ!!! -->
+      <td>
+        <xsl:value-of select="@num"/>
+      </td>
+      <td align="left">
+        <xsl:value-of select="@name"/>
+      </td>
+      <td>
+        <xsl:value-of select="@izm_date"/>
+      </td>
+      <td align="left">
+        <xsl:value-of select="@descr"/>
+      </td>
+      <td>
+        <xsl:value-of select="@times_min"/>
+      </td>
+      <td>
+        <xsl:value-of select="@time_min"/>
+      </td>
+    </tr>
+  </xsl:template>
+
+  <xsl:template match ="table2">
+    <table>
+      <tr>
+        <td width="5%" rowspan="3">№ m</td>
+        <td width="15%" rowspan="3">Длительность измерения, мин</td>
+        <td width="80%" colspan="6">Корректированный уровень виброускорения, дБ (по направления воздействия X, Y, Z)</td>
+      </tr>
+      <tr>
+        <td width="53%" colspan="3">Результат измерения (L1; L2; L3;..)</td>
+        <td width="27%" colspan="3">Эквивалентный уровень за операцию</td>
+      </tr>
+      <tr>
+        <td width="18%">X</td>
+        <td width="18%">Y</td>
+        <td width="17%">Z</td>
+        <td width="9%">X</td>
+        <td width="9%">Y</td>
+        <td width="9%">Z</td>
+      </tr>
+      <xsl:apply-templates select="param2"/>
+    </table>
+  </xsl:template>
+
+  <xsl:template match ="param2">
+    <tr>
+      <!-- СТРОКИ!!! -->
+      <td>
+        <xsl:value-of select="@num"/>
+      </td>
+      <td>
+        <xsl:value-of select="@izm_level_times"/>
+      </td>
+      <td>
+        <xsl:value-of select="@izm_levelsX"/>
+      </td>
+      <td>
+        <xsl:value-of select="@izm_levelsY"/>
+      </td>
+      <td>
+        <xsl:value-of select="@izm_levelsZ"/>
+      </td>
+      <td>
+        <xsl:value-of select="@factX"/>
+      </td>
+      <td>
+        <xsl:value-of select="@factY"/>
+      </td>
+      <td>
+        <xsl:value-of select="@factZ"/>
+      </td>
+    </tr>
+  </xsl:template>
+
+  <xsl:template match ="table3">
+    <table width="100%">
+      <tr>
+        <td width="60%">Фактор</td>
+        <td width="10%">ФАКТ</td>
+        <td width="10%">U095</td>
+        <td width="10%">ПДУ</td>
+        <td width="10%">ОТКЛ</td>
+      </tr>
+      <xsl:apply-templates select="param3"/>
+    </table>
+  </xsl:template>
+
+  <xsl:template match ="param3">
+    <tr>
+      <!-- СТРОКИ!!! -->
+      <td align="left">
+        <xsl:value-of select="@name"/>
+      </td>
+      <td>
+        <xsl:value-of select="@fact"/>
+      </td>
+      <td>
+        <xsl:value-of select="@U095"/>
+      </td>
+      <td>
+        <xsl:value-of select="@norm"/>
+      </td>
+      <td>
+        <xsl:value-of select="@otkl"/>
+      </td>
+    </tr>
+  </xsl:template>
+
+  <xsl:template match ="table4">
+    <p>
+      <b>Дополнительные сведения об условиях измерения:</b>
+    </p>
+    <table width="100%">
+      <tr>
+        <td width="10%"> № m</td>
+        <td width="45%">Место установки и ориентация акселерометров, методы крепления акселерометров</td>
+        <td width="45%">Дополнительные сведения о месте проведения измерения (при необходимости)</td>
+      </tr>
+      <xsl:apply-templates select="param4"/>
+    </table>
+  </xsl:template>
+
+  <xsl:template match ="param4">
+    <tr>
+      <!-- СТРОКИ!!! -->
+      <td>
+        <xsl:value-of select="@num"/>
+      </td>
+      <td align="left">
+        <xsl:value-of select="@descr1"/>
+      </td>
+      <td align="left">
+        <xsl:value-of select="@descr2"/>
+      </td>
+    </tr>
+  </xsl:template>
+
+
+  <xsl:template match ="pers_izm|pers_exp">
+    <table width="100%" class="empty">
+      <xsl:apply-templates select="pers"/>
+    </table>
+  </xsl:template>
+  
+  <xsl:template match ="pers">
+    <tr>
+      <td class="sign" width="15%">
+        <xsl:value-of select="@reg_num" />
+      </td>
+      <td width="5%">
+        <xsl:text disable-output-escaping="yes"><![CDATA[&nbsp;]]></xsl:text>
+      </td>
+      <td class="sign" width="25%">
+        <xsl:value-of select="@dolg" />
+      </td>
+      <td width="5%">
+        <xsl:text disable-output-escaping="yes"><![CDATA[&nbsp;]]></xsl:text>
+      </td>
+      <td class="sign" width="15%">
+        <xsl:text disable-output-escaping="yes"><![CDATA[&nbsp;]]></xsl:text>
+      </td>
+      <td width="5%">
+        <xsl:text disable-output-escaping="yes"><![CDATA[&nbsp;]]></xsl:text>
+      </td>
+      <td class="sign" width="30%">
+        <xsl:value-of select="@fio" />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <sup>№ в реестре</sup>
+      </td>
+      <td>
+        <xsl:text disable-output-escaping="yes"><![CDATA[&nbsp;]]></xsl:text>
+      </td>
+      <td>
+        <sup>Должность</sup>
+      </td>
+      <td>
+        <xsl:text disable-output-escaping="yes"><![CDATA[&nbsp;]]></xsl:text>
+      </td>
+      <td>
+        <sup>Подпись</sup>
+      </td>
+      <td>
+        <xsl:text disable-output-escaping="yes"><![CDATA[&nbsp;]]></xsl:text>
+      </td>
+      <td>
+        <sup>Ф.И.О.</sup>
+      </td>
+    </tr>
+  </xsl:template>
+
+  <xsl:template match ="pers_boss">
+    <table width="100%" class="empty">
+      <xsl:apply-templates select="pers" mode="m2"/>
+    </table>
+  </xsl:template>
+
+
+  <xsl:template  match ="pers" mode="m2">
+    <tr>
+      <td class="sign" width="25%">
+        <xsl:value-of select="@dolg" />
+      </td>
+      <td width="5%">
+        <xsl:text disable-output-escaping="yes"><![CDATA[&nbsp;]]></xsl:text>
+      </td>
+      <td class="sign" width="15%">
+        <xsl:text disable-output-escaping="yes"><![CDATA[&nbsp;]]></xsl:text>
+      </td>
+      <td width="5%">
+        <xsl:text disable-output-escaping="yes"><![CDATA[&nbsp;]]></xsl:text>
+      </td>
+      <td class="sign" width="30%">
+        <xsl:value-of select="@fio" />
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <sup>Должность</sup>
+      </td>
+      <td>
+        <xsl:text disable-output-escaping="yes"><![CDATA[&nbsp;]]></xsl:text>
+      </td>
+      <td>
+        <sup>Подпись</sup>
+      </td>
+      <td>
+        <xsl:text disable-output-escaping="yes"><![CDATA[&nbsp;]]></xsl:text>
+      </td>
+      <td>
+        <sup>Ф.И.О.</sup>
+      </td>
+    </tr>
+  </xsl:template>
+  <xsl:template match ="os_data">
+    <table width="100%">
+      <tr>
+        <td width="8%">№</td>
+        <td width="44%">Место измерения</td>
+        <td width="12%">t, ºC</td>
+        <td width="12%">p, мм.рт.ст.</td>
+        <td width="12%">υ, м/с</td>
+        <td width="12%">φ, %</td>
+      </tr>
+      <xsl:apply-templates select="os_item"/>
+    </table>
+  </xsl:template>
+
+  <xsl:template match ="os_item">
+    <tr>
+      <td>
+        <xsl:value-of select="@num" />
+      </td>
+      <td>
+        <xsl:value-of select="@name" />
+      </td>
+      <td>
+        <xsl:value-of select="@os_t" />
+      </td>
+      <td>
+        <xsl:value-of select="@os_p" />
+      </td>
+      <td>
+        <xsl:value-of select="@os_sk" />
+      </td>
+      <td>
+        <xsl:value-of select="@os_v" />
+      </td>
+    </tr>
+  </xsl:template>
+
+  <xsl:template match ="si_nd_data">
+    <table width="100%">
+      <tr>
+        <td width="8%">№</td>
+        <td width="62%">Наименование вредного вещества</td>
+        <td width="15%">№ СИ из п.2</td>
+        <td width="15%">№ НД из п.4</td>
+      </tr>
+      <xsl:apply-templates select="si_nd_param"/>
+    </table>
+  </xsl:template>
+
+
+  <xsl:template match ="si_nd_param">
+    <tr>
+      <td>
+        <xsl:value-of select="count(preceding-sibling::si_nd_param)+1"/>
+      </td>
+      <td>
+        <xsl:value-of select="@name" />
+      </td>
+      <td>
+        <xsl:value-of select="@si_nums" />
+      </td>
+      <td>
+        <xsl:value-of select="@nd_nums" />
+      </td>
+    </tr>
+  </xsl:template>
+
+
+</xsl:stylesheet>

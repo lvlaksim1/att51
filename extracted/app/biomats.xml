@@ -1,0 +1,1802 @@
+﻿<Classifier>
+  <MicroorganismPathogenic>
+    <Kod>1</Kod>
+    <Name>Absidia spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>2</Kod>
+    <Name>Acanthamoeba spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>3</Kod>
+    <Name>Acremonium spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>4</Kod>
+    <Name>Actinomyces albus</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>5</Kod>
+    <Name>Adenoviridae: аденовирусы всех типов</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>6</Kod>
+    <Name>Aerobacter aerogenes</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>7</Kod>
+    <Name>Alternaria spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>8</Kod>
+    <Name>Ancylostoma duodenale</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>9</Kod>
+    <Name>Anisakis spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>10</Kod>
+    <Name>Aphanoascus fulvescens (анаморфа - Chrysosporium)</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>11</Kod>
+    <Name>Apophysomyces elegans</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>12</Kod>
+    <Name>Arenaviridae: вирусы Ласса,2, Хунин,2, Мачупо,2, Себиа,2, Гуанарито</Name>
+    <PathogenicGroup>1</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>13</Kod>
+    <Name>Arenaviridae: вирусы лимфоцитарного хориоменингита,2, Такарибе,2, Пичинде</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>14</Kod>
+    <Name>Askaris lumbricoides</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>15</Kod>
+    <Name>Askaris suum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>16</Kod>
+    <Name>Aspergillus flavus</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>17</Kod>
+    <Name>Aspergillus fumigatus</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>18</Kod>
+    <Name>Aspergillus spp. (кроме Aspergillus flavus,2, Aspergillus fumigatus,2, Aspergillus terreus)</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>19</Kod>
+    <Name>Aspergillus terreus</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>20</Kod>
+    <Name>Aureobasidium pullulans</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>21</Kod>
+    <Name>Babesia caucasica</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>22</Kod>
+    <Name>Bacillus anthracis</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>23</Kod>
+    <Name>Bacillus cereus</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>24</Kod>
+    <Name>Bacteroides spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>25</Kod>
+    <Name>Balantidium coli</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>26</Kod>
+    <Name>Basidiobolus spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>27</Kod>
+    <Name>Beavueria bassiana</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>28</Kod>
+    <Name>Blastocystis hominis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>29</Kod>
+    <Name>Blastomyces dermatitidis</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>30</Kod>
+    <Name>Bordetella bronchiseptica</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>31</Kod>
+    <Name>Bordetella parapertussis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>32</Kod>
+    <Name>Bordetella pertussis</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>33</Kod>
+    <Name>Borrelia recurrentis</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>34</Kod>
+    <Name>Borrelia spp</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>35</Kod>
+    <Name>Botryomyces caespitosus</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>36</Kod>
+    <Name>Branchamella catarralis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>37</Kod>
+    <Name>Brucella abortus 1</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>38</Kod>
+    <Name>Brucella melitensis</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>39</Kod>
+    <Name>Brucella melitensis biovar Abortus</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>40</Kod>
+    <Name>Brucella melitensis biovar Canis</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>41</Kod>
+    <Name>Brucella melitensis biovar Neotomae</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>42</Kod>
+    <Name>Brucella melitensis biovar Ovis</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>43</Kod>
+    <Name>Brucella melitensis biovar Suis</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>44</Kod>
+    <Name>Bunyaviridae,2, Род Bunyavirus: комплекс C-вирусы Апеу,2, Мадрид,2, Орибока,2, Осса,2, Рестан и др.</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>45</Kod>
+    <Name>Bunyaviridae,2, Род Bunyavirus: Комплекс Калифорнийского энцефалита,2, Ла Кросс,2, Джеймстаун каньон,2, зайцев-беляков,2, Инко,2, Тягиня</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>46</Kod>
+    <Name>Burkholderia cepacia</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>47</Kod>
+    <Name>Burkholderia mallei</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>48</Kod>
+    <Name>Burkholderia pseudomallei</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>49</Kod>
+    <Name>Burkholderia thailandensis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>50</Kod>
+    <Name>Caliciviridae: вирус Норфолк</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>51</Kod>
+    <Name>Campylobacter fetus</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>52</Kod>
+    <Name>Campylobacter jejuni</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>53</Kod>
+    <Name>Campylobacter spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>54</Kod>
+    <Name>Candida albicans</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>55</Kod>
+    <Name>Candida crusei</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>56</Kod>
+    <Name>Candida glabrata</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>57</Kod>
+    <Name>Candida spp. (кроме Candida albicans,2, Candida glabrata,2, Candida crusei,2, Candida tropicalis)</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>58</Kod>
+    <Name>Candida tropicalis</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>59</Kod>
+    <Name>Chaetomium spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>60</Kod>
+    <Name>Chlamydia trachomatis</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>61</Kod>
+    <Name>Chlamydophila pneumoniae</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>62</Kod>
+    <Name>Chlamydophila psittaci</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>63</Kod>
+    <Name>Citrobacter spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>64</Kod>
+    <Name>Cladophialophora bantiana</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>65</Kod>
+    <Name>Cladophialophora spp. (кроме Cladophialophora bantiana)</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>66</Kod>
+    <Name>Clonorchis sinensis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>67</Kod>
+    <Name>Clostridium bifermentans</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>68</Kod>
+    <Name>Clostridium botulinum</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>69</Kod>
+    <Name>Clostridium histolyticum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>70</Kod>
+    <Name>Clostridium novyi</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>71</Kod>
+    <Name>Clostridium perfringens</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>72</Kod>
+    <Name>Clostridium septicum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>73</Kod>
+    <Name>Clostridium tetani</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>74</Kod>
+    <Name>Coccidioides immitis Coccidioides posadasii</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>75</Kod>
+    <Name>Cokeromyces recurvatus</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>76</Kod>
+    <Name>Conidiobolus spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>77</Kod>
+    <Name>Coronaviridae: вирус SARS</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>78</Kod>
+    <Name>Coronaviridae: коронавирусы человека</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>79</Kod>
+    <Name>Corynebacterium diphtheria</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>80</Kod>
+    <Name>Coxiella burnetii</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>81</Kod>
+    <Name>Cryptococcus neoformans</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>82</Kod>
+    <Name>Cryptococcus spp. (кроме Cryptococcus neoformans)</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>83</Kod>
+    <Name>Cryptosporidium parvum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>84</Kod>
+    <Name>Cunnunghmella bertholletiae</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>85</Kod>
+    <Name>Curvularia spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>86</Kod>
+    <Name>Cyclospora cayetanensis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>87</Kod>
+    <Name>Demodex folliculorum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>88</Kod>
+    <Name>Dicrocoelium lanceatum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>89</Kod>
+    <Name>Dioctophyme renale</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>90</Kod>
+    <Name>Diphyllobotrium dendriticum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>91</Kod>
+    <Name>Diphyllobotrium latum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>92</Kod>
+    <Name>Diphyllobotrium luxi</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>93</Kod>
+    <Name>Dipylidium caninum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>94</Kod>
+    <Name>Dirofilaria immitis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>95</Kod>
+    <Name>Dirofilaria repens</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>96</Kod>
+    <Name>Dracunculus medinensis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>97</Kod>
+    <Name>E.canis</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>98</Kod>
+    <Name>E.chaffeensis</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>99</Kod>
+    <Name>Echinococcus granulosus</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>100</Kod>
+    <Name>Echinococcus multilocularis</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>101</Kod>
+    <Name>Ehrlichia sennetsu</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>102</Kod>
+    <Name>Eikinella corrodens</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>103</Kod>
+    <Name>Emmonsia spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>104</Kod>
+    <Name>Entamoeba hystolytica</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>105</Kod>
+    <Name>Enterobius vermicularis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>106</Kod>
+    <Name>Enterococcus faecalis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>107</Kod>
+    <Name>Enterococcus faecium</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>108</Kod>
+    <Name>Epidermophyton floccosum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>109</Kod>
+    <Name>Erysipelothrix rhusiopathiae</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>110</Kod>
+    <Name>Escherichia coli</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>111</Kod>
+    <Name>Escherichia coli О157:H7,2, О104:Н4 и другие серотипы - продуценты веротоксина</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>112</Kod>
+    <Name>Eubacterium endocarditidis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>113</Kod>
+    <Name>Eubacterium lentum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>114</Kod>
+    <Name>Eubacterium ventricosum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>115</Kod>
+    <Name>Exophiala spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>116</Kod>
+    <Name>Fasciola gigantica</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>117</Kod>
+    <Name>Fasciola hepatica</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>118</Kod>
+    <Name>Fasciolopsis buski</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>119</Kod>
+    <Name>Filoviridae: вирусы Марбург и Эбола</Name>
+    <PathogenicGroup>1</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>120</Kod>
+    <Name>Flaviviridae: Болезни леса Киассанур,2, Омской геморрагической лихорадки (ОГЛ)</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>121</Kod>
+    <Name>Flaviviridae: Вирус гепатита C</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>122</Kod>
+    <Name>Flaviviridae: вирусы комплекса клещевого энцефалита (КЭ),2, Алма-Арасан,2, Апои,2, Лангат,2, Негиши,2, Повассан,2, Шотландского энцефаломиелита овец</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>123</Kod>
+    <Name>Flaviviridae: вирусы комплекса японского энцефалита (ЯЭ),2, Западного Нила,2, Ильеус,2, Росио,2, Сент-Луис (энцефалиты),2, Усуту,2, (энцефалит),2, долины Муррея,2, Карши,2, Кунжин,2, Сепик,2, Вессельсборн</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>124</Kod>
+    <Name>Flaviviridae: Желтой лихорадки</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>125</Kod>
+    <Name>Flaviviridae: Зика,2, Риобраво,2, Денге,2, Сокулук</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>126</Kod>
+    <Name>Flavobacterium meningosepticum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>127</Kod>
+    <Name>Fonsecaea spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>128</Kod>
+    <Name>Francisella tularensis</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>129</Kod>
+    <Name>Fusarium spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>130</Kod>
+    <Name>Geotrichum spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>131</Kod>
+    <Name>Graphium eumorphum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>132</Kod>
+    <Name>Gymnoascus dankalensis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>133</Kod>
+    <Name>Haemophilus influenza</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>134</Kod>
+    <Name>Hafnia alvei</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>135</Kod>
+    <Name>Helicobacter pylori</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>136</Kod>
+    <Name>Hepadnaviridae: вирусы гепатита B</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>137</Kod>
+    <Name>Herpesviridae: вирус герпеса 6 типа (HBLv- HHv6)</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>138</Kod>
+    <Name>Herpesviridae: вирус цитомегалии</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>139</Kod>
+    <Name>Herpesviridae: вирус Эпштейн-Барра</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>140</Kod>
+    <Name>Herpesviridae: вирусы простого герпеса I и II типов</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>141</Kod>
+    <Name>Herpesviridae: герпесвирус зостор-ветрянки</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>142</Kod>
+    <Name>Herpesviridae: обезьяний вирус B</Name>
+    <PathogenicGroup>1</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>143</Kod>
+    <Name>Histoplasma capsulatum var.capsulatum u duboisii</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>144</Kod>
+    <Name>Histoplasma falciminosum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>145</Kod>
+    <Name>Hoptaea werneckii</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>146</Kod>
+    <Name>Hymenolepis diminuta</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>147</Kod>
+    <Name>Hymenolepis nana</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>148</Kod>
+    <Name>Isospora belli</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>149</Kod>
+    <Name>Klebsiella ozaenae</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>150</Kod>
+    <Name>Klebsiella pneumonia</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>151</Kod>
+    <Name>Klebsiella rhinoscleromatis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>152</Kod>
+    <Name>Lacazia loboi</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>153</Kod>
+    <Name>Lamblia intestinalis (Giardia lamblia)</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>154</Kod>
+    <Name>Legionella pneumophila</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>155</Kod>
+    <Name>Leishmania donovani</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>156</Kod>
+    <Name>Leishmania major</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>157</Kod>
+    <Name>Leishmania tropica</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>158</Kod>
+    <Name>Leptosphaeria spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>159</Kod>
+    <Name>Leptospira interrogans</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>160</Kod>
+    <Name>Listeria monocytogenes</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>161</Kod>
+    <Name>Loa loa</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>162</Kod>
+    <Name>Madurella spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>163</Kod>
+    <Name>Malassezia spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>164</Kod>
+    <Name>Methagonimus jokogowai</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>165</Kod>
+    <Name>Micoplasma genitalium</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>166</Kod>
+    <Name>Micoplasma hominis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>167</Kod>
+    <Name>Micoplasma pneumoniae</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>168</Kod>
+    <Name>Micoplasma urealyticum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>169</Kod>
+    <Name>Microascus spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>170</Kod>
+    <Name>Microsporum spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>171</Kod>
+    <Name>Mortierella wolfii</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>172</Kod>
+    <Name>Mucor spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>173</Kod>
+    <Name>Multiceps multiceps</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>174</Kod>
+    <Name>Mycobacterium avium</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>175</Kod>
+    <Name>Mycobacterium bovis</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>176</Kod>
+    <Name>Mycobacterium leprae</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>177</Kod>
+    <Name>Mycobacterium spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>178</Kod>
+    <Name>Mycobacterium tuberculosis</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>179</Kod>
+    <Name>Naegleria spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>180</Kod>
+    <Name>Nanophyetes schikhobalowi</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>181</Kod>
+    <Name>Nattrassia mangiferae (Scytalidium spp.)</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>182</Kod>
+    <Name>Necator americanus</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>183</Kod>
+    <Name>Neisseria gonorrhoeae</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>184</Kod>
+    <Name>Neisseria meningitides</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>185</Kod>
+    <Name>Neotestudina rosatii</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>186</Kod>
+    <Name>Nocardia asteroids</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>187</Kod>
+    <Name>Nocardia brasiliensis</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>188</Kod>
+    <Name>Nodaviridae: вирусы гепатитов D (дельта) и E</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>189</Kod>
+    <Name>Nonphotochromogens</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>190</Kod>
+    <Name>Ochroconis spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>191</Kod>
+    <Name>Onychocola spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>192</Kod>
+    <Name>Opisthorchis felineus</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>193</Kod>
+    <Name>Opisthorchis viverini</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>194</Kod>
+    <Name>Ornithonyssus bacoty</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>195</Kod>
+    <Name>Orthomyxoviridae: вирусы гриппа A,2, B и C</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>196</Kod>
+    <Name>Paecilomyces spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>197</Kod>
+    <Name>Paracoccidioides brasiliensis</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>198</Kod>
+    <Name>Paragonimus westermani</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>199</Kod>
+    <Name>Paramyxoviridae: вирус кори</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>200</Kod>
+    <Name>Paramyxoviridae: вирус Ньюкаслской болезни</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>201</Kod>
+    <Name>Paramyxoviridae: вирус эпидемического паротита</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>202</Kod>
+    <Name>Paramyxoviridae: вирусы парагриппа человека 1-4 типа</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>203</Kod>
+    <Name>Paramyxoviridae: респираторно-синцитиальный вирус (РС-вирус)</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>204</Kod>
+    <Name>Pasteurella multocida</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>205</Kod>
+    <Name>Pediculus capitis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>206</Kod>
+    <Name>Pediculus vestimenti</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>207</Kod>
+    <Name>Penicillium spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>208</Kod>
+    <Name>Penicillum marneffei</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>209</Kod>
+    <Name>Pentatrichomonas (Trichomonas) hominis</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>210</Kod>
+    <Name>Phaeoacremonium spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>211</Kod>
+    <Name>Phialemonium spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>212</Kod>
+    <Name>Phialophora spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>213</Kod>
+    <Name>Phoma spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>214</Kod>
+    <Name>Photochromogens</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>215</Kod>
+    <Name>Phthirus pubis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>216</Kod>
+    <Name>Picornaviridae,2, Род Aphtovirus: вирус ящура</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>217</Kod>
+    <Name>Picornaviridae,2, Род Cardiovirus: вирус энцефаломиокардита и вирус Менго</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>218</Kod>
+    <Name>Picornaviridae,2, Род Enterovirus вирусы ECHO</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>219</Kod>
+    <Name>Picornaviridae,2, Род Enterovirus вирусы Коксаки группы A и B</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>220</Kod>
+    <Name>Picornaviridae,2, Род Enterovirus энтеровирусы - типы 68-71</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>221</Kod>
+    <Name>Picornaviridae,2, Род Enterovirus: вирус острого геморрагического конъюнктивита (АНС)</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>222</Kod>
+    <Name>Picornaviridae,2, Род Enterovirus: вирусы гепатитов А и Е</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>223</Kod>
+    <Name>Picornaviridae,2, Род Enterovirus: вирусы полиомиелита - дикие штаммы</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>224</Kod>
+    <Name>Picornaviridae,2, Род Rinovirus: риновирусы человека 130 типов</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>225</Kod>
+    <Name>Piedraia hortae</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>226</Kod>
+    <Name>Plasmodium falciparum</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>227</Kod>
+    <Name>Plasmodium malariae</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>228</Kod>
+    <Name>Plasmodium ovale</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>229</Kod>
+    <Name>Plasmodium vivax</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>230</Kod>
+    <Name>Pneumocystis carinii</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>231</Kod>
+    <Name>Poxviridae: вирус контагиозного моллюска</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>232</Kod>
+    <Name>Poxviridae: вирус оспы коров</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>233</Kod>
+    <Name>Poxviridae: вирус узелков доильщиц</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>234</Kod>
+    <Name>Poxviridae: вирус эктромелии</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>235</Kod>
+    <Name>Poxviridae: вирусы Тана и Яба</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>236</Kod>
+    <Name>Poxviridae: орфвирус</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>237</Kod>
+    <Name>Poxviridae: Род Ortopoxvirine вирус натуральной оспы (Variola)</Name>
+    <PathogenicGroup>1</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>238</Kod>
+    <Name>Poxviridae: Род Ortopoxvirine вирус оспы обезьян (Monkeypox)</Name>
+    <PathogenicGroup>1</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>239</Kod>
+    <Name>Proactinomyces israelii</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>240</Kod>
+    <Name>Propionibacterium avidum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>241</Kod>
+    <Name>Proteus spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>242</Kod>
+    <Name>Pseudamphistomum truncatum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>243</Kod>
+    <Name>Pseudoallecheria boydii (Scedosporium apiospermum)</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>244</Kod>
+    <Name>Pseudochaetosphaeronema larense</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>245</Kod>
+    <Name>Pseudomonas aeruginosa</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>246</Kod>
+    <Name>Pyrenochaeta spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>247</Kod>
+    <Name>Pythium insidiosum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>248</Kod>
+    <Name>Ramichloridium mackenzei</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>249</Kod>
+    <Name>Ramichloridium spp. (кроме Ramichloridium mackenzei)</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>250</Kod>
+    <Name>Rapid growers</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>251</Kod>
+    <Name>Reoviridae,2, Род Orbivirus: вирусы Кемерово,2, колорадской клещевой лихорадки,2, Синего языка овец,2, Чангвинола,2, Орунго и др.</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>252</Kod>
+    <Name>Reoviridae,2, Род Reovirus: реовирусы человека</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>253</Kod>
+    <Name>Reoviridae,2, Род Rotavirus: ротавирусы человека,2, вирус диареи телят Небраски (NCDV)</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>254</Kod>
+    <Name>Retroviridae: вирус Т-клеточного лейкоза человека (HTLV)</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>255</Kod>
+    <Name>Retroviridae: вирусы иммунодефицита человека (ВИЧ-1,2, ВИЧ-2)</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>256</Kod>
+    <Name>Rhabdoviridae,2, Род Lyssavirus: вирус уличного бешенства</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>257</Kod>
+    <Name>Rhabdoviridae,2, Род Lyssavirus: Дикования,2, Лагос-бат</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>258</Kod>
+    <Name>Rhabdoviride,2, Род Vesiculovirus: вирус везикулярного стоматита</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>259</Kod>
+    <Name>Rhinocladiella aquaspersa</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>260</Kod>
+    <Name>Rhinosporidium seeberi</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>261</Kod>
+    <Name>Rhizomucor spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>262</Kod>
+    <Name>Rhizopus spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>263</Kod>
+    <Name>Rickettsia akari</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>264</Kod>
+    <Name>Rickettsia australis</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>265</Kod>
+    <Name>Rickettsia conorii</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>266</Kod>
+    <Name>Rickettsia japonica</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>267</Kod>
+    <Name>Rickettsia prowazeki</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>268</Kod>
+    <Name>Rickettsia rickettsii</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>269</Kod>
+    <Name>Rickettsia sharoni</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>270</Kod>
+    <Name>Rickettsia sibirica</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>271</Kod>
+    <Name>Rickettsia sp.now?</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>272</Kod>
+    <Name>Rickettsia sp.now?</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>273</Kod>
+    <Name>Rickettsia sp.now?</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>274</Kod>
+    <Name>Rickettsia tsutsugamushi</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>275</Kod>
+    <Name>Rickettsia typhi</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>276</Kod>
+    <Name>Saksenaea vasiformis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>277</Kod>
+    <Name>Salmonella paratyphi A</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>278</Kod>
+    <Name>Salmonella paratyphi B</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>279</Kod>
+    <Name>Salmonella spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>280</Kod>
+    <Name>Salmonella typhi</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>281</Kod>
+    <Name>Sarcocystis hominis (bovihominis)</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>282</Kod>
+    <Name>Sarcocystis suihominis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>283</Kod>
+    <Name>Sarcoptes scabiei</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>284</Kod>
+    <Name>Scedosporium profilicans</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>285</Kod>
+    <Name>Schistosoma haematobium</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>286</Kod>
+    <Name>Schistosoma intercalatum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>287</Kod>
+    <Name>Schistosoma japonicum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>288</Kod>
+    <Name>Schistosoma mansoni</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>289</Kod>
+    <Name>Scopulariopsis spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>290</Kod>
+    <Name>Scotochromogens</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>291</Kod>
+    <Name>Serratia marcescens</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>292</Kod>
+    <Name>Shigella spp</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>293</Kod>
+    <Name>Shigella spp</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>294</Kod>
+    <Name>Sparganum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>295</Kod>
+    <Name>Sporothrix schenkii</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>296</Kod>
+    <Name>Staphylococcus spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>297</Kod>
+    <Name>Streptococcus spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>298</Kod>
+    <Name>Strongyloides stercoralis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>299</Kod>
+    <Name>Syncephalastpum racemosum</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>300</Kod>
+    <Name>Taenia solium</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>301</Kod>
+    <Name>Taeniarinchus saginatus</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>302</Kod>
+    <Name>Togaviridae,2, Род Rubivirus: вирус краснухи</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>303</Kod>
+    <Name>Togaviridae: вирусы лихорадок Семлики,2, Бибару,2, Эвергладес,2, Чикунгунья,2,Ньонг-Ньонг,2, Карельской,2, Синдбис,2, реки Росс,2, Майяро,2, Мукамбо,2, Сагиума</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>304</Kod>
+    <Name>Togaviridae: вирусы лошадиных инцефаломиелитов (Венесуэльский ВНЭЛ,2, Восточный ВЭЛ,2, Западный ЗЭЛ)</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>305</Kod>
+    <Name>Toxocara canis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>306</Kod>
+    <Name>Toxocara leonina</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>307</Kod>
+    <Name>Toxocara mystax</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>308</Kod>
+    <Name>Toxoplasma gondii</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>309</Kod>
+    <Name>Trichinella spp.</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>310</Kod>
+    <Name>Trichocephalus trichiurus</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>311</Kod>
+    <Name>Trichoderma spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>312</Kod>
+    <Name>Trichomonas vaginalis</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>313</Kod>
+    <Name>Trichophyton spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>314</Kod>
+    <Name>Trichosporon</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>315</Kod>
+    <Name>Trichosporon</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>316</Kod>
+    <Name>Trypanosoma cruzi</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>317</Kod>
+    <Name>Trypanosoma gambiense</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>318</Kod>
+    <Name>Trypanosoma rhodesiense</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>319</Kod>
+    <Name>Ulocladium spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>320</Kod>
+    <Name>Unconventional agents: Агент CJD-возбудитель болезни Крейцфельда-Якоба</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>321</Kod>
+    <Name>Unconventional agents: Возбудители медленных нейроинфекций = подострых губчатых энцефалопатий (Prion Diseases) Куру</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>322</Kod>
+    <Name>Unconventional agents: Возбудитель губчатой энцефалопатии крупного рогатого скота</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>323</Kod>
+    <Name>Unconventional agents: Возбудитель оливопонтоцеребеллярной атрофии человека</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>324</Kod>
+    <Name>Unconventional agents: Возбудитель трансмиссивной губчатой энцефалопатии человека</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>325</Kod>
+    <Name>Unconventional agents: Возбудитель энцефалопатии норок</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>326</Kod>
+    <Name>Unconventional agents: Скрепи</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>327</Kod>
+    <Name>Unconventional agents: Хроническая изнуряющая болезнь копытных</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>328</Kod>
+    <Name>Vibrio alginolyticus</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>329</Kod>
+    <Name>Vibrio cholerae non O1 (O139) не токсигенный</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>330</Kod>
+    <Name>Vibrio cholerae non O1 (O139) токсигенный</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>331</Kod>
+    <Name>Vibrio cholerae O1 не токсигенный</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>332</Kod>
+    <Name>Vibrio cholerae O1 токсигенный</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>333</Kod>
+    <Name>Vibrio fluvialis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>334</Kod>
+    <Name>Vibrio mimicus</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>335</Kod>
+    <Name>Vibrio parahaemolyticus</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>336</Kod>
+    <Name>Vibrio spp.</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>337</Kod>
+    <Name>Vibrio vulnificus</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>338</Kod>
+    <Name>Wangiella dermatitidis</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>339</Kod>
+    <Name>Yersinia enterocolitica</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>340</Kod>
+    <Name>Yersinia pestis</Name>
+    <PathogenicGroup>1</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>341</Kod>
+    <Name>Yersinia pseudotuberculosis</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>342</Kod>
+    <Name>Ботулинические токсины всех типов</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>343</Kod>
+    <Name>Дифтерийный токсин</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>344</Kod>
+    <Name>Клещи домашней пыли</Name>
+    <PathogenicGroup>4</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>345</Kod>
+    <Name>Микотоксины</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>346</Kod>
+    <Name>Патогенные микроорганизмы при обслуживании пассажирских вагонов проводниками</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>347</Kod>
+    <Name>Патогенные микроорганизмы. Возбудители инфекционных заболеваний. Работники патоморфологических отделений, прозекторских, моргов.</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>348</Kod>
+    <Name>Патогенные микроорганизмы. Особо опасные инфекции: проведение работ в ветеринарных учреждениях и подразделениях, специализированных хозяйств для больных животных с возбудителями особо опасных инфекционных заболеваний.</Name>
+    <PathogenicGroup>1</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>349</Kod>
+    <Name>Патогенные микроорганизмы. Особо опасные инфекции: проведение работ в ветеринарных учреждениях и подразделениях, специализированных хозяйствах для больных животных при контакте с животными больными особо опасными инфекционными заболеваниями.</Name>
+    <PathogenicGroup>1</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>350</Kod>
+    <Name>Патогенные микроорганизмы. Особо опасные инфекции: проведение работ в специализированных медицинских учреждениях при контакте с больными особо опасными инфекционными заболеваниями.</Name>
+    <PathogenicGroup>1</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>351</Kod>
+    <Name>Патогенные микроорганизмы. Особо опасные инфекции: проведение работ в специализированных медицинских учреждениях с возбудителями особо опасных инфекционных заболеваний.</Name>
+    <PathogenicGroup>1</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>352</Kod>
+    <Name>Патогенные микроорганизмы. Работники имеющие контакт с возбудителями инфекционных заболеваний.</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>353</Kod>
+    <Name>Род Hantavirus: вирусы Хантаан,2, Сеул,2, Пуумала,2, Чили,2, Аидо и др.</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>354</Kod>
+    <Name>Род Nairovirus: болезни овец Найроби,2, Ганджам</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>355</Kod>
+    <Name>Род Nairovirus: вирус Крымской геморрагической лихорадки-Конго</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>356</Kod>
+    <Name>Род Nairovirus: Дугбе</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>357</Kod>
+    <Name>Род Phlebovirus: вирусы москитных лихорадок Сицилии,2, Неаполя,2, Рифт-валли,2, Тоскана и др.</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>358</Kod>
+    <Name>Столбнячный токсин</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>359</Kod>
+    <Name>Стрептококковый токсин группы А</Name>
+    <PathogenicGroup>3</PathogenicGroup>
+  </MicroorganismPathogenic>
+  <MicroorganismPathogenic>
+    <Kod>360</Kod>
+    <Name>Холерный токсин</Name>
+    <PathogenicGroup>2</PathogenicGroup>
+  </MicroorganismPathogenic>
+</Classifier>

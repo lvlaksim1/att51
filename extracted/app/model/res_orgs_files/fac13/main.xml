@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Document name="" date="29.08.2023">
+<info>
+<UNC id="p1_1_1m_res" value="0 %"/>
+<UNC id="p1_1_1w_res" value="0 %"/>
+<UNC id="p1_1_2m_res" value="0 кгм"/>
+<UNC id="p1_1_2w_res" value="0 кгм"/>
+<UNC id="p1_1_3m_res" value="0 кгм"/>
+<UNC id="p1_1_3w_res" value="0 кгм"/>
+<UNC id="p1_2_1m_res" value="0 %"/>
+<UNC id="p1_2_1w_res" value="0 %"/>
+<UNC id="p1_2_2m_res" value="0 кгм"/>
+<UNC id="p1_2_2w_res" value="0 кгм"/>
+<UNC id="p1_2_3m_res" value="0 кгм"/>
+<UNC id="p1_2_3w_res" value="0 кгм"/>
+<UNC id="p1_3_1m_res" value="0 %"/>
+<UNC id="p1_3_1w_res" value="0 %"/>
+<UNC id="p1_3_2m_res" value="0 кгм"/>
+<UNC id="p1_3_2w_res" value="0 кгм"/>
+<UNC id="p1_3_3m_res" value="0 кгм"/>
+<UNC id="p1_3_3w_res" value="0 кгм"/>
+<UNC id="p2_1_1m_res" value="0 %"/>
+<UNC id="p2_1_1w_res" value="0 %"/>
+<UNC id="p2_1_2m_res" value="0 кг"/>
+<UNC id="p2_1_2w_res" value="0 кг"/>
+<UNC id="p2_1_3m_res" value="0 кг"/>
+<UNC id="p2_1_3w_res" value="0 кг"/>
+<UNC id="p2_2_1m_res" value="0 %"/>
+<UNC id="p2_2_1w_res" value="0 %"/>
+<UNC id="p2_2_2m_res" value="0 кг"/>
+<UNC id="p2_2_2w_res" value="0 кг"/>
+<UNC id="p2_2_3m_res" value="0 кг"/>
+<UNC id="p2_2_3w_res" value="0 кг"/>
+<UNC id="p2_3_1m_res" value="0 %"/>
+<UNC id="p2_3_1w_res" value="0 %"/>
+<UNC id="p2_3_2m_res" value="0 %"/>
+<UNC id="p2_3_2w_res" value="0 %"/>
+<UNC id="p2_3_3m_res" value="0 кг"/>
+<UNC id="p2_3_3w_res" value="0 кг"/>
+<UNC id="p2_4_1m_res" value="0 %"/>
+<UNC id="p2_4_1w_res" value="0 %"/>
+<UNC id="p2_4_2m_res" value="0 кг"/>
+<UNC id="p2_4_2w_res" value="0 %"/>
+<UNC id="p2_4_3m_res" value="0 кг"/>
+<UNC id="p2_4_3w_res" value="0 кг"/>
+<UNC id="p3_1_1m_res" value="0 %"/>
+<UNC id="p3_1_2m_res" value="0 "/>
+<UNC id="p3_1_3m_res" value="0 "/>
+<UNC id="p3_2_1m_res" value="0 %"/>
+<UNC id="p3_2_2m_res" value="0 "/>
+<UNC id="p3_2_3m_res" value="0 "/>
+<UNC id="p4_1_1m_res" value="0 %"/>
+<UNC id="p4_1_1w_res" value="0 %"/>
+<UNC id="p4_1_2m_res" value="0 кгс с"/>
+<UNC id="p4_1_2w_res" value="0 кгс с"/>
+<UNC id="p4_1_3m_res" value="0 кгс с"/>
+<UNC id="p4_1_3w_res" value="0 кгс с"/>
+<UNC id="p4_2_1m_res" value="0 %"/>
+<UNC id="p4_2_1w_res" value="0 %"/>
+<UNC id="p4_2_2m_res" value="0 кгс с"/>
+<UNC id="p4_2_2w_res" value="0 кгс с"/>
+<UNC id="p4_2_3m_res" value="0 кгс с"/>
+<UNC id="p4_2_3w_res" value="0 кгс с"/>
+<UNC id="p4_3_1m_res" value="0 %"/>
+<UNC id="p4_3_1w_res" value="0 %"/>
+<UNC id="p4_3_2m_res" value="0 кгс с"/>
+<UNC id="p4_3_2w_res" value="0 кгс с"/>
+<UNC id="p4_3_3m_res" value="0 кгс с"/>
+<UNC id="p4_3_3w_res" value="0 кгс с"/>
+<UNC id="p5_res" value="0"/>
+<UNC id="p6_1_res" value="0 "/>
+<UNC id="p6_2_res" value="0 "/>
+<UNC id="p6_3_res" value="0 "/>
+<UNC id="p6_4_res" value="0 "/>
+<UNC id="p7_1_1_res" value="0 %"/>
+<UNC id="p7_1_2_res" value="0 км"/>
+<UNC id="p7_1_3_res" value="0 км"/>
+<UNC id="p7_2_1_res" value="0 %"/>
+<UNC id="p7_2_2_res" value="0 км"/>
+<UNC id="p7_2_3_res" value="0 км"/>
+</info>
+</Document>

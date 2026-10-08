@@ -1,0 +1,39 @@
+.treeHTML {
+  line-height: normal;
+}
+
+.treeHTML div {
+  position: relative;
+  margin: 0 0 0 .5em;
+  padding: 0 0 0 1.2em;
+}
+
+.treeHTML div.root {
+  position: relative;
+  margin: 0 0 0 0;
+  padding: 0 0 0 0;
+  background: url(../img/main.gif) no-repeat;
+  padding-left: 20px;
+}
+
+
+details summary::-webkit-details-marker {
+  display: none
+}
+details summary {
+  background: url(../img/folder.gif) no-repeat;
+  padding-left: 18px;
+}
+
+details[open] > summary {
+  background: url(../img/folderopen.gif) no-repeat;
+  padding-left: 18px;
+}
+
+.treeHTML div.RM {
+  position: relative;
+  margin: 0 0 0 .5em;
+  padding: 0 0 0 1.2em;
+  background: url(../img/rm.gif) no-repeat;
+  padding-left: 18px;
+}
