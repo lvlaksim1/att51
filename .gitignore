@@ -1,6 +1,15 @@
-# Repository storage policy
+# Default repository exclusions
 /dist/
 /build/
+/work/
+/unpacked/
+/carved/
+/*.exe
+/*_decompressed.bin
+*.pyc
+__pycache__/
+
+# Default protection for files outside the research collection.
 *.exe
 *.msi
 *.zip
@@ -8,12 +17,14 @@
 *.rar
 *.dll
 *.pdb
-# Local copies of installer contents and investigation results
-/work/
-/unpacked/
-/extracted/
-/carved/
-/*.exe
-/*_decompressed.bin
-*.pyc
-__pycache__/
+
+# OWNER EXCEPTION: att51 ONLY (2026-10-09).
+# Original application files under extracted/ are permitted regardless of
+# extension and locally imposed size limits; GitHub still has a hard limit
+# of 100 MiB per regular Git object. No modification to repo-factory itself.
+!/extracted/
+!/extracted/**
+
+# Never publish known potentially sensitive registration or account data.
+/extracted/win/att_reg/att.reg
+/extracted/app/dop_info.ini
