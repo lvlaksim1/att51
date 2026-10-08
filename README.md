@@ -9,7 +9,7 @@
 - Репозиторий создан через [repo-factory](https://github.com/lvlaksim1/repo-factory/issues/188) с профилем Project Manager.
 - Выполнено статическое исследование установщика Inno Setup. Исполняемый код **не запускался**.
 - Выявлены компоненты Win32/Visual Basic 6, упоминания Microsoft Jet, шаблонов Word и обмена XML.
-- Доступен [проверяемый перечень находок](research/components.md), [карта образцов документов](research/word-templates.md) и [инструмент сканирования](tools/scan_payload.py).
+- Доступен [проверяемый перечень находок](research/components.md), [карту исполняемых модулей](research/pe-module-map.md), [карта образцов документов](research/word-templates.md) и [инструмент сканирования](tools/scan_payload.py).
 - **Важно:** это пока не полный каталог штатных файлов установки. Присутствующие сигнатуры не равнозначны отдельным файлам.
 
 ## Размещение
