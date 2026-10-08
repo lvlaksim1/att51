@@ -8,3 +8,12 @@
 *.rar
 *.dll
 *.pdb
+# Local copies of installer contents and investigation results
+/work/
+/unpacked/
+/extracted/
+/carved/
+/*.exe
+/*_decompressed.bin
+*.pyc
+__pycache__/
