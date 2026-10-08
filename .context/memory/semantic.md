@@ -1,5 +1,15 @@
-# Semantic memory
+# Семантическая память проекта att51
 
-Record reusable durable knowledge and lessons that are broader than the current working state.
+## Подтверждённые долговременные сведения
 
-Treat observed information as a candidate first. Admit it only when it has durable future value. Preserve source and authority when the memory could influence future decisions, revalidate it when freshness or risk matters, and revise it with confirm/supersede/conflict semantics rather than silent overwrite.
+- Репозиторий `lvlaksim1/att51` создан публичным через `repo-factory`, задание №188, профиль `project-manager`. Источник: комментарий фабрики в GitHub Issue #188; authority: verified-repository.
+- Исследуемый установщик: `setup.exe`, версия `5.1.1739`, SHA-256 `941e82cd07815861a10d7c77c9c47b94dcad799b6d7408e78bd3749d4eb2cfcc`. Источник: статическое исследование загруженного файла; authority: verified-runtime.
+- Пакет содержит PE-компоненты, опирающиеся на VB6, взаимодействие с Microsoft Word и сторонние элементы ActiveX; детальная карта доказательств находится в `research/pe-module-map.md`. Источник: сигнатуры PE и их внутренние строки; authority: verified-runtime.
+- Локальный бинарный поток распакованных данных имеет длину 645 359 024 байта; из него обнаружены 675 сигнатур OLE, 11 валидных заголовков PE32, различные признаки ZIP/изображений/XML. Подсчёт сигнатур не тождественен числу файлов. Источник: воспроизводимый `tools/scan_payload.py`; authority: verified-runtime.
+- Эталонная политика хранения из `repo-factory` в новый репозиторий автоматически не попала, несмотря на сообщение о создании. В ходе исследования скрипт, workflow и `.gitignore` добавлены отдельно. Источник: проверка содержимого GitHub до и после изменений; authority: verified-repository.
+
+## Открытые вопросы
+
+- Точная таблица файлов Inno Setup и штатные каталоги установки ещё не извлечены.
+- Наличие и состав модулей VBA не подтверждены точной выгрузкой исходного кода.
+- Функции интерфейса и связь модулей не проверялись запуском приложения.
