@@ -1,0 +1,12 @@
+offset_bytes,pe_machine,optional_header,notes
+22129152,0x14c,PE32,VB6 runtime
+36836031,0x14c,PE32,VB6 runtime
+112065128,0x14c,PE32,Jet/VBAJet dependencies
+152515294,0x14c,PE32,VB6 runtime
+643676767,0x14c,PE32,Windows/OLE dependencies
+644739471,0x14c,PE32,Windows/OLE dependencies
+644983495,0x14c,PE32,VB6 runtime
+645008071,0x14c,PE32,VB6 runtime
+645073607,0x14c,PE32,VB6 runtime; att_npa.dll string
+645176007,0x14c,PE32,CRTDLL.dll dependency
+645229296,0x14c,PE32,MSVCRT.dll dependency
