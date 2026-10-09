@@ -25,5 +25,5 @@ __pycache__/
 !/extracted/
 !/extracted/**
 
-# Never publish known potentially sensitive registration or account data.
-/extracted/win/att_reg/att.reg
+# The app's original registration metadata was published manually by the owner.
+# No path exclusions apply within extracted/ under the att51 exception.

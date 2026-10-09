@@ -13,10 +13,6 @@ from pathlib import Path
 MAX_TRACKED_FILE_BYTES = 5 * 1024 * 1024
 FORBIDDEN_SUFFIXES = {".exe", ".msi", ".zip", ".7z", ".rar", ".dll", ".pdb"}
 EXCEPTION_PREFIX = "extracted/"
-KNOWN_SENSITIVE_PATHS = {
-    "extracted/win/att_reg/att.reg",
-}
-
 
 def tracked_files(repository_root: Path) -> list[Path]:
     completed = subprocess.run(
@@ -35,9 +31,6 @@ def violations(repository_root: Path) -> list[str]:
         if not path.is_file():
             continue
         relative = path.relative_to(repository_root).as_posix()
-        if relative in KNOWN_SENSITIVE_PATHS:
-            result.append(f"{relative}: known potentially sensitive configuration")
-            continue
         if relative.startswith(EXCEPTION_PREFIX):
             # Owner-authorized att51 investigation materials only.
             continue
