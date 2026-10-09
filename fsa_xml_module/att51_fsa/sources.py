@@ -54,7 +54,7 @@ def sidecar_for_document(document: str) -> str:
 def resolve_relative_file(root: Path, relative: str) -> Path:
     """Interpret the relative Windows path stored in sout_factors.file."""
     p = PureWindowsPath(relative)
-    if p.is_absolute() or ".." in p.parts:
+    if p.is_absolute() or p.drive or ".." in p.parts:
         raise FsaSourceError(f"Unsafe/non-relative protocol path: {relative!r}")
     candidate = root.joinpath(*p.parts)
     if not candidate.resolve(strict=False).is_relative_to(root.resolve(strict=False)):
