@@ -148,3 +148,10 @@
 - **[implemented]** Third GUI command “Сформировать XML ФГИС”, in addition to two independent reports. Original VBA header/status, factor 13/14 mappings, people roles, equipment/ND mapping, XSD output with fail-closed validation. Missing required values produce reports/Проверка_и_формирование_XML_ФГИС.txt and prevent final XML; no fake IDs.
 - **[unverified]** Real output on user's private MDB not verified (previously absent FGIS IDs), portal acceptance not verified, original modes/summaries and provenance query_date not fully recovered. Issues #2 and #8 open.
 - **[source]** research/FSA_VBA_XML_IMPL_2026-10-09.md. No private customer data in GitHub.
+
+
+## Att51_export v0.1.10 — выпущена 09.10.2026, поколение 25
+- **[released, checked]** [Release v0.1.10](https://github.com/lvlaksim1/att51/releases/tag/v0.1.10): Setup 14 513 467 байт; Update 14 513 708 байт. [Windows выпуск #37954835977](https://github.com/lvlaksim1/att51/actions/runs/37954835977): completed/success.
+- **[from user field report]** В v0.1.9: 5 протоколов, 0 подготовлены. Дата заявки введена с ошибкой (пятнадцатипозиционный год), FGIS ID приборов/сотрудников и НД/методики не сопоставились в выбранной базе, 47 зависимых позиций измерений не завершены. Нельзя из одного отчёта решить, отсутствуют ли реальные записи, или указан не тот `res_orgs.mdb`.
+- **[code]** v0.1.10: по единственной организации автоматическое чтение `STRUCT_ORG` + `000_org_data/<mguid>/adv_data.xml`, дату и реквизиты; `ATT_PERSON.no_dop_fld2` как должность ФГИС; предварительная проверка даты; местный отчёт с путём ресурса, размерами таблиц, точными незарегистрированными ссылками и сгруппированными ошибками; положительный синтетический сквозной XML+XSD тест.
+- **[limits]** Реальный XML на частной MDB и приём порталом НЕ подтверждены. Неверные или отсутствующие FGIS ID не замещаются строками. Полный список оригинальных вариантов/сводных протоколов ещё не перенесён. #2 и #8 остаются открыты.

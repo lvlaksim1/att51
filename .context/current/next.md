@@ -136,3 +136,10 @@
 2. Confirm true v5_org_options.query_date and customer schema from user MDB and restore automatic read-only extraction; verify res_orgs [DB_res] and numeric FGIS links.
 3. Compare XML with actual original export on identical fully verified data, then support additional original modes and summary protocols. Do not misrepresent XSD as portal acceptance.
 4. Continue #2 and #8. Any further executable change requires published, Windows tested Setup+Update.
+
+
+## После подтверждённого выпуска v0.1.10 — поколение 25
+1. По обновлённой программе получить локальный отчёт из третьей кнопки. Заполнить дату заявки (либо автоматически из единственной исходной организации, либо вручную проверенной датой).
+2. Проверить в отчёте полный путь выбранной ресурсной базы, наличие `FGIS_RA`, числа `ATT_DEVICE`, `ATT_PERSON`, `DIC_ND`, `DIC_ND_INFO`, ID ФГИС. Если отличие от оригинального `options.ini/[DB_res]`, выяснить реальный путь; **без догадок и без изменения рабочих MDB**.
+3. На исходных XML и подтверждённых справочниках проверить `UniqueMethod`/`UniqueMethodik` по фактической ветви VBA. Довести соответствие эталонному Word XML и другим режимам; проверка XSD сама по себе приём ФГИС не доказывает.
+4. Отдельно проверить сохранность старых `fsa_prot*.xml` при неудачной повторной выгрузке (не оставлять старые данные как новые), если будут реальные повторные успешные выгрузки.

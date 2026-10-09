@@ -163,3 +163,10 @@
 - Original VBA statically inspected via read-only GitHub Actions. The full field provenance and factor 13/14 mapping are documented in research/FSA_VBA_XML_IMPL_2026-10-09.md. Original exporter writes human status labels contrary to xs:int; independent writer uses checked numeric 13/20/6.
 - Original dates: fill_date, fallback sign_date, measurement interval from factor/@izm_date; ApplicationDate comes from v5_org_options.query_date. Role codes: izm=1, boss=2, exp=3; FGIS position source: pers.fgis_state, not arbitrary job field.
 - v0.1.9 implements strict XSD-checked XML generation for verified complete sources, with a local blocker report for missing application date, resources, FGIS IDs, methods, or personnel. Original full end-to-end equivalence and portal acceptance remain unverified; neither can be claimed yet.
+
+
+## Разбор первого реального отчёта XML и установление источников — 09.10.2026, поколение 25
+- Отчёт v0.1.9: 5 внутренних протоколов прочитаны, 0 подготовленных; общая ошибочная ручная дата, отсутствие числовых FGIS ID в выбранном ресурсе, неразрешённые НД/методики, следственные ошибки 47 показателей. Не считать число ошибок независимыми причинами.
+- Подтверждено **из оригинального VBA**: `v5_org_options.fill_org_info` читает `STRUCT_ORG`; `fill_org_info_XML` читает `main_fs_path/000_org_data/<mguid>/adv_data.xml`, дату `Document/dop_info/@query_date`. `v52_exp_fgis_ra.read_pers_info` берёт должность ФГИС из `ATT_PERSON.no_dop_fld2` (не `dolg`). Модуль ресурсов v0.1.9 это пропускал, исправлено.
+- ФГИС XSD для приборов и сотрудников требует числовые ID, но для НД существуют `UniqueMethod`/`UniqueMethodik`. Без доказательства соответствующей ветви оригинала не подставлять вымышленные методы и не искажать `NoEquipmentInfo`.
+- Автоматический выбор организации допустим только при точно одной записи `STRUCT_ORG`. Выбор правильной ресурсной MDB нельзя делать по пустой шаблонной базе наугад; диагностировать текущий путь и состав таблиц.
