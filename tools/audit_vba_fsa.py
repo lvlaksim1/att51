@@ -41,7 +41,7 @@ def main() -> None:
                 for proc in target_procs:
                     found_start = None
                     for i, line in enumerate(lines):
-                        if re.match(r"(?i)^\\s*(?:(?:public|private)\\s+)?Function\\s+" + proc + r"\\b", line):
+                        if re.match(r"(?i)^\s*(?:(?:public|private)\s+)?Function\s+" + proc + r"\b", line):
                             found_start = i
                             break
                     if found_start is None:
@@ -52,7 +52,7 @@ def main() -> None:
                     for i in range(found_start, limit):
                         line = lines[i].rstrip()
                         print(f"PROC {proc} {i+1:5d} {line[:300]}")
-                        if i>found_start and re.match(r"(?i)^\\s*End Function\\s*$", line):
+                        if i>found_start and re.match(r"(?i)^\s*End Function\s*$", line):
                             break
                     print(f"END_PROCEDURE {proc}")
             # Avoid uncontrolled log size, and restrict to known module/terms.
