@@ -159,7 +159,7 @@ class DesktopApp:
         bar = ttk.Frame(bottom)
         bar.pack(fill="x", pady=(8, 0))
         ttk.Label(bar, textvariable=self.update_status).pack(side="left")
-        self.install_btn = ttk.Button(bar, text="Установить обновление",
+        self.install_btn = ttk.Button(bar, text="Обновить",
                                       command=self._install_update)
         self.install_btn.pack(side="right", padx=(6, 0))
         self.install_btn.state(["disabled"])
@@ -516,17 +516,12 @@ class DesktopApp:
             messagebox.showwarning(APP_NAME,
                 "Установка обновлений доступна только в установленной Windows-версии.")
             return
-        if not messagebox.askyesno(
-            APP_NAME,
-            f"Скачать и установить {release.tag}?\n"
-            "Установка не запрашивает права администратора. Исходные данные не изменяются.",
-        ):
-            return
         if not self._save_sources():
             messagebox.showerror(APP_NAME, "Не удалось сохранить пути перед обновлением.")
             return
         import ctypes
-        args = f'--apply-update {release.tag} {release.sha256} {release.size}'
+        args = (f'--apply-update {release.tag} {release.sha256} '
+                f'{release.size} {os.getpid()}')
         try:
             code = ctypes.windll.shell32.ShellExecuteW(
                 None, "open", str(Path(sys.executable).resolve()), args,
@@ -643,9 +638,10 @@ def main() -> int:
             return 0
         except Exception:
             return 14
-    if len(sys.argv) == 5 and sys.argv[1] == "--apply-update":
+    if len(sys.argv) in (5, 6) and sys.argv[1] == "--apply-update":
         try:
-            apply_update(sys.argv[2], sys.argv[3], sys.argv[4])
+            apply_update(sys.argv[2], sys.argv[3], sys.argv[4],
+                         sys.argv[5] if len(sys.argv) == 6 else "0")
             return 0
         except Exception as error:
             root = tk.Tk()
