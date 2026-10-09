@@ -118,3 +118,93 @@ def map_noise_equivalent(root: ET.Element, options: NoiseOptions) -> list[Resear
 
 def extract_noise_from_file(path, options: NoiseOptions) -> list[ResearchObjectDraft]:
     return map_noise_equivalent(parse_xml(path), options)
+
+
+def map_infrasound_equivalent(root: ET.Element, options: NoiseOptions) -> list[ResearchObjectDraft]:
+    """Original read_ekv_infr_param: acoustic vs equivalent (facid 5).
+
+    Shares the original UI switches with noise but uses different FGIS codes.
+    """
+    document = _first_document(root)
+    factor = document.find("factor")
+    if factor is None or factor.get("facid") != "5":
+        raise FsaSourceError("Infrasound mapper only accepts factor facid='5'")
+    result: list[ResearchObjectDraft] = []
+    if options.acoustic_measurements:
+        for index, item in enumerate(document.findall("./izm_res_data/izm"), 1):
+            fact = item.get("level", "") if options.acoustic_level_per_operation else item.get("levels", "")
+            if fact == "":
+                fact = item.get("level", "")
+            fact = original_get_num(fact)
+            if fact:
+                if options.acoustic_level_per_operation and options.include_uncertainty:
+                    unc = item.get("unc", "")
+                    if unc:
+                        fact += "\u00b1" + unc
+                result.append(ResearchObjectDraft(
+                    indicator_id="10", directory="1", measurement_id="429",
+                    fact_value=fact, nd_izm1=item.get("nd_izm1", ""),
+                    source_xpath=f"Document/izm_res_data/izm[{index}]",
+                ))
+    if not (options.acoustic_measurements and options.both_measurements_and_equivalent):
+        lekv = document.find("./izm_data/Level[@bm='Lekv']")
+        if lekv is not None:
+            fact = original_get_num(lekv.get("fact", ""))
+            if fact:
+                if options.include_uncertainty:
+                    unc = document.get("U8h", "")
+                    if original_get_num(unc):
+                        fact += "\u00b1" + unc
+                result.append(ResearchObjectDraft(
+                    indicator_id="131616", directory="2", measurement_id="429",
+                    fact_value=fact, nd_izm1=lekv.get("nd_izm1", ""),
+                    source_xpath="Document/izm_data/Level[@bm='Lekv']",
+                ))
+    return result
+
+
+@dataclass(frozen=True)
+class LightingOptions:
+    include_uncertainty: bool
+
+
+def map_lighting_2025(root: ET.Element, options: LightingOptions) -> list[ResearchObjectDraft]:
+    """Original read_osv_params: light (osv) and light pulsation (puls).
+
+    Unlike conventional numeric parsing, the original preserves fact strings
+    containing digits, and appends U095 only when checkbox is enabled.
+    """
+    document = _first_document(root)
+    factor = document.find("factor")
+    if factor is None or factor.get("facid") != "12":
+        raise FsaSourceError("Lighting mapper only accepts factor facid='12'")
+    result: list[ResearchObjectDraft] = []
+    for index, item in enumerate(document.findall("./izm_data/zone/param"), 1):
+        bm = item.get("bm", "")
+        fact = original_get_num(item.get("fact", ""))
+        if not fact:
+            continue
+        unc = item.get("U095", "")
+        if options.include_uncertainty and original_get_num(unc):
+            fact_with_unc = fact + "\u00b1" + unc
+        else:
+            fact_with_unc = fact
+        if "osv" in bm:
+            result.append(ResearchObjectDraft(
+                indicator_id="16", directory="1", measurement_id="64",
+                fact_value=fact_with_unc,
+                nd_izm1=item.get("nd_izm1", ""),
+                source_xpath=f"Document/izm_data/zone/param[{index}]",
+            ))
+        if "puls" in bm:
+            # Original code uses two consecutive If blocks; the second may
+            # append U095 a second time if bm matches BOTH substrings.
+            pulse_value = fact_with_unc
+            if "osv" in bm and options.include_uncertainty and original_get_num(unc):
+                pulse_value += "\u00b1" + unc
+            result.append(ResearchObjectDraft(
+                indicator_id="3520", directory="1", measurement_id="292",
+                fact_value=pulse_value, nd_izm1=item.get("nd_izm1", ""),
+                source_xpath=f"Document/izm_data/zone/param[{index}]",
+            ))
+    return result
