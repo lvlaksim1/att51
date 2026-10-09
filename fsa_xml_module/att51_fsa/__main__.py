@@ -8,6 +8,9 @@ from .sources import AppSources, FsaSourceError
 from .selection import select_individual, select_consolidated, selections_to_dict
 from .measurements import NoiseOptions, extract_noise_from_file
 from .writer import validate_xml
+from .resources import ResourceCatalog, resource_mdb_path
+from .resource_xml import inspect_protocol_resources_file, inspection_dict
+from dataclasses import asdict
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -45,6 +48,16 @@ def main(argv: list[str] | None = None) -> int:
     noise.add_argument("--uncertainty", action="store_true")
     noise.add_argument("--output", type=Path)
 
+    resources = subs.add_parser("inspect-resources", help="Read FSA resource relationships from original MDB and XML")
+    origin = resources.add_mutually_exclusive_group(required=True)
+    origin.add_argument("--resources", type=Path, help="Original working res_orgs.mdb")
+    origin.add_argument("--app-dir", type=Path, help="Application directory with options.ini")
+    resources.add_argument("--xml", type=Path, help="Original individual or summary XML protocol")
+    resources.add_argument("--summary", action="store_true", help="Read summary protocol info/* paths")
+    resources.add_argument("--secondary-equipment", action="store_true")
+    resources.add_argument("--additional-equipment", action="store_true")
+    resources.add_argument("--output", type=Path, help="Local JSON report (may contain personnel names)")
+
     args = p.parse_args(argv)
 
     def show(data):
@@ -55,6 +68,23 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(result)
     try:
+        if args.operation == "inspect-resources":
+            db_path = args.resources if args.resources else resource_mdb_path(args.app_dir)
+            catalog = ResourceCatalog.from_mdb(db_path)
+            result = {
+                "resources_mdb": str(db_path),
+                "catalog": asdict(catalog.diagnostics),
+                "not_exportable": True,
+                "note": "Read-only research diagnostics; no working FGIS export",
+            }
+            if args.xml:
+                result["protocol"] = inspection_dict(inspect_protocol_resources_file(
+                    args.xml, catalog, summary=args.summary,
+                    include_secondary=args.secondary_equipment,
+                    include_additional=args.additional_equipment,
+                ))
+            show(result)
+            return 0
         if args.operation == "inspect":
             result = AppSources(args.mdb, args.resources, documents_root=args.files).inspect(args.rm_id)
             content = json.dumps(result, ensure_ascii=False, indent=2)
