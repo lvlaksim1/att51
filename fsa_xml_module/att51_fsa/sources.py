@@ -253,8 +253,12 @@ class AppSources:
                     except FsaSourceError:
                         reports.append(Candidate(rm_id, factor_id, str(word_file), str(xml_file), "malformed_xml"))
                         continue
-                    missing = tuple(g for g, _ in entry.equipment
-                                    if g and (0, g.lower()) not in available)
+                    # Original get_xml_data skips equipment lookup when fgis_state=2.
+                    missing = tuple(
+                        g for g, _ in entry.equipment
+                        if entry.fgis_state not in ("1", "2")
+                        and g and (0, g.lower()) not in available
+                    )
                     status = "excluded_by_fgis_state" if entry.fgis_state == "1" else (
                         "unmapped_equipment" if missing else "ready_for_further_mapping"
                     )
