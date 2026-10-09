@@ -55,6 +55,9 @@ Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 Name: "{autoprograms}\Att51_export"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"
 Name: "{autodesktop}\Att51_export"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; Tasks: desktopicon
 
+[Dirs]
+Name: "{app}\data"; Permissions: users-modify
+
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\updates"
 Type: filesandordirs; Name: "{app}\data"

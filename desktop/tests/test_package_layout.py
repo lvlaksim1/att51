@@ -37,6 +37,13 @@ class InstallationContractTests(unittest.TestCase):
         self.assertIn("FileExists(InstalledExe)", code)
         self.assertIn(r"{commonappdata}\Att51_export\Att51_export.exe", code)
 
+    def test_snapshot_directory_writable_for_unprivileged_user(self):
+        for name in ("full.iss", "update.iss"):
+            with self.subTest(installer=name):
+                code = self.script(name)
+                self.assertIn('[Dirs]', code)
+                self.assertIn('Name: "{app}\\data"; Permissions: users-modify', code)
+
     def test_uninstaller_cleans_own_directories(self):
         for name in ("full.iss", "update.iss"):
             code = self.script(name)

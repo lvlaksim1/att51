@@ -51,6 +51,9 @@ Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 [Icons]
 Name: "{autoprograms}\Att51_export"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"
 
+[Dirs]
+Name: "{app}\data"; Permissions: users-modify
+
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\updates"
 Type: filesandordirs; Name: "{app}\data"

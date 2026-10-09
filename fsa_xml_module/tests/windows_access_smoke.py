@@ -19,6 +19,20 @@ for label, path, sql in samples:
         print(f"{label}: ADO/Jet provider={connection.provider}, rows={len(records)}")
 print("ORIGINAL_MDB_READ_ONLY_SMOKE_PASS")
 
+# Force the fallback on a real original MDB, not just simulated COM errors.
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
+with TemporaryDirectory() as temp:
+    root_snapshot = Path(temp) / "Att51_export" / "data"
+    with patch.object(AccessReader, "_is_network_path", return_value=True):
+        with AccessReader(samples[0][1], snapshot_root=root_snapshot) as copy:
+            assert copy.used_snapshot, "Forced network snapshot was not used"
+            rows = copy.select(samples[0][2])
+            print("ORIGINAL_MDB_LOCAL_SNAPSHOT_READ_PASS", len(rows))
+    assert not list(root_snapshot.rglob("*.mdb")), "MDB copy remained after closing"
+    print("ORIGINAL_MDB_LOCAL_SNAPSHOT_REMOVED")
+
+
 
 # Check the same MSXML/XSD mechanism that the original save_XML invokes.
 from att51_fsa.writer import Protocol, serialize_protocols, validate_xml

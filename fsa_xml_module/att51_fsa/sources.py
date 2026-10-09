@@ -11,7 +11,11 @@ from dataclasses import asdict, dataclass
 from datetime import date, datetime
 import ntpath
 from pathlib import Path, PureWindowsPath
+import os
 import re
+import shutil
+import sys
+import tempfile
 from typing import Any
 from xml.etree import ElementTree as ET
 
@@ -116,13 +120,20 @@ def read_sidecar(path: Path) -> Sidecar:
 
 
 class AccessReader:
-    """Windows ADODB, like the original; requires installed Jet or ACE provider.
+    """Read original MDB without changing records; copy to app-local scratch if locked.
 
-    READ-ONLY mode; no Word automation, schema upgrades, write SQL or migrations.
+    A legacy Jet/ACE database can require a writable .ldb next to the source.
+    No source-file permissions are changed and a live database is never
+    compacted, repaired, copied back, or opened for exclusive writing.
     """
     PROVIDERS = ("Microsoft.Jet.OLEDB.4.0", "Microsoft.ACE.OLEDB.12.0")
+    LOCK_MARKERS = (
+        "could not lock file", "cannot lock file", "couldn't lock file",
+        "блокировка файла невозможна", "невозможно заблокировать файл",
+        "не удается заблокировать файл",
+    )
 
-    def __init__(self, database: Path):
+    def __init__(self, database: Path, *, snapshot_root: Path | None = None):
         self.database = Path(database)
         if not self.database.is_file():
             raise FsaSourceError(f"Access file does not exist: {self.database}")
@@ -132,34 +143,124 @@ class AccessReader:
             raise FsaSourceError("Semicolon in Access path is unsupported")
         self._connection = None
         self.provider = ""
+        self.used_snapshot = False
+        self._snapshot = None
+        self._snapshot_root = Path(snapshot_root) if snapshot_root is not None else (
+            Path(sys.executable).resolve().parent / "data"
+            if getattr(sys, "frozen", False)
+            else Path(__file__).resolve().parents[2] / "desktop" / "data"
+        )
+
+    @classmethod
+    def _lock_error(cls, error: Exception) -> bool:
+        message = str(error).casefold()
+        return any(key in message for key in cls.LOCK_MARKERS)
+
+    def _open(self, path: Path, client) -> tuple[Exception, ...]:
+        failures = []
+        for provider in self.PROVIDERS:
+            conn = None
+            try:
+                conn = client.Dispatch("ADODB.Connection")
+                # adModeRead | adModeShareDenyNone: do not deny other readers
+                # or writers; disable OLE DB connection pooling.
+                conn.Mode = 17
+                conn.Open(
+                    f"Provider={provider};Data Source={path};"
+                    "Mode=Read;OLE DB Services=-4;"
+                )
+                self._connection, self.provider = conn, provider
+                return ()
+            except Exception as exc:
+                failures.append(exc)
+                if conn is not None:
+                    try:
+                        conn.Close()
+                    except Exception:
+                        pass
+        return tuple(failures)
+
+    @staticmethod
+    def _is_network_path(path: Path) -> bool:
+        value = str(path)
+        if value.startswith("\\\\"):
+            return True
+        if sys.platform != "win32" or len(value) < 3 or value[1:3] != ":\\":
+            return False
+        try:
+            import ctypes
+            return ctypes.windll.kernel32.GetDriveTypeW(value[:3]) == 4
+        except (AttributeError, OSError):
+            return False
+
+    def _open_snapshot(self, client):
+        try:
+            self._snapshot_root.mkdir(parents=True, exist_ok=True)
+            self._snapshot = tempfile.TemporaryDirectory(
+                prefix="mdb-read-", dir=str(self._snapshot_root))
+            target = Path(self._snapshot.name) / "read-only.mdb"
+            before = self.database.stat()
+            shutil.copyfile(self.database, target)
+            after = self.database.stat()
+            if (before.st_size, before.st_mtime_ns) != (
+                after.st_size, after.st_mtime_ns
+            ) or target.stat().st_size != before.st_size:
+                raise FsaSourceError(
+                    "Рабочая MDB изменялась во время копирования. "
+                    "Повторите проверку после завершения операций с базой."
+                )
+            errors = self._open(target, client)
+            if errors:
+                raise FsaSourceError(
+                    "Не удалось прочитать временную копию MDB (исходная база не "
+                    f"изменялась): {errors[-1]}"
+                )
+            self.used_snapshot = True
+        except Exception:
+            self._release_snapshot()
+            raise
+
+    def _release_snapshot(self):
+        if self._snapshot is not None:
+            scratch, self._snapshot = self._snapshot, None
+            try:
+                scratch.cleanup()
+            except OSError as exc:
+                raise FsaSourceError(
+                    "Не удалось удалить временную копию MDB из папки приложения: "
+                    f"{scratch.name}: {exc}"
+                ) from exc
 
     def __enter__(self) -> "AccessReader":
         try:
             import win32com.client
         except ImportError as exc:
             raise FsaSourceError("Windows module pywin32 is required for ADO") from exc
-        last = None
-        for provider in self.PROVIDERS:
-            conn = win32com.client.Dispatch("ADODB.Connection")
-            try:
-                conn.Mode = 1  # adModeRead
-                conn.Open(f"Provider={provider};Data Source={self.database};Mode=Read;")
-                self._connection, self.provider = conn, provider
-                return self
-            except Exception as exc:
-                last = exc
-                try:
-                    conn.Close()
-                except Exception:
-                    pass
+        if self._is_network_path(self.database):
+            # ADO may require a writable .ldb on the server even for SELECT.
+            # Do not attempt to create any locking file on a network share.
+            self._open_snapshot(win32com.client)
+            return self
+        failures = self._open(self.database, win32com.client)
+        if not failures:
+            return self
+        if any(self._lock_error(exc) for exc in failures):
+            # The original file is readable but Jet/ACE cannot coordinate
+            # its lock file. This is not proof of a missing OLE DB driver.
+            self._open_snapshot(win32com.client)
+            return self
         raise FsaSourceError(
-            f"Unable to read MDB with Jet/ACE OLE DB (architecture or driver): {last}"
+            "Не удалось открыть MDB только для чтения с Jet/ACE: "
+            + "; ".join(str(err) for err in failures)
         )
 
     def __exit__(self, *args: object) -> None:
-        if self._connection is not None:
-            self._connection.Close()
-            self._connection = None
+        try:
+            if self._connection is not None:
+                self._connection.Close()
+                self._connection = None
+        finally:
+            self._release_snapshot()
 
     def table_names(self) -> frozenset[str]:
         """Query ADO schema in read-only mode; no CREATE/ALTER as original does."""
@@ -281,10 +382,24 @@ class AppSources:
                     reports.append(Candidate(rm_id, factor_id, str(word_file),
                                              str(xml_file), status, entry.protocol_number,
                                              entry.fgis_state, tuple(g for g, _ in entry.equipment)))
+        copies_used = [
+            source for source, reader in (
+                ("База рабочих мест", main),
+                ("Справочник ресурсов", resources),
+) if getattr(reader, "used_snapshot", False)
+        ]
         return {
             "workplace_mdb": str(self.workplace_mdb),
             "resources_mdb": str(self.resources_mdb),
             "documents_root": str(self.documents_root),
+            "temporary_snapshot_sources": copies_used,
+            "snapshot_warning": (
+                "Считывание выполнено по временной копии MDB. "
+                "Если оригинал изменялся одновременно с копированием, "
+                "снимок может быть несогласованным; для контрольной "
+                "проверки остановите изменения исходной базы."
+                if copies_used else None
+            ),
             "candidates": [asdict(c) for c in reports],
             "note": "Read-only source inspection: individual equipment mapping uses the original GUID/serial/FGIS rules; full ND/person/indicator output and final XML are incomplete.",
         }
