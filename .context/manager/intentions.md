@@ -1,7 +1,9 @@
-# Manager intentions and commitments
+# Намерения и обязательства
 
-Record commitments using the Contract lifecycle:
+## Выполнено
+- **[completed] Точная распаковка Inno Setup 5.3.10.** Завершено 09.10.2026, все 3614 исходных записей и встроенные SHA-1 проверены. Доказательство: `research/EXTRACTION_VERIFIED.md`.
+- **[completed] Исключение из ограничений хранения для att51.** Завершено 09.10.2026, проверка GitHub Actions успешна. Доказательство: `.gitignore`, `scripts/check_repository_storage.py`.
+- **[completed] Размещение исследовательских файлов в GitHub.** Завершено 09.10.2026, 3612 исходных файлов с сохранением путей, 2 регистрационных файла исключены. Доказательство: коммит `32c5a10f4bd53362d7c3222d013c12777dd28cc8`, процесс `37863832729`.
 
-`proposed → accepted/active → completed | cancelled | invalidated | superseded`
-
-Only accepted/active items are continuing manager responsibility. Record the verification basis for completion and the reason for cancellation, invalidation, or supersession when significant. An explicit statement that there are no active commitments is valid state once verified.
+## Действующее намерение
+- **[active] Исследование внутреннего устройства и поведения приложения.** Владелец инициировал изучение приложения; материальная база подготовлена. Следующие задачи: схемы MDB, VBA, зависимости исполняемых модулей и отчётные формы. Не считать их заранее завершёнными.

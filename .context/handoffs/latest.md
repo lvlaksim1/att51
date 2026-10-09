@@ -1,15 +1,15 @@
-# Latest handoff
+# Передача состояния att51 — 09.10.2026
 
-This is a convenience/emergency summary, not the primary manager continuity mechanism.
+## Завершённая работа
+- Точная распаковка установщика Inno Setup 5.3.10 (3614 файла / 645359024 байта) и полная проверка целостности.
+- Индивидуальное исключение из ограничений GitHub для каталога `extracted/`.
+- Публикация 3612 оригинальных файлов (645358881 байт), два файла регистрации/конфигурации исключены.
+- Процесс публикации https://github.com/lvlaksim1/att51/actions/runs/37863832729 — success; исходный коммит публикации `32c5a10f4bd53362d7c3222d013c12777dd28cc8`.
 
-## Last completed work
+## Текущее состояние
+- Главный доступный источник материалов — каталог `extracted/`; README и `research/PUBLICATION_VERIFIED.md` описывают формат и проверку.
+- Полный перечень записей Inno — `research/inno-5.3.10-verified-files.csv`.
+- Исполнение Windows не проверялось. Не повторять без нужды распаковку, если исходные файлы уже доступны в GitHub.
 
-No handoff recorded yet.
-
-## Verified current state
-
-Not yet captured.
-
-## Next operation
-
-Perform initial manager/project capture from the target repository.
+## Следующая работа
+Анализ баз MDB, Word/VBA, модулей VB6, XML/XSL и составление архитектурной карты.
