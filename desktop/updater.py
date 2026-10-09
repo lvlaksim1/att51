@@ -97,7 +97,8 @@ def newer(info: Release, installed: str) -> bool:
     return info.version > parse_version("v" + installed)
 
 
-def download_update(info: Release, install_dir: Path, *, opener=urllib.request.urlopen) -> Path:
+def download_update(info: Release, install_dir: Path, *,
+                    opener=urllib.request.urlopen, progress=None) -> Path:
     if not info.verified or not _HASH.fullmatch(info.sha256):
         raise UpdateError("Нет SHA-256 для автоматического обновления.")
     if info.download_url != asset_url(info.tag) or info.size < 100_000:
@@ -123,6 +124,8 @@ def download_update(info: Release, install_dir: Path, *, opener=urllib.request.u
                         raise UpdateError("Неверный размер обновления.")
                     sha.update(data)
                     output.write(data)
+                    if progress is not None:
+                        progress(received, info.size)
         if received != info.size or sha.hexdigest() != info.sha256:
             raise UpdateError("Не совпали размер или SHA-256 установщика.")
         with temporary.open("rb") as stream:
@@ -192,7 +195,7 @@ def launch_install_after_exit(installer: Path, app_pid: int = 0, *,
 
 
 def apply_update(tag: str, checksum: str, length: str,
-                 app_pid: str = "0") -> None:
+                 app_pid: str = "0", *, progress=None) -> None:
     import sys
     if not getattr(sys, "frozen", False):
         raise UpdateError("Обновление запускается только в установленной программе.")
@@ -211,5 +214,5 @@ def apply_update(tag: str, checksum: str, length: str,
     if (not current.verified or current.tag != tag
             or current.sha256 != checksum.lower() or current.size != size):
         raise UpdateError("Выпуск GitHub изменился; проверьте обновления заново.")
-    path = download_update(current, install_dir)
+    path = download_update(current, install_dir, progress=progress)
     launch_install_after_exit(path, original_pid)
