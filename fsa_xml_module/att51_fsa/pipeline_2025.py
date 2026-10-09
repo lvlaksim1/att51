@@ -21,6 +21,7 @@ from .research_objects import (
     PreparedResearchObject, ResearchOverrides,
     load_working_overrides, prepare_research_object, original_oa_parameter_tag,
 )
+from .labour_2025 import LabourOptions, map_labour_2025
 from .resource_xml import inspect_protocol_resources
 from .resources import ResourceCatalog
 from .sources import FsaSourceError, parse_xml
@@ -35,6 +36,7 @@ class Original2025Options:
     include_uncertainty: bool = False
     micro_use_result_values: bool = False
     micro_include_exposure_dose: bool = False
+    labour: LabourOptions = LabourOptions()
 
 
 @dataclass(frozen=True)
@@ -63,7 +65,7 @@ class Protocol2025Diagnostic:
     not_exportable: bool = True
 
 
-SUPPORTED_FACTORS = frozenset(("4", "5", "6", "11", "12", "10099"))
+SUPPORTED_FACTORS = frozenset(("4", "5", "6", "11", "12", "13", "14", "10099"))
 
 
 def _doc(root: ET.Element) -> ET.Element:
@@ -118,6 +120,8 @@ def map_supported_2025(doc: ET.Element, options: Original2025Options) -> list[Re
         ))
     if facid == "12":
         return map_lighting_2025(doc, LightingOptions(options.include_uncertainty))
+    if facid in ("13", "14"):
+        return map_labour_2025(doc, options.labour)
     if facid == "10099":
         return map_aeroions_2025(doc)
     raise FsaSourceError("Factor has no verified 2025 measurement mapping: " + facid)
