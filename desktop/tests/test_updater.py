@@ -86,7 +86,7 @@ class UpdaterTests(unittest.TestCase):
                     popen=lambda *args, **kwargs: (
                         calls.append((args, kwargs)) or Process()))
             self.assertIsInstance(process, Process)
-            self.assertEqual(marker_path, app / "updates" / "overlay.ready")
+            self.assertEqual(marker_path.resolve(), (app / "updates" / "overlay.ready").resolve())
             self.assertEqual(calls[0][0][0][0], "powershell.exe")
             args = calls[0][0][0]
             self.assertIn("-STA", args)
