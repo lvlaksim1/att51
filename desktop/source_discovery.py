@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from typing import Iterable
 
-from att51_fsa.sources import AccessReader, files_directory, read_ini, resolve_relative_file
+from att51_fsa.sources import AccessReader, FsaSourceError, files_directory, read_ini, resolve_relative_file
 
 
 ORIGINAL_DIR = "Аттестация-5.1(СОУТ)"
@@ -171,6 +171,6 @@ def discover_protocols(database: Path, rm_id: int | None = None) -> tuple[Protoc
                 result.append(Protocol(int(item.get("rm_id") or item.get("RM_ID")),
                                        int(item.get("factor_id") or item.get("FACTOR_ID")),
                                        document, xml))
-            except (ValueError, TypeError, OSError):
+            except (ValueError, TypeError, OSError, FsaSourceError):
                 continue
     return tuple(result)
