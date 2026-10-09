@@ -146,6 +146,11 @@ jobs:
           $adoTest = Start-Process -FilePath $exe -ArgumentList ('--self-test-mdb "' + $sampleMdb + '"') -Wait -PassThru
           if ($adoTest.ExitCode -ne 0) { throw "Installed MDB read test failed, code $($adoTest.ExitCode)" }
           Write-Host 'INSTALLED_REAL_MDB_READ_PASS'
+          # Third GUI button and Excel use worker threads, not the main
+          # CLI apartment. Regression for CO_E_NOTINITIALIZED (-2147221008).
+          $workerTest = Start-Process -FilePath $exe -ArgumentList ('--self-test-mdb-thread "' + $sampleMdb + '"') -Wait -PassThru
+          if ($workerTest.ExitCode -ne 0) { throw "Installed MDB background COM test failed, code $($workerTest.ExitCode)" }
+          Write-Host 'INSTALLED_BACKGROUND_COM_MDB_READ_PASS'
           $sampleRes = Join-Path $pwd 'extracted\app\res_orgs.mdb'
           $reportsTest = Start-Process -FilePath $exe -ArgumentList ('--self-test-reports "' + $sampleMdb + '" "' + $sampleRes + '"') -Wait -PassThru
           if ($reportsTest.ExitCode -ne 0) { throw "Installed full-base reports failed, code $($reportsTest.ExitCode)" }
