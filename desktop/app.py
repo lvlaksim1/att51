@@ -25,6 +25,7 @@ from att51_fsa.pipeline_2025 import Original2025Options, analyze_2025_file, diag
 from att51_fsa.writer import validate_xml
 from updater import Release, UpdateError, apply_update, fetch_latest, newer, LATEST_WEB
 from source_discovery import discover_installations, discover_protocols
+from protocol_batch import inspect_all_2025
 from version import VERSION
 
 APP_NAME = "Att51_export"
@@ -57,8 +58,8 @@ class DesktopApp:
         self.status = tk.StringVar(value="Готово. Рабочая выгрузка XML ещё не реализована.")
         self.update_status = tk.StringVar(value="Обновления: проверка не выполнена")
         root.title(f"{APP_NAME} — v{VERSION} (диагностика)")
-        root.geometry("980x735")
-        root.minsize(810, 570)
+        root.geometry("1050x790")
+        root.minsize(850, 620)
         icon = included_file("assets/app.ico")
         if icon.exists():
             try:
@@ -75,7 +76,7 @@ class DesktopApp:
         if "vista" in style.theme_names():
             style.theme_use("vista")
         self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(2, weight=1)
+        self.root.rowconfigure(3, weight=1)
 
         heading = ttk.Frame(self.root, padding=(15, 12, 15, 8))
         heading.grid(row=0, column=0, sticky="ew")
@@ -87,67 +88,100 @@ class DesktopApp:
             foreground="#456280",
         ).pack(anchor="w", pady=(3, 0))
 
-        pane = ttk.LabelFrame(self.root, text="Исходные файлы (доступ только для чтения)", padding=12)
+        pane = ttk.LabelFrame(
+            self.root, text="Основные источники (доступ только для чтения)", padding=12)
         pane.grid(row=1, column=0, padx=14, pady=(0, 8), sticky="ew")
         pane.columnconfigure(1, weight=1)
         labels = [
             ("mdb", "База рабочих мест (.mdb)", [("Access MDB", "*.mdb")]),
             ("resources", "Справочник res_orgs.mdb", [("Access MDB", "*.mdb")]),
-            ("xml", "Внутренний XML протокола", [("XML", "*.xml")]),
-            ("ini", "Параметры fgis_ra.ini", [("INI", "*.ini")]),
         ]
         for row, (name, label, extensions) in enumerate(labels):
-            ttk.Label(pane, text=label, width=29).grid(row=row, column=0, sticky="w", pady=3)
+            ttk.Label(pane, text=label, width=32).grid(
+                row=row, column=0, sticky="w", pady=3)
             ttk.Entry(pane, textvariable=self.fields[name]).grid(
                 row=row, column=1, sticky="ew", padx=8, pady=3)
             ttk.Button(
                 pane, text="Обзор…", width=11,
                 command=lambda n=name, ext=extensions: self._browse(n, ext),
             ).grid(row=row, column=2, pady=3)
+        ttk.Label(pane, text="fgis_ra.ini (необязательно)", width=32).grid(
+            row=2, column=0, sticky="w", pady=3)
+        ttk.Entry(pane, textvariable=self.fields["ini"]).grid(
+            row=2, column=1, sticky="ew", padx=8, pady=3)
+        ttk.Button(
+            pane, text="Обзор…", width=11,
+            command=lambda: self._browse("ini", [("INI", "*.ini")]),
+        ).grid(row=2, column=2, pady=3)
+        ttk.Label(
+            pane, text="Файл используется только для пользовательских подмен "
+                       "идентификаторов ФГИС. Если его нет, оставьте поле пустым.",
+            foreground="#456280",
+        ).grid(row=3, column=0, columnspan=3, sticky="w", pady=(2, 0))
         findbar = ttk.Frame(pane)
         findbar.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(8, 2))
         ttk.Button(findbar, text="Найти по настройкам",
                    command=lambda: self._discover_paths(interactive=True)
                    ).pack(side="left", padx=(0, 8))
         ttk.Button(findbar, text="Указать папку Аттестации…",
-                   command=self._browse_installation).pack(side="left", padx=(0, 8))
-        ttk.Button(findbar, text="Выбрать XML протокола…",
-                   command=self._find_protocols).pack(side="left")
-        opts = ttk.Frame(pane)
-        opts.grid(row=5, column=0, columnspan=3, sticky="ew", pady=(8, 2))
-        ttk.Label(opts, text="Номер рабочего места:").pack(side="left")
-        ttk.Entry(opts, textvariable=self.fields["rm"], width=12).pack(side="left", padx=(6, 16))
-        for text, var in (
+                   command=self._browse_installation).pack(side="left")
+
+        detail = ttk.LabelFrame(
+            self.root,
+            text="Параметры диагностики (выбор одного XML необязателен)",
+            padding=(12, 8))
+        detail.grid(row=2, column=0, padx=14, pady=(0, 8), sticky="ew")
+        detail.columnconfigure(1, weight=1)
+        ttk.Label(detail, text="XML для отдельной проверки:").grid(
+            row=0, column=0, sticky="w", pady=3)
+        ttk.Entry(detail, textvariable=self.fields["xml"]).grid(
+            row=0, column=1, sticky="ew", padx=8, pady=3)
+        ttk.Button(
+            detail, text="Обзор…", width=11,
+            command=lambda: self._browse("xml", [("XML", "*.xml")]),
+        ).grid(row=0, column=2, pady=3)
+        ttk.Button(detail, text="Выбрать из базы…",
+                   command=self._find_protocols).grid(
+                       row=0, column=3, padx=(8, 0))
+        opts = ttk.Frame(detail)
+        opts.grid(row=1, column=0, columnspan=4, sticky="ew", pady=(8, 2))
+        ttk.Label(opts, text="Фильтр по ID РМ (необязательно):").pack(side="left")
+        ttk.Entry(opts, textvariable=self.fields["rm"], width=10).pack(
+            side="left", padx=(6, 16))
+        for name, var in (
             ("Акустические измерения", self.acoustic),
             ("Только акустические", self.acoustic_only),
             ("По операциям", self.per_operation),
             ("Неопределённость", self.uncertainty),
         ):
-            ttk.Checkbutton(opts, text=text, variable=var).pack(side="left", padx=4)
-        micro = ttk.Frame(pane)
-        micro.grid(row=6, column=0, columnspan=3, sticky="w", pady=(3, 0))
+            ttk.Checkbutton(opts, text=name, variable=var).pack(side="left", padx=4)
+        micro = ttk.Frame(detail)
+        micro.grid(row=2, column=0, columnspan=4, sticky="w", pady=(3, 0))
         ttk.Checkbutton(micro, text="Итоговые значения микроклимата",
                         variable=self.micro_results).pack(side="left")
         ttk.Checkbutton(micro, text="Экспозиционная доза",
                         variable=self.micro_dose).pack(side="left", padx=(20, 0))
 
         report = ttk.LabelFrame(self.root, text="Проверка и результаты", padding=(10, 8))
-        report.grid(row=2, column=0, padx=14, sticky="nsew")
+        report.grid(row=3, column=0, padx=14, sticky="nsew")
         report.rowconfigure(1, weight=1)
         report.columnconfigure(0, weight=1)
         tools = ttk.Frame(report)
         tools.grid(row=0, column=0, sticky="ew")
         self.buttons = []
-        for label, command in (
-            ("Проверить базу РМ", self._inspect_mdb),
+        for index, (label, command) in enumerate((
+            ("Проверить протоколы базы", self._inspect_mdb),
+            ("Сопоставить все XML (6 факторов)", self._inspect_all_2025),
             ("Проверить справочники", self._inspect_resources),
-            ("Сопоставить протокол", self._inspect_2025),
-            ("Проверить XML по XSD", self._validate_xml),
-        ):
+            ("Сопоставить один XML", self._inspect_2025),
+            ("Проверить один XML по XSD", self._validate_xml),
+        )):
             b = ttk.Button(tools, text=label, command=command)
-            b.pack(side="left", padx=(0, 7))
+            b.grid(row=index // 3, column=index % 3, sticky="ew",
+                   padx=(0, 7), pady=(0, 4))
             self.buttons.append(b)
-        ttk.Button(tools, text="Копировать отчёт", command=self._copy).pack(side="right")
+        ttk.Button(tools, text="Копировать отчёт", command=self._copy).grid(
+            row=1, column=2, sticky="ew", padx=(0, 7), pady=(0, 4))
         self.report = scrolledtext.ScrolledText(
             report, wrap="none", font=("Consolas", 10), undo=False)
         self.report.grid(row=1, column=0, sticky="nsew", pady=(8, 0))
@@ -158,7 +192,7 @@ class DesktopApp:
         self.report.config(state="disabled")
 
         bottom = ttk.Frame(self.root, padding=(15, 10, 15, 14))
-        bottom.grid(row=3, column=0, sticky="ew")
+        bottom.grid(row=4, column=0, sticky="ew")
         ttk.Label(bottom, textvariable=self.status, foreground="#6d4a10").pack(anchor="w")
         bar = ttk.Frame(bottom)
         bar.pack(fill="x", pady=(8, 0))
@@ -269,7 +303,7 @@ class DesktopApp:
             self.status.set(
                 "Проверены настройки оригинальной программы. " +
                 (problem or "Доступные исходные пути заполнены.") +
-                " XML выбирается по записи протокола.")
+                " Все XML читаются по данным базы, без ручного выбора.")
         except Exception as error:
             self.status.set("Не удалось прочитать настройки источников: " +
                             human_error(error))
@@ -345,28 +379,51 @@ class DesktopApp:
             return result
         self._work(task, title="Проверка справочников")
 
+    def _diagnostic_options(self) -> Original2025Options:
+        if self.acoustic_only.get() and not self.acoustic.get():
+            raise ValueError("Флаг «Только акустические» требует «Акустические измерения».")
+        if self.per_operation.get() and not self.acoustic.get():
+            raise ValueError("Флаг «По операциям» требует «Акустические измерения».")
+        return Original2025Options(
+            acoustic_measurements=self.acoustic.get(),
+            both_measurements_and_equivalent=self.acoustic_only.get(),
+            acoustic_level_per_operation=self.per_operation.get(),
+            include_uncertainty=self.uncertainty.get(),
+            micro_use_result_values=self.micro_results.get(),
+            micro_include_exposure_dose=self.micro_dose.get())
+
+    def _optional_fgis_ini(self) -> Path | None:
+        raw = self.fields["ini"].get().strip()
+        return self._required("ini")["ini"] if raw else None
+
+    def _inspect_all_2025(self):
+        try:
+            sources = self._required("mdb", "resources")
+            ini_path = self._optional_fgis_ini()
+            options = self._diagnostic_options()
+            value = self.fields["rm"].get().strip()
+            rm_id = int(value) if value else None
+            if rm_id is not None and rm_id <= 0:
+                raise ValueError("Номер рабочего места должен быть положительным.")
+        except Exception as error:
+            messagebox.showerror(APP_NAME, human_error(error))
+            return
+        self._work(lambda: inspect_all_2025(
+            sources["mdb"], sources["resources"], options,
+            rm_id=rm_id, working_fgis_ini=ini_path),
+            title="Пакетное сопоставление внутренних XML")
+
     def _inspect_2025(self):
         try:
             files = self._required("xml", "resources")
-            ini = self.fields["ini"].get().strip()
-            ini_path = self._required("ini")["ini"] if ini else None
-            if self.acoustic_only.get() and not self.acoustic.get():
-                raise ValueError("Флаг «Только акустические» требует «Акустические измерения».")
-            if self.per_operation.get() and not self.acoustic.get():
-                raise ValueError("Флаг «По операциям» требует «Акустические измерения».")
-            options = Original2025Options(
-                acoustic_measurements=self.acoustic.get(),
-                both_measurements_and_equivalent=self.acoustic_only.get(),
-                acoustic_level_per_operation=self.per_operation.get(),
-                include_uncertainty=self.uncertainty.get(),
-                micro_use_result_values=self.micro_results.get(),
-                micro_include_exposure_dose=self.micro_dose.get())
+            ini_path = self._optional_fgis_ini()
+            options = self._diagnostic_options()
         except Exception as error:
             messagebox.showerror(APP_NAME, human_error(error))
             return
         self._work(lambda: diagnostic_dict(analyze_2025_file(
             files["xml"], files["resources"], options,
-            working_fgis_ini=ini_path)), title="Сопоставление измерений")
+            working_fgis_ini=ini_path)), title="Сопоставление одного протокола")
 
     def _validate_xml(self):
         try:
@@ -467,7 +524,6 @@ class DesktopApp:
                                     lambda p: p.label))
                             if chosen is not None:
                                 self.fields["xml"].set(str(chosen.xml))
-                                self.fields["rm"].set(str(chosen.rm_id))
                                 self.status.set(
                                     "Внутренний XML определён по sout_factors.file; "
                                     "файл не изменялся.")
