@@ -104,6 +104,12 @@ def main() -> None:
                 for start, stop in ((1995, 2075), (2500, 2570)):
                     for i in range(start-1, min(stop,len(lines))):
                         print(f"PROBE {name} {i+1:5d} {lines[i][:300]}")
+            if name == "v52_exp_fgis_ra":
+                keys = ("fgis_state", "pers_info", "is_boss_exp", "get_fgis_pers_id")
+                for i, line in enumerate(lines):
+                    if any(key in line.casefold() for key in keys):
+                        print(f"PERSON_SRC {i+1:5d} " +
+                              " | ".join(lines[max(0,i-2):min(len(lines),i+3)])[:700])
             # Avoid uncontrolled log size, and restrict to known module/terms.
             for i in sorted(selected)[:1300]:
                 line = lines[i].rstrip()
