@@ -1,0 +1,4 @@
+pyinstaller==6.16.0
+pillow==11.3.0
+pywin32==311
+lxml==6.0.2
