@@ -62,6 +62,24 @@ def main() -> None:
                     for i in range(start-1, min(stop, len(lines))):
                         print(f"RANGE {i+1:5d} {lines[i][:290]}")
                     print("END_ORIGINAL_RANGE")
+            if name == "v52_exp_fgis_ra":
+                for proc in ("get_PERS_data", "get_ApprovedUser", "get_PERS_info"):
+                    start = next((i for i, line in enumerate(lines)
+                        if re.match(r"(?i)^\s*(?:(?:public|private)\s+)?Function\s+"
+                                    + proc + r"\b", line)), None)
+                    if start is None:
+                        continue
+                    print(f"BEGIN_ROLE_FUNCTION {proc}")
+                    for i in range(start, min(start + 250, len(lines))):
+                        print(f"ROLE {proc} {i+1:5d} {lines[i][:290]}")
+                        if i > start and re.match(r"(?i)^\s*End Function\s*$", lines[i]):
+                            break
+                    print(f"END_ROLE_FUNCTION {proc}")
+                for start, stop in ((3770, 3832), (1740, 1830)):
+                    print(f"BEGIN_ROLE_RANGE {start}-{stop}")
+                    for i in range(start-1, min(stop,len(lines))):
+                        print(f"ROLE_RANGE {i+1:5d} {lines[i][:290]}")
+                    print("END_ROLE_RANGE")
             # Avoid uncontrolled log size, and restrict to known module/terms.
             for i in sorted(selected)[:1300]:
                 line = lines[i].rstrip()
