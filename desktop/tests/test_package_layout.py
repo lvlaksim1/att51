@@ -61,7 +61,7 @@ class InstallationContractTests(unittest.TestCase):
                 code = self.script(name)
                 self.assertIn('function PrepareToInstall(var NeedsRestart: Boolean)', code)
                 self.assertIn('tasklist /FI "IMAGENAME eq Att51_export.exe"', code)
-                self.assertIn("LegacyAtt51ProcessRunning()", code)
+                self.assertIn("LegacyAtt51ProcessRunning: Boolean;", code)
                 self.assertNotIn("taskkill", code)
 
     def test_gui_holds_mutex_until_exiting(self):

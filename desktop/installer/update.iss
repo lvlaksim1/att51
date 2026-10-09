@@ -62,10 +62,10 @@ Type: filesandordirs; Name: "{app}\reports"
 
 [Code]
 
-; A previous release (<=0.1.10) did not create AppMutex. Detect that
-; legacy running executable before Inno tries to remove/replace it.
-; This is intentionally a check, not a forced process termination.
-function LegacyAtt51ProcessRunning(): Boolean;
+// A previous release (<=0.1.10) did not create AppMutex. Detect that
+// legacy running executable before Inno tries to remove/replace it.
+// This is intentionally a check, not a forced process termination.
+function LegacyAtt51ProcessRunning: Boolean;
 var ExitCode: Integer;
 begin
   Result := Exec(
@@ -78,7 +78,7 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   Result := '';
-  if LegacyAtt51ProcessRunning() then
+  if LegacyAtt51ProcessRunning then
     Result := 'Программа Att51_export всё ещё запущена.' + #13#10 +
       'Закройте её и завершите процесс Att51_export.exe в диспетчере задач, ' +
       'затем повторите установку.' + #13#10 +
