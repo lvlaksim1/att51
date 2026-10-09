@@ -538,19 +538,41 @@ class DesktopApp:
         if not self._save_sources():
             messagebox.showerror(APP_NAME, "Не удалось сохранить пути перед обновлением.")
             return
-        import ctypes
-        args = (f'--apply-update {release.tag} {release.sha256} '
-                f'{release.size} {os.getpid()}')
+        from updater import start_update_overlay
+        # Show progress IMMEDIATELY; wait until the persistent helper appears
+        # before shutting down the original Att51_export.exe.
+        starting = tk.Toplevel(self.root)
+        starting.title("Обновление Att51_export")
+        starting.geometry("490x156")
+        starting.resizable(False, False)
+        starting.transient(self.root)
+        ttk.Label(starting, text="Подготовка обновления…",
+                  padding=(15, 14)).pack(anchor="w")
+        progress = ttk.Progressbar(starting, mode="indeterminate", length=445)
+        progress.pack(padx=15, pady=(10, 0), fill="x")
+        progress.start(12)
+        starting.update_idletasks()
         try:
-            code = ctypes.windll.shell32.ShellExecuteW(
-                None, "open", str(Path(sys.executable).resolve()), args,
-                str(Path(sys.executable).resolve().parent), 1)
-            if code <= 32:
-                raise OSError("Операция отменена или Windows отказала в запуске.")
-        except Exception as error:
-            messagebox.showerror(APP_NAME, human_error(error))
+            process, ready = start_update_overlay(
+                release, Path(sys.executable).resolve().parent,
+                included_file("assets/update_overlay.ps1"), os.getpid())
+        except Exception as exc:
+            starting.destroy()
+            messagebox.showerror(APP_NAME, human_error(exc))
             return
-        self.root.destroy()
+        def wait_visible():
+            if ready.is_file():
+                progress.stop()
+                self.root.destroy()
+            elif process.poll() is not None:
+                progress.stop()
+                starting.destroy()
+                messagebox.showerror(
+                    APP_NAME, "Окно обновления не запустилось. "
+                    "Проверьте доступность Windows PowerShell.")
+            else:
+                self.root.after(100, wait_visible)
+        wait_visible()
 
     def _pump(self):
         try:
@@ -618,6 +640,8 @@ def main() -> int:
             return 10
         if not included_file("assets/fileProtocolLoad_v4.xsd").is_file():
             return 11
+        if not included_file("assets/update_overlay.ps1").is_file():
+            return 19
         if len(VERSION.split(".")) != 3:
             return 12
         # Exercise COM imports inside the frozen executable; the previous
@@ -698,11 +722,18 @@ def main() -> int:
         with InstallationMutex():
             time.sleep(min(max(int(sys.argv[2]), 1), 60))
         return 0
-    if len(sys.argv) > 1:
+    updated = len(sys.argv) == 2 and sys.argv[1] == "--update-started"
+    if len(sys.argv) > 1 and not updated:
         return 2
     with InstallationMutex():
         root = tk.Tk()
         DesktopApp(root)
+        if updated:
+            def signal_ready():
+                marker = Path(sys.executable).resolve().parent / "updates" / "newapp.ready"
+                marker.parent.mkdir(parents=True, exist_ok=True)
+                marker.write_text("READY", encoding="ascii")
+            root.after(300, signal_ready)
         root.mainloop()
     return 0
 
