@@ -55,6 +55,16 @@ class XmlResourceResolutionTests(unittest.TestCase):
         self.assertEqual(output.normative[0].method_doc_id, "999")
         self.assertEqual(output.normative[0].match_rule, "hash_with_factor")
 
+    def test_original_del_bad_chars_strips_leading_hyphens(self):
+        root = ET.fromstring(
+            '<Document><factor facid="4"/>'
+            '<nd_data><nd name="---ГОСТ 12.1.003-83" action="0"/></nd_data>'
+            '</Document>'
+        )
+        output = inspect_protocol_resources(root, catalog())
+        self.assertEqual(output.normative[0].matched_guid, "ND-A")
+        self.assertEqual(output.normative[0].source_name, "ГОСТ 12.1.003-83")
+
     def test_missing_normative_is_fatal(self):
         root = ET.fromstring(
             '<Document><factor facid="4"/>'
