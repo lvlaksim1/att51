@@ -70,14 +70,15 @@ class BuiltExecutableTests(unittest.TestCase):
         self.assertIn('win32com.client.Dispatch("ADODB.Connection")', app)
         self.assertIn('"--self-test-mdb"', app)
 
-    def test_internal_xml_button_does_not_call_fgis_xsd(self):
+    def test_individual_xml_checks_are_not_offered_in_new_gui(self):
         app = (DESKTOP / "app.py").read_text(encoding="utf-8")
-        body = app.split("    def _validate_xml(self):", 1)[1].split(
-            "    def _copy(self):", 1)[0]
-        self.assertIn("inspect_internal_xml", body)
-        self.assertNotIn("validate_xml(", body)
-        self.assertIn('("Проверить структуру XML",', app)
         self.assertNotIn("Проверить один XML по XSD", app)
+        self.assertNotIn("Сопоставить один XML", app)
+        self.assertNotIn("Параметры диагностики", app)
+        self.assertIn("create_details(", app)
+        # The legacy low-level XML inspector remains available to library tests.
+        inspector = (DESKTOP / "internal_xml.py").read_text(encoding="utf-8")
+        self.assertIn("inspect_internal_xml(", inspector)
 
 
 if __name__ == "__main__":

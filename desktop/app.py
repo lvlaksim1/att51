@@ -409,6 +409,19 @@ class DesktopApp:
 
 
 def main() -> int:
+    if len(sys.argv) == 4 and sys.argv[1] == "--self-test-reports":
+        try:
+            index = create_index(Path(sys.argv[2]), Path(sys.argv[3]))
+            details = create_details(Path(sys.argv[2]), Path(sys.argv[3]))
+            if not index.is_file() or not details.is_file():
+                return 16
+            if "Протоколов" not in index.read_text(encoding="utf-8-sig"):
+                return 16
+            if "ПРОТОКОЛ" not in details.read_text(encoding="utf-8-sig"):
+                return 16
+            return 0
+        except Exception:
+            return 16
     if len(sys.argv) == 2 and sys.argv[1] == "--self-test-settings":
         try:
             store = SourceSettings()

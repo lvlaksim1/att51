@@ -99,6 +99,15 @@ jobs:
           $adoTest = Start-Process -FilePath $exe -ArgumentList ('--self-test-mdb "' + $sampleMdb + '"') -Wait -PassThru
           if ($adoTest.ExitCode -ne 0) { throw "Installed MDB read test failed, code $($adoTest.ExitCode)" }
           Write-Host 'INSTALLED_REAL_MDB_READ_PASS'
+          $sampleRes = Join-Path $pwd 'extracted\app\res_orgs.mdb'
+          $reportsTest = Start-Process -FilePath $exe -ArgumentList ('--self-test-reports "' + $sampleMdb + '" "' + $sampleRes + '"') -Wait -PassThru
+          if ($reportsTest.ExitCode -ne 0) { throw "Installed full-base reports failed, code $($reportsTest.ExitCode)" }
+          $indexTxt = Join-Path $app 'reports\Рабочие_места_и_протоколы.txt'
+          $detailsTxt = Join-Path $app 'reports\Подробные_сведения_протоколов.txt'
+          if (-not (Test-Path $indexTxt) -or -not (Test-Path $detailsTxt)) {
+            throw "Two separate text reports not written under ProgramData"
+          }
+          Write-Host 'INSTALLED_FULL_BASE_TEXT_REPORTS_PASS'
           $p = Start-Process -FilePath $update -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Update error $($p.ExitCode)" }
           $smoke = Start-Process -FilePath $exe -ArgumentList '--self-test' -Wait -PassThru

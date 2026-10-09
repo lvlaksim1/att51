@@ -89,23 +89,21 @@ class BatchProtocolTests(unittest.TestCase):
 
 
 class SourcePanelLayoutTests(unittest.TestCase):
-    def test_main_source_panel_contains_only_mdbs_and_optional_ini(self):
+    def test_new_source_panel_has_three_files_and_optional_ini(self):
         source = (DESKTOP / "app.py").read_text(encoding="utf-8")
-        main = source.split('pane = ttk.LabelFrame(', 1)[1].split(
-            'detail = ttk.LabelFrame(', 1)[0]
-        self.assertIn('("mdb", "База рабочих мест', main)
-        self.assertIn('("resources", "Справочник res_orgs.mdb', main)
-        self.assertNotIn('("xml",', main)
-        self.assertIn("fgis_ra.ini (необязательно)", main)
-        self.assertIn("Файл используется только для пользовательских подмен", main)
+        self.assertIn('("mdb", "База организации / рабочих мест', source)
+        self.assertIn('("resources", "База ресурсов res_orgs.mdb', source)
+        self.assertIn('("ini", "fgis_ra.ini (необязательно)"', source)
+        self.assertNotIn('("xml",', source)
+        self.assertNotIn("Найти по настройкам", source)
+        self.assertNotIn("Указать папку Аттестации", source)
 
-    def test_batch_action_does_not_request_one_xml(self):
+    def test_new_aggregate_actions_have_no_one_xml_selection(self):
         source = (DESKTOP / "app.py").read_text(encoding="utf-8")
-        method = source.split("    def _inspect_all_2025(self):", 1)[1].split(
-            "    def _inspect_2025(self):", 1)[0]
-        self.assertIn('self._required("mdb", "resources")', method)
-        self.assertNotIn('self._required("xml"', method)
-        self.assertIn("inspect_all_2025(", method)
+        self.assertIn("self._required(\"mdb\", \"resources\")", source)
+        self.assertNotIn('self._required("xml"', source)
+        self.assertIn("create_index(", source)
+        self.assertIn("create_details(", source)
 
 
 if __name__ == "__main__":
