@@ -165,6 +165,30 @@ class SourceSelectionTests(unittest.TestCase):
             self.assertEqual([p.status for p in selected],
                              ["missing_xml", "available", "missing_xml"])
 
+    def test_internal_xml_exclusion_status(self):
+        with TemporaryDirectory() as tmp:
+            root = self.make_root(tmp)
+            xml_dir = root / "rm1" / "xml"
+            xml_dir.mkdir(parents=True)
+            (xml_dir / "excluded.xml").write_text(
+                '<Document num_doc="1" fgis_state="1"><factor facid="4"/></Document>')
+            (xml_dir / "bad.xml").write_text('<Document')
+            class Reader:
+                def __init__(self, _db): pass
+                def __enter__(self): return self
+                def __exit__(self, *args): pass
+                def select(self, _sql):
+                    return [
+                        {"factor_id": 4, "file": r"rm1\excluded.docx"},
+                        {"factor_id": 4, "file": r"rm1\bad.docx"},
+                    ]
+            with patch("att51_fsa.selection.AccessReader", Reader):
+                items = select_individual(
+                    Path(tmp) / "test.mdb", root,
+                    selected_workplace_ids=[1], enabled_factors=[4])
+            self.assertEqual([v.status for v in items],
+                             ["excluded_by_fgis_state", "malformed_xml"])
+
     def test_individual_requires_explicit_selected_ids(self):
         with TemporaryDirectory() as tmp:
             root = self.make_root(tmp)
