@@ -10,7 +10,7 @@ from unittest.mock import patch
 from xml.etree import ElementTree as ET
 import unittest
 
-from att51_fsa.measurements import (NoiseOptions, LightingOptions, map_noise_equivalent, map_infrasound_equivalent, map_lighting_2025, original_get_num)
+from att51_fsa.measurements import (NoiseOptions, LightingOptions, MicroclimateOptions, map_noise_equivalent, map_infrasound_equivalent, map_lighting_2025, map_microclimate_2025, map_aeroions_2025, map_ultrasound_2025, original_get_num)
 from att51_fsa.selection import select_individual, select_consolidated
 from att51_fsa.sources import FsaSourceError
 
@@ -129,6 +129,95 @@ class MoreFactorMappingTests(unittest.TestCase):
             map_infrasound_equivalent(doc, NoiseOptions(False, False, False, False))
         with self.assertRaises(FsaSourceError):
             map_lighting_2025(doc, LightingOptions(False))
+
+
+class More2025FactorTests(unittest.TestCase):
+    def test_microclimate_2025_indicators(self):
+        xml = ET.fromstring(
+            '<Document><factor facid="11"/><izm_data><zone>'
+            '<param bm="t_1" fact="22,1" U095="0,2" nd_izm1="2"/>'
+            '<param bm="skor_1" fact="0,12" U095="0,04"/>'
+            '<param bm="vl_1" fact="45" U095="1"/>'
+            '<param bm="tns_1" fact="24" U095="0,5"/>'
+            '<param bm="tepl_1" fact="130" U095="4"/>'
+            '<param bm="doza_1" fact="12" U095="3"/>'
+            '<param bm="unmatched" fact="2"/>'
+            '</zone></izm_data></Document>'
+        )
+        no_dose = map_microclimate_2025(
+            xml, MicroclimateOptions(False, True, False))
+        self.assertEqual(
+            [(x.indicator_id, x.directory, x.measurement_id) for x in no_dose],
+            [("3", "1", "61"), ("5", "1", "90"), ("4", "1", "292"),
+             ("122114", "2", "61"), ("122794", "2", "532")]
+        )
+        self.assertEqual(no_dose[0].fact_value, "22,1±0,2")
+        with_dose = map_microclimate_2025(
+            xml, MicroclimateOptions(False, True, True))
+        self.assertEqual(with_dose[-1].indicator_id, "131478")
+        self.assertEqual(with_dose[-1].measurement_id, "50")
+
+    def test_microclimate_result_overrides_fact_and_suppresses_uncertainty(self):
+        xml = ET.fromstring(
+            '<Document><factor facid="11"/><izm_data><zone>'
+            '<param bm="t_1" fact="20" results="21,5" U095="0,2"/>'
+            '<param bm="vl_2" fact="40" result="41" U095="1"/>'
+            '</zone></izm_data></Document>'
+        )
+        r = map_microclimate_2025(
+            xml, MicroclimateOptions(True, True, False))
+        self.assertEqual([x.fact_value for x in r], ["21,5", "41"])
+
+    def test_aeroions_preserves_original_raw_values(self):
+        xml = ET.fromstring(
+            '<Document><factor facid="10099"/><izm_data><zone>'
+            '<param bm="n_plus_1" fact="1300" nd_izm1="3"/>'
+            '<param bm="n_minus_1" fact=""/>'
+            '<param bm="n_both_1" fact="400"/>'
+            '</zone></izm_data></Document>'
+        )
+        r = map_aeroions_2025(xml)
+        self.assertEqual(
+            [(x.indicator_id, x.directory, x.measurement_id, x.fact_value) for x in r],
+            [("3650", "2", "1091", "1300"), ("129637", "2", "1091", "")]
+        )
+
+    def test_ultrasound_2019_measurements_and_equivalent(self):
+        xml = ET.fromstring(
+            '<Document type="protocol2019"><factor facid="6"/>'
+            '<izm_data><zone><param bm="x" fact="79" result="76" unc="1"/></zone></izm_data>'
+            '<itog_data><Level fact="82" unc="2"/></itog_data>'
+            '</Document>'
+        )
+        r = map_ultrasound_2025(xml, NoiseOptions(True, False, False, True))
+        self.assertEqual(
+            [(x.indicator_id, x.directory, x.fact_value, x.measurement_id) for x in r],
+            [("11", "1", "76±1", "429"), ("152610", "2", "82±2", "429")]
+        )
+        acoustic_only = map_ultrasound_2025(
+            xml, NoiseOptions(True, True, True, False))
+        self.assertEqual([x.indicator_id for x in acoustic_only], ["11"])
+        equivalent_only = map_ultrasound_2025(
+            xml, NoiseOptions(False, False, False, False))
+        self.assertEqual([x.indicator_id for x in equivalent_only], ["152610"])
+
+    def test_ultrasound_legacy_ignores_2019_flags(self):
+        xml = ET.fromstring(
+            '<Document type="protocol"><factor facid="6"/>'
+            '<izm_data><zone><param fact="0"/><param fact="<1"/></zone></izm_data>'
+            '</Document>'.replace('fact="<1"', 'fact="&lt;1"')
+        )
+        r = map_ultrasound_2025(xml, NoiseOptions(False, False, True, False))
+        self.assertEqual([x.fact_value for x in r], ["<1"])
+
+    def test_new_factor_mappers_reject_wrong_factor(self):
+        xml = ET.fromstring('<Document><factor facid="5"/></Document>')
+        with self.assertRaises(FsaSourceError):
+            map_microclimate_2025(xml, MicroclimateOptions(False, False, False))
+        with self.assertRaises(FsaSourceError):
+            map_aeroions_2025(xml)
+        with self.assertRaises(FsaSourceError):
+            map_ultrasound_2025(xml, NoiseOptions(False, False, False, False))
 
 
 class SourceSelectionTests(unittest.TestCase):
