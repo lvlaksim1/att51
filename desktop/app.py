@@ -5,7 +5,7 @@ No persistent configuration, cache, logs or user exports outside {app}.
 """
 from __future__ import annotations
 
-import json
+import os
 from pathlib import Path
 import queue
 import sys
@@ -13,22 +13,14 @@ import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 import webbrowser
-from dataclasses import asdict
 
 if not getattr(sys, "frozen", False):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "fsa_xml_module"))
 
-from att51_fsa.sources import AppSources, FsaSourceError
-from att51_fsa.resources import ResourceCatalog
-from att51_fsa.resource_xml import inspect_protocol_resources_file, inspection_dict
-from att51_fsa.pipeline_2025 import Original2025Options, analyze_2025_file, diagnostic_dict
-from att51_fsa.writer import validate_xml
 from updater import Release, UpdateError, apply_update, fetch_latest, newer, LATEST_WEB
-from source_discovery import discover_installations, discover_protocols
-from protocol_batch import inspect_all_2025
-from internal_xml import inspect_internal_xml
+from source_discovery import discover_installations
 from source_settings import SourceSettings, SOURCE_KEYS
-from source_evidence import resource_source_evidence
+from whole_base_reports import create_index, create_details
 from version import VERSION
 
 APP_NAME = "Att51_export"
@@ -51,7 +43,7 @@ class DesktopApp:
         self.busy = False
         self.latest: Release | None = None
         self.fields = {name: tk.StringVar(value="") for name in
-                       ("mdb", "resources", "xml", "ini", "rm")}
+                       ("mdb", "resources", "ini")}
         self.source_settings = SourceSettings()
         self._save_after_id = None
         self._settings_load_warning = ""
@@ -61,18 +53,13 @@ class DesktopApp:
             previous_paths = {}
             self._settings_load_warning = str(exc)
         for key, path in previous_paths.items():
-            self.fields[key].set(path)
-        self.acoustic = tk.BooleanVar(value=False)
-        self.acoustic_only = tk.BooleanVar(value=False)
-        self.per_operation = tk.BooleanVar(value=False)
-        self.uncertainty = tk.BooleanVar(value=False)
-        self.micro_results = tk.BooleanVar(value=False)
-        self.micro_dose = tk.BooleanVar(value=False)
+            if key in self.fields:
+                self.fields[key].set(path)
         self.status = tk.StringVar(value="Готово. Рабочая выгрузка XML ещё не реализована.")
         self.update_status = tk.StringVar(value="Обновления: проверка не выполнена")
         root.title(f"{APP_NAME} — v{VERSION} (диагностика)")
-        root.geometry("1050x790")
-        root.minsize(850, 620)
+        root.geometry("1050x700")
+        root.minsize(780, 510)
         icon = included_file("assets/app.ico")
         if icon.exists():
             try:
@@ -80,13 +67,13 @@ class DesktopApp:
             except tk.TclError:
                 pass
         self._build_ui()
-        for key in SOURCE_KEYS:
+        for key in self.fields:
             self.fields[key].trace_add("write", self._paths_changed)
         root.protocol("WM_DELETE_WINDOW", self._close)
         if self._settings_load_warning:
             self.status.set(self._settings_load_warning)
         root.after(100, self._pump)
-        root.after(350, self._auto_discover)
+        root.after(350, self._auto_ini)
         root.after(1200, lambda: self._check_updates(manual=False))
 
     def _build_ui(self):
@@ -94,7 +81,7 @@ class DesktopApp:
         if "vista" in style.theme_names():
             style.theme_use("vista")
         self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(3, weight=1)
+        self.root.rowconfigure(2, weight=1)
 
         heading = ttk.Frame(self.root, padding=(15, 12, 15, 8))
         heading.grid(row=0, column=0, sticky="ew")
@@ -107,110 +94,59 @@ class DesktopApp:
         ).pack(anchor="w", pady=(3, 0))
 
         pane = ttk.LabelFrame(
-            self.root, text="Основные источники (доступ только для чтения)", padding=12)
+            self.root, text="Источники данных (только чтение)", padding=12)
         pane.grid(row=1, column=0, padx=14, pady=(0, 8), sticky="ew")
         pane.columnconfigure(1, weight=1)
-        labels = [
-            ("mdb", "База рабочих мест (.mdb)", [("Access MDB", "*.mdb")]),
-            ("resources", "Справочник res_orgs.mdb", [("Access MDB", "*.mdb")]),
-        ]
-        for row, (name, label, extensions) in enumerate(labels):
-            ttk.Label(pane, text=label, width=32).grid(
+        labels = (
+            ("mdb", "База организации / рабочих мест (.mdb)", [("Access MDB", "*.mdb")]),
+            ("resources", "База ресурсов res_orgs.mdb", [("Access MDB", "*.mdb")]),
+            ("ini", "fgis_ra.ini (необязательно)", [("INI", "*.ini")]),
+        )
+        for row, (key, label, extensions) in enumerate(labels):
+            ttk.Label(pane, text=label, width=38).grid(
                 row=row, column=0, sticky="w", pady=3)
-            ttk.Entry(pane, textvariable=self.fields[name]).grid(
+            ttk.Entry(pane, textvariable=self.fields[key]).grid(
                 row=row, column=1, sticky="ew", padx=8, pady=3)
-            ttk.Button(
-                pane, text="Обзор…", width=11,
-                command=lambda n=name, ext=extensions: self._browse(n, ext),
-            ).grid(row=row, column=2, pady=3)
-        ttk.Label(pane, text="fgis_ra.ini (необязательно)", width=32).grid(
-            row=2, column=0, sticky="w", pady=3)
-        ttk.Entry(pane, textvariable=self.fields["ini"]).grid(
-            row=2, column=1, sticky="ew", padx=8, pady=3)
-        ttk.Button(
-            pane, text="Обзор…", width=11,
-            command=lambda: self._browse("ini", [("INI", "*.ini")]),
-        ).grid(row=2, column=2, pady=3)
-        ttk.Label(
-            pane, text="Файл используется только для пользовательских подмен "
-                       "идентификаторов ФГИС. Если его нет, оставьте поле пустым.",
-            foreground="#456280",
-        ).grid(row=3, column=0, columnspan=3, sticky="w", pady=(2, 0))
-        findbar = ttk.Frame(pane)
-        findbar.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(8, 2))
-        ttk.Button(findbar, text="Найти по настройкам",
-                   command=lambda: self._discover_paths(interactive=True)
-                   ).pack(side="left", padx=(0, 8))
-        ttk.Button(findbar, text="Указать папку Аттестации…",
-                   command=self._browse_installation).pack(side="left")
+            ttk.Button(pane, text="Обзор…", width=11,
+                       command=lambda k=key, ext=extensions: self._browse(k, ext)
+                       ).grid(row=row, column=2, pady=3)
+        ttk.Button(pane, text="Авто", width=9,
+                   command=lambda: self._auto_ini(interactive=True)
+                   ).grid(row=2, column=3, padx=(8, 0))
+        ttk.Label(pane, text="Если fgis_ra.ini отсутствует, отчёты всё равно создаются. "
+                             "Выбранные пути сохраняются.",
+                  foreground="#456280").grid(
+                      row=3, column=0, columnspan=4, sticky="w", pady=(5, 0))
 
-        detail = ttk.LabelFrame(
-            self.root,
-            text="Параметры диагностики (выбор одного XML необязателен)",
-            padding=(12, 8))
-        detail.grid(row=2, column=0, padx=14, pady=(0, 8), sticky="ew")
-        detail.columnconfigure(1, weight=1)
-        ttk.Label(detail, text="XML для отдельной проверки:").grid(
-            row=0, column=0, sticky="w", pady=3)
-        ttk.Entry(detail, textvariable=self.fields["xml"]).grid(
-            row=0, column=1, sticky="ew", padx=8, pady=3)
-        ttk.Button(
-            detail, text="Обзор…", width=11,
-            command=lambda: self._browse("xml", [("XML", "*.xml")]),
-        ).grid(row=0, column=2, pady=3)
-        ttk.Button(detail, text="Выбрать из базы…",
-                   command=self._find_protocols).grid(
-                       row=0, column=3, padx=(8, 0))
-        opts = ttk.Frame(detail)
-        opts.grid(row=1, column=0, columnspan=4, sticky="ew", pady=(8, 2))
-        ttk.Label(opts, text="Фильтр по ID РМ (необязательно):").pack(side="left")
-        ttk.Entry(opts, textvariable=self.fields["rm"], width=10).pack(
-            side="left", padx=(6, 16))
-        for name, var in (
-            ("Акустические измерения", self.acoustic),
-            ("Только акустические", self.acoustic_only),
-            ("По операциям", self.per_operation),
-            ("Неопределённость", self.uncertainty),
-        ):
-            ttk.Checkbutton(opts, text=name, variable=var).pack(side="left", padx=4)
-        micro = ttk.Frame(detail)
-        micro.grid(row=2, column=0, columnspan=4, sticky="w", pady=(3, 0))
-        ttk.Checkbutton(micro, text="Итоговые значения микроклимата",
-                        variable=self.micro_results).pack(side="left")
-        ttk.Checkbutton(micro, text="Экспозиционная доза",
-                        variable=self.micro_dose).pack(side="left", padx=(20, 0))
-
-        report = ttk.LabelFrame(self.root, text="Проверка и результаты", padding=(10, 8))
-        report.grid(row=3, column=0, padx=14, sticky="nsew")
-        report.rowconfigure(1, weight=1)
+        report = ttk.LabelFrame(
+            self.root, text="Общая диагностика всей базы", padding=(10, 8))
+        report.grid(row=2, column=0, padx=14, sticky="nsew")
         report.columnconfigure(0, weight=1)
-        tools = ttk.Frame(report)
-        tools.grid(row=0, column=0, sticky="ew")
+        report.rowconfigure(1, weight=1)
+        actions = ttk.Frame(report)
+        actions.grid(row=0, column=0, sticky="ew")
         self.buttons = []
-        for index, (label, command) in enumerate((
-            ("Проверить протоколы базы", self._inspect_mdb),
-            ("Сопоставить все XML (6 факторов)", self._inspect_all_2025),
-            ("Проверить справочники", self._inspect_resources),
-            ("Сопоставить один XML", self._inspect_2025),
-            ("Проверить структуру XML", self._validate_xml),
-        )):
-            b = ttk.Button(tools, text=label, command=command)
-            b.grid(row=index // 3, column=index % 3, sticky="ew",
-                   padx=(0, 7), pady=(0, 4))
+        for label, command in (
+            ("1. Перечень рабочих мест и протоколов", self._create_index),
+            ("2. Подробные сведения всех протоколов", self._create_details),
+        ):
+            b = ttk.Button(actions, text=label, command=command)
+            b.pack(side="left", padx=(0, 10), pady=(0, 6))
             self.buttons.append(b)
-        ttk.Button(tools, text="Копировать отчёт", command=self._copy).grid(
-            row=1, column=2, sticky="ew", padx=(0, 7), pady=(0, 4))
         self.report = scrolledtext.ScrolledText(
-            report, wrap="none", font=("Consolas", 10), undo=False)
+            report, wrap="word", font=("Segoe UI", 10), undo=False)
         self.report.grid(row=1, column=0, sticky="nsew", pady=(8, 0))
         self.report.insert("1.0",
-            "Сведения об организации, измерениях и сотрудниках выводятся только здесь.\n"
-            "В папке программы сохраняются только выбранные пути. Отчёты не записываются.\n"
-            "Формирование итогового XML для ФГИС ФСА пока недоступно.\n")
+            "Обе кнопки обрабатывают ВСЮ рабочую базу, без исключения факторов.\n"
+            "Первая создаёт список рабочих мест и протоколов.\n"
+            "Вторая записывает подробные значения всех внутренних XML.\n"
+            "Найденные и несопоставленные сведения сохраняются в исходном виде.\n"
+            "Отчёты: %ProgramData%\\Att51_export\\reports\\*.txt.\n"
+            "Значения not_exportable: итоговый XML ФГИС пока не формируется.")
         self.report.config(state="disabled")
 
         bottom = ttk.Frame(self.root, padding=(15, 10, 15, 14))
-        bottom.grid(row=4, column=0, sticky="ew")
+        bottom.grid(row=3, column=0, sticky="ew")
         ttk.Label(bottom, textvariable=self.status, foreground="#6d4a10").pack(anchor="w")
         bar = ttk.Frame(bottom)
         bar.pack(fill="x", pady=(8, 0))
@@ -236,7 +172,7 @@ class DesktopApp:
             self._save_after_id = None
         try:
             self.source_settings.save({
-                key: self.fields[key].get().strip() for key in SOURCE_KEYS
+                key: self.fields[key].get().strip() for key in self.fields
             })
         except (OSError, ValueError) as exc:
             self.status.set("Не удалось сохранить пути внутри папки приложения: "
@@ -256,8 +192,6 @@ class DesktopApp:
             parent=self.root, title="Выберите исходный файл",
             filetypes=extensions + [("Все файлы", "*.*")])
         if path:
-            if name == "mdb" and self.fields[name].get().strip() != path:
-                self.fields["xml"].set("")
             self.fields[name].set(path)
 
     def _choose_candidate(self, title: str, choices, describe=str):
@@ -291,79 +225,35 @@ class DesktopApp:
         self.root.wait_window(dialog)
         return selected[0]
 
-    def _auto_discover(self):
-        self._discover_paths(interactive=False)
-
-    def _browse_installation(self):
-        folder = filedialog.askdirectory(parent=self.root,
-                                          title="Папка оригинальной Аттестации-5.1")
-        if folder:
-            self._discover_paths(explicit_root=Path(folder), interactive=True)
-
-    def _discover_paths(self, *, explicit_root=None, interactive=False):
+    def _auto_ini(self, *, interactive=False):
+        # Only search original fgis_ra.ini. Never replace user MDB paths.
+        if self.fields["ini"].get().strip() and not interactive:
+            return
         try:
-            installs = discover_installations(
-                (explicit_root,) if explicit_root is not None else None)
-            if not installs:
-                self.status.set(
-                    "Исходная программа не найдена по штатному пути. "
-                    "Укажите её папку или выберите файлы вручную.")
+            choices = tuple(dict.fromkeys(
+                p for install in discover_installations() for p in install.settings
+                if p.is_file()
+            ))
+            if not choices:
+                self.status.set("fgis_ra.ini не обнаружен. Файл необязателен.")
+                if interactive:
+                    messagebox.showinfo(APP_NAME, "fgis_ra.ini не найден. "
+                                        "Поля базы и отчёты работают без него.")
                 return
-            if len(installs) > 1:
+            if len(choices) > 1:
                 if not interactive:
-                    self.status.set(
-                        "Найдено несколько установок Аттестации. "
-                        "Нажмите «Найти по настройкам» и выберите одну.")
+                    self.status.set("Найдено несколько fgis_ra.ini. "
+                                    "Нажмите «Авто» для выбора.")
                     return
-                installation = self._choose_candidate(
-                    "Выберите оригинальную установку", installs,
-                    lambda x: x.folder)
-                if installation is None:
+                selected = self._choose_candidate("Выберите fgis_ra.ini", choices)
+                if selected is None:
                     return
             else:
-                installation = installs[0]
-            ambiguous = []
-            for name, choices in (
-                ("mdb", installation.databases),
-                ("resources", installation.resources),
-                ("ini", installation.settings),
-            ):
-                # Manual choices are never silently overwritten.
-                if self.fields[name].get().strip():
-                    continue
-                if len(choices) == 1:
-                    self.fields[name].set(str(choices[0]))
-                elif len(choices) > 1:
-                    if interactive:
-                        selected = self._choose_candidate(
-                            "Выберите исходный файл", choices)
-                        if selected is not None:
-                            self.fields[name].set(str(selected))
-                    else:
-                        ambiguous.append(name)
-            problem = "; ".join(installation.warnings)
-            if ambiguous:
-                problem += "; неоднозначный источник: " + ", ".join(ambiguous)
-            self.status.set(
-                "Проверены настройки оригинальной программы. " +
-                (problem or "Доступные исходные пути заполнены.") +
-                " Все XML читаются по данным базы, без ручного выбора.")
-        except Exception as error:
-            self.status.set("Не удалось прочитать настройки источников: " +
-                            human_error(error))
-
-    def _find_protocols(self):
-        try:
-            database = self._required("mdb")["mdb"]
-            rm = self.fields["rm"].get().strip()
-            rm_id = int(rm) if rm else None
-            if rm_id is not None and rm_id <= 0:
-                raise ValueError("Номер рабочего места должен быть положительным.")
-        except Exception as error:
-            messagebox.showerror(APP_NAME, human_error(error))
-            return
-        self._work(lambda: discover_protocols(database, rm_id),
-                   title="Чтение записей протоколов", kind="protocols")
+                selected = choices[0]
+            self.fields["ini"].set(str(selected))
+            self.status.set("Найден необязательный fgis_ra.ini: " + str(selected))
+        except (OSError, ValueError) as exc:
+            self.status.set("Не удалось определить fgis_ra.ini: " + human_error(exc))
 
     def _required(self, *names: str) -> dict[str, Path]:
         found = {}
@@ -392,122 +282,50 @@ class DesktopApp:
                 self.results.put(("error", human_error(error)))
         threading.Thread(target=worker, daemon=True).start()
 
-    def _inspect_mdb(self):
+    def _report_inputs(self):
+        source = self._required("mdb", "resources")
+        ini = self.fields["ini"].get().strip()
+        if ini:
+            source.update(self._required("ini"))
+        return source, source.get("ini")
+
+    def _create_index(self):
         try:
-            sources = self._required("mdb", "resources")
-            rm = self.fields["rm"].get().strip()
-            ids = [int(rm)] if rm else None
-            if ids and ids[0] <= 0:
-                raise ValueError("Номер рабочего места должен быть положительным.")
-        except Exception as error:
+            files, ini = self._report_inputs()
+        except (ValueError, OSError) as error:
             messagebox.showerror(APP_NAME, human_error(error))
             return
-        self._work(lambda: AppSources(
-            sources["mdb"], sources["resources"]).inspect(ids),
-            title="Проверка рабочих мест")
+        self._work(lambda: create_index(files["mdb"], files["resources"], ini),
+                   title="Формирование перечня всех рабочих мест",
+                   kind="report_file")
 
-    def _inspect_resources(self):
+    def _create_details(self):
         try:
-            source = self._required("resources")
-            xml_raw = self.fields["xml"].get().strip()
-            xml = self._required("xml")["xml"] if xml_raw else None
-        except Exception as error:
+            files, ini = self._report_inputs()
+        except (ValueError, OSError) as error:
             messagebox.showerror(APP_NAME, human_error(error))
             return
-        def task():
-            catalog = ResourceCatalog.from_mdb(source["resources"])
-            result = {
-                "not_exportable": True,
-                "catalog": asdict(catalog.diagnostics),
-                "resource_source": resource_source_evidence(source["resources"]),
-            }
-            info = catalog.diagnostics
-            if (info.device_count == 0 and info.person_count == 0 and
-                    "FGIS_RA" in info.tables_absent):
-                result["source_warning"] = (
-                    "Справочник не содержит приборов и сотрудников, а таблица "
-                    "FGIS_RA отсутствует. Это не доказывает выбор ошибочного "
-                    "файла: оригинальная программа может использовать пустой "
-                    "справочник и создавать часть таблиц позднее. Сверьте "
-                    "путь по разделу resource_source; база не изменялась."
-                )
-            if xml:
-                result["protocol"] = inspection_dict(
-                    inspect_protocol_resources_file(xml, catalog))
-            return result
-        self._work(task, title="Проверка справочников")
+        self._work(lambda: create_details(files["mdb"], files["resources"], ini),
+                   title="Формирование подробного отчёта по всем протоколам",
+                   kind="report_file")
 
-    def _diagnostic_options(self) -> Original2025Options:
-        if self.acoustic_only.get() and not self.acoustic.get():
-            raise ValueError("Флаг «Только акустические» требует «Акустические измерения».")
-        if self.per_operation.get() and not self.acoustic.get():
-            raise ValueError("Флаг «По операциям» требует «Акустические измерения».")
-        return Original2025Options(
-            acoustic_measurements=self.acoustic.get(),
-            both_measurements_and_equivalent=self.acoustic_only.get(),
-            acoustic_level_per_operation=self.per_operation.get(),
-            include_uncertainty=self.uncertainty.get(),
-            micro_use_result_values=self.micro_results.get(),
-            micro_include_exposure_dose=self.micro_dose.get())
-
-    def _optional_fgis_ini(self) -> Path | None:
-        raw = self.fields["ini"].get().strip()
-        return self._required("ini")["ini"] if raw else None
-
-    def _inspect_all_2025(self):
-        try:
-            sources = self._required("mdb", "resources")
-            ini_path = self._optional_fgis_ini()
-            options = self._diagnostic_options()
-            value = self.fields["rm"].get().strip()
-            rm_id = int(value) if value else None
-            if rm_id is not None and rm_id <= 0:
-                raise ValueError("Номер рабочего места должен быть положительным.")
-        except Exception as error:
-            messagebox.showerror(APP_NAME, human_error(error))
-            return
-        self._work(lambda: inspect_all_2025(
-            sources["mdb"], sources["resources"], options,
-            rm_id=rm_id, working_fgis_ini=ini_path),
-            title="Пакетное сопоставление внутренних XML")
-
-    def _inspect_2025(self):
-        try:
-            files = self._required("xml", "resources")
-            ini_path = self._optional_fgis_ini()
-            options = self._diagnostic_options()
-        except Exception as error:
-            messagebox.showerror(APP_NAME, human_error(error))
-            return
-        self._work(lambda: diagnostic_dict(analyze_2025_file(
-            files["xml"], files["resources"], options,
-            working_fgis_ini=ini_path)), title="Сопоставление одного протокола")
-
-    def _validate_xml(self):
-        """Only internal ATT51 XML is selected here; FGIS XSD does not apply."""
-        try:
-            path = self._required("xml")["xml"]
-        except Exception as error:
-            messagebox.showerror(APP_NAME, human_error(error))
-            return
-        self._work(
-            lambda: inspect_internal_xml(path),
-            title="Проверка структуры внутреннего XML",
-        )
-
-    def _copy(self):
-        content = self.report.get("1.0", "end-1c")
-        self.root.clipboard_clear()
-        self.root.clipboard_append(content)
-        self.status.set("Отчёт скопирован в буфер обмена (файл не создавался).")
-
-    def _show_report(self, value: object):
-        content = json.dumps(value, ensure_ascii=False, indent=2, default=str)
+    def _open_report(self, filename: Path):
         self.report.config(state="normal")
         self.report.delete("1.0", "end")
-        self.report.insert("1.0", content)
+        self.report.insert("1.0", "Отчёт готов:\n" + str(filename) +
+                           "\n\nСоздан текстовый файл UTF-8. "
+                           "Файл содержит исходные значения, в том числе "
+                           "не имеющие сопоставленного ID ФГИС.\n"
+                           "Отчёт не является итоговым XML ФГИС.")
         self.report.config(state="disabled")
-        self.status.set("Диагностика завершена. Рабочий XML не формировался.")
+        self.status.set("Текстовый отчёт создан: " + str(filename))
+        try:
+            if sys.platform == "win32":
+                os.startfile(str(filename))
+        except OSError as exc:
+            messagebox.showwarning(
+                APP_NAME, "Отчёт сохранён, но не удалось открыть текстовый файл:\n"
+                + str(filename) + "\n" + human_error(exc))
 
     def _check_updates(self, *, manual: bool):
         if self.check_btn.instate(["disabled"]):
@@ -560,28 +378,12 @@ class DesktopApp:
         try:
             while True:
                 kind, value = self.results.get_nowait()
-                if kind in ("report", "error", "protocols"):
+                if kind in ("report_file", "error"):
                     self.busy = False
                     for b in self.buttons:
                         b.state(["!disabled"])
-                    if kind == "report":
-                        self._show_report(value)
-                    elif kind == "protocols":
-                        protocols = value
-                        if not protocols:
-                            self.status.set(
-                                "Для выбранной MDB/РМ не найдены связанные XML. "
-                                "Проверьте путь, сохранение протокола или выберите вручную.")
-                        else:
-                            chosen = protocols[0] if len(protocols) == 1 else (
-                                self._choose_candidate(
-                                    "Выберите протокол", protocols,
-                                    lambda p: p.label))
-                            if chosen is not None:
-                                self.fields["xml"].set(str(chosen.xml))
-                                self.status.set(
-                                    "Внутренний XML определён по sout_factors.file; "
-                                    "файл не изменялся.")
+                    if kind == "report_file":
+                        self._open_report(Path(value))
                     else:
                         self.status.set(str(value))
                         messagebox.showerror(APP_NAME, str(value))
