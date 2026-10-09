@@ -125,7 +125,8 @@ def select_consolidated(
     # The original curxmldoc.SelectNodes("//Document/doc")
     document = parse_xml(catalog)
     results: list[ProtocolSelection] = []
-    for node in document.findall(".//Document/doc"):
+    doc_nodes = document.findall("./doc") if document.tag == "Document" else document.findall(".//Document/doc")
+    for node in doc_nodes:
         file, name = node.get("file", ""), node.get("name", "")
         dtype = node.get("doc_type", "")
         if not file or not name or dtype != "3":
