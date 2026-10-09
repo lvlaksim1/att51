@@ -96,6 +96,19 @@ begin
   Result := True;
 end;
 
+// Report actual installation bytes to the external progress window.
+// The installer itself runs /VERYSILENT: no wizard, finish or launch dialog.
+procedure CurInstallProgressChanged(CurProgress, MaxProgress: Integer);
+var
+  ProgressFile: String;
+begin
+  ProgressFile := ExpandConstant('{param:PROGRESSFILE|}');
+  if (ProgressFile <> '') and (MaxProgress > 0) and
+     (CompareText(ExtractFileDir(ProgressFile), ExpandConstant('{app}\updates')) = 0) then
+    SaveStringToFile(ProgressFile,
+      IntToStr(CurProgress) + '/' + IntToStr(MaxProgress), False);
+end;
+
 // The embedded update uses /SILENT /RUNAFTERUPDATE=1: show only progress
 // and launch the new program automatically. Unattended /VERYSILENT CI
 // installs remain fully silent and must not leave a running GUI.
