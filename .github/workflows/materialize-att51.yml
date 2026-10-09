@@ -1,0 +1,40 @@
+name: Restore verified ATT51 research files
+on:
+  push:
+    paths:
+      - "extracted/.transfer/part_*.bin"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: att51-materialize
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    if: github.event_name != 'push' || !contains(github.event.head_commit.message, '[att51:payload-committed]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify and restore original application files
+        run: python3 tools/materialize_att51_archive.py --parts extracted/.transfer --output extracted
+      - name: Commit verified files and drop staging parts from HEAD
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f -- extracted/app extracted/sys extracted/win
+          git rm -rf -- extracted/.transfer
+          python3 scripts/check_repository_storage.py
+          if git diff --cached --quiet; then
+            echo "No changes required"
+            exit 0
+          fi
+          git commit -m "Restore 3612 verified ATT51 research files [att51:payload-committed]"
+          git push origin HEAD:main
