@@ -32,6 +32,40 @@ class ExportPreparationTests(unittest.TestCase):
         self.assertIsNone(result.protocol)
         self.assertTrue(any("дата заявки" in x for x in result.blockers))
 
+    def test_complete_source_protocol_can_pass_all_transformations(self):
+        resources = ResourceCatalog.from_rows(
+            devices=[{"id": 1, "mguid": "D1", "factory_num": "555", "name": "Device"}],
+            people=[{"mguid": "P1", "snils": "10000000000", "fio": "Tester",
+                     "dolg": "Engineer", "no_dop_fld2": "FGIS engineer"}],
+            normative=[{"id": 7, "mguid": "N1", "name": "Методика 17",
+                        "factor_id": 13, "typ": 1}],
+            links=[{"rec_type": 0, "rec_guid": "D1", "IntValue": 101},
+                   {"rec_type": 1, "rec_guid": "P1", "IntValue": 202}],
+            nd_info=[{"nd_id": 7, "key_ctxt": "Методика 17",
+                      "dop2": 303, "dop4": "", "dop5": "ОА {404}"}],
+            present_tables={"ATT_DEVICE", "ATT_PERSON", "DIC_ND",
+                            "FGIS_RA", "DIC_ND_INFO"}
+        )
+        doc = ET.fromstring('''<Document num_doc="P-001" fill_date="24.03.2026">
+          <factor facid="13" izm_date="19.03.2026">
+            <si_guids><si_guid guid="D1" num="555"/></si_guids>
+            <persons><pers guid="P1"/></persons>
+          </factor>
+          <nd_data><nd name="Методика 17" action="1" id="7"/></nd_data>
+          <izm_data><zone><param bm="bm_2_2_m" fact="5" nd_izm1="7"/>
+          </zone></izm_data></Document>''')
+        proposal = prepare_protocol(
+            doc, resources, CustomerSettings("10.03.2026", 1, inn="1234567890",
+                                             full_name="Customer"))
+        self.assertEqual(proposal.blockers, ())
+        self.assertIsNotNone(proposal.protocol)
+        self.assertEqual(proposal.protocol.approved_users[0].position, "FGIS engineer")
+        self.assertEqual(proposal.protocol.research_objects[0].indicator_id, "131459")
+        blob = serialize_protocols([proposal.protocol], verified_mapping=True)[0]
+        schema = Path(__file__).resolve().parents[2]/"extracted"/"app"/"fileProtocolLoad_v4.xsd"
+        valid, reason = validate_xml(blob, schema)
+        self.assertTrue(valid, reason)
+
     def test_positive_verified_serializer_matches_original_xsd(self):
         sample = Protocol(
             doc_id="T-001", creation_date="2026-03-24",
