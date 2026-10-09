@@ -181,3 +181,9 @@
 - Главный интерфейс только две кнопки XML/Excel. `desktop/excel_export.py` независим от `res_orgs.mdb` и `fgis_ra.ini`: читает рабочую MDB и связанные исходные XML; производит импортного формата один `TDSheet` A-Z, значения K-O, placeholders «НЕТ ДАННЫХ», файл в `reports/Сведения_из_протоколов.xls`.
 - `desktop/com_workers.py`: отдельная COM-инициализация и освобождение в каждом GUI-worker; устранён прежний порядок «сначала кнопка 1 и 2, потом XML». Windows новый CLI `--self-test-mdb-thread` продемонстрировал доступ MDB из фонового потока.
 - `research/ATT51_EXCEL_SOURCE_EXPORT.md` содержит контракт источников и ограничения, `desktop/tests/test_excel_export.py` — синтетические проверки. Реальная заполненность XLS и портал ФГИС ещё **не проверены**. Microsoft Excel необходим для сохранения настоящего .xls, GitHub CI не выполнял приложение Office.
+
+## Att51_export v0.1.17 — единый источник для XML/Excel, диалоговое обновление упрощено
+- Код: `fsa_xml_module/att51_fsa/pipeline_2025.py` (исходные значения до ID), `export_2025.py` (сохранённые принятые трассы), `desktop/excel_shared_source.py` (только принятые XML-показатели), `desktop/excel_export.py` (один лист TDSheet A-Z), `desktop/app.py` (единый диалог параметров для обоих форматов).
+- Обновление: `desktop/updater.py` (проверенная загрузка и запуск установщика после завершения приложения); `desktop/installer/update.iss` (без секции [Icons], /SILENT /RUNAFTERUPDATE=1 для автооткрытия после установки); `desktop/app.py` (одно нажатие, две последовательных полосы хода загрузки/установки).
+- Выпуск v0.1.17: https://github.com/lvlaksim1/att51/releases/tag/v0.1.17 ; тест Windows: https://github.com/lvlaksim1/att51/actions/runs/38001601222 .
+- Безопасность: MDB/XML/INI пользователя только читаются; инсталлятор сохраняет настройки, не использует UAC и не меняет ярлык на рабочем столе. Интеграционное соответствие на реальных 11 протоколах ещё не подтверждено.
