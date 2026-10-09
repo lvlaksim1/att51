@@ -27,6 +27,7 @@ from updater import Release, UpdateError, apply_update, fetch_latest, newer, LAT
 from source_discovery import discover_installations, discover_protocols
 from protocol_batch import inspect_all_2025
 from internal_xml import inspect_internal_xml
+from source_evidence import resource_source_evidence
 from version import VERSION
 
 APP_NAME = "Att51_export"
@@ -373,16 +374,20 @@ class DesktopApp:
             return
         def task():
             catalog = ResourceCatalog.from_mdb(source["resources"])
-            result = {"not_exportable": True, "catalog": asdict(catalog.diagnostics)}
+            result = {
+                "not_exportable": True,
+                "catalog": asdict(catalog.diagnostics),
+                "resource_source": resource_source_evidence(source["resources"]),
+            }
             info = catalog.diagnostics
             if (info.device_count == 0 and info.person_count == 0 and
                     "FGIS_RA" in info.tables_absent):
                 result["source_warning"] = (
                     "Справочник не содержит приборов и сотрудников, а таблица "
-                    "FGIS_RA отсутствует. Возможно, выбран исходный шаблон "
-                    "res_orgs.mdb вместо рабочей базы организации. Проверьте "
-                    "настройку [DB_res] в options.ini оригинальной программы. "
-                    "Рабочие данные не изменялись."
+                    "FGIS_RA отсутствует. Это не доказывает выбор ошибочного "
+                    "файла: оригинальная программа может использовать пустой "
+                    "справочник и создавать часть таблиц позднее. Сверьте "
+                    "путь по разделу resource_source; база не изменялась."
                 )
             if xml:
                 result["protocol"] = inspection_dict(

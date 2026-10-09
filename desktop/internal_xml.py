@@ -8,6 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from att51_fsa.sources import FsaSourceError, parse_xml, read_sidecar
+from factor_structure import inspect_factor_structure
 
 
 FACTOR_NAMES = {
@@ -51,6 +52,9 @@ def inspect_internal_xml(path: Path) -> dict:
         "equipment_count": len(sidecar.equipment),
         "personnel_count": sidecar.personnel_count,
         "normative_documents_count": sidecar.normative_documents_count,
+        "measurement_structure_evidence": (
+            inspect_factor_structure(root) if facid in FACTOR_NAMES else None
+        ),
         "warnings": warnings,
         "fgis_schema_applicable": False,
         "schema_explanation": (

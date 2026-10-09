@@ -15,6 +15,7 @@ from att51_fsa.resources import ResourceCatalog
 from att51_fsa.sources import FsaSourceError, parse_xml
 from source_discovery import discover_protocols
 from internal_xml import FACTOR_NAMES
+from factor_structure import inspect_factor_structure
 
 
 def inspect_all_2025(
@@ -50,8 +51,9 @@ def inspect_all_2025(
             "xml": str(protocol.xml),
         }
         try:
+            original_xml = parse_xml(protocol.xml)
             result = analyze_2025(
-                parse_xml(protocol.xml), catalog, options,
+                original_xml, catalog, options,
                 working_fgis_ini=working_fgis_ini,
             )
             record.update({
@@ -65,6 +67,10 @@ def inspect_all_2025(
                 "resource_warnings": list(result.resource_warnings),
             })
             if result.status == "unsupported_factor":
+                if str(protocol.factor_id) in FACTOR_NAMES:
+                    record["measurement_structure_evidence"] = inspect_factor_structure(
+                        original_xml
+                    )
                 record["explanation"] = (
                     "Обнаруженный внутренний XML не повреждён. "
                     "Преобразование данного фактора в ФГИС ещё не реализовано."
@@ -88,8 +94,9 @@ def inspect_all_2025(
         "statuses": dict(sorted(counts.items())),
         "fgis_ini": str(working_fgis_ini) if working_fgis_ini else None,
         "resource_source_warning": (
-            "В справочнике нет приборов, сотрудников и таблицы FGIS_RA; "
-            "возможно, вместо рабочей базы выбран шаблон res_orgs.mdb."
+            "В справочнике нет приборов, сотрудников и таблицы FGIS_RA. "
+            "Это не доказывает, что выбран неправильный файл; сверяйте "
+            "источник с настройкой оригинала [DB_res]."
             if resource_may_be_template else None
         ),
         "warnings": (
