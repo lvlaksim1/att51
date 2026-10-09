@@ -199,7 +199,8 @@ def bind_methods_from_catalog(
         # this only for an unambiguous exact-factor match to a real ND;
         # fuzzy and cross-factor matches remain review-only.
         if (resource.method_doc_id in ("", "0", "-1")
-                and matched.source_rule == "hash_with_factor"
+                and matched.source_rule in ("hash_with_factor", "exact_name_when_hash_empty")
+                and resource.factor_id == str(factor_id)
                 and matched.alternatives == 1
                 and nd_hash(resource.name) == nd_hash(item.doc_name)
                 and bool(item.doc_name.strip())
