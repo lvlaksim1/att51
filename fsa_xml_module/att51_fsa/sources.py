@@ -160,6 +160,22 @@ class AccessReader:
             self._connection.Close()
             self._connection = None
 
+    def table_names(self) -> frozenset[str]:
+        """Query ADO schema in read-only mode; no CREATE/ALTER as original does."""
+        if self._connection is None:
+            raise FsaSourceError("ADO connection is not open")
+        schema = self._connection.OpenSchema(20)  # adSchemaTables
+        try:
+            names = set()
+            while not schema.EOF:
+                name = schema.Fields("TABLE_NAME").Value
+                if name:
+                    names.add(str(name).upper())
+                schema.MoveNext()
+            return frozenset(names)
+        finally:
+            schema.Close()
+
     def select(self, query: str) -> list[dict[str, Any]]:
         if self._connection is None:
             raise FsaSourceError("ADO connection is not open")
