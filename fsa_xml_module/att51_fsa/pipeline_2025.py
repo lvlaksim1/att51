@@ -51,6 +51,9 @@ class FieldTrace:
     prepared: PreparedResearchObject | None
     warnings: tuple[str, ...]
     errors: tuple[str, ...]
+    source_draft: ResearchObjectDraft | None = None
+    original_method_name: str = ""
+    original_oa_method: str = ""
 
 
 @dataclass(frozen=True)
@@ -192,6 +195,9 @@ def analyze_2025(
             selected.selected.source_rule, selected.selected.doc_name_id,
             prepared.value, tuple(dict.fromkeys(warnings + list(prepared.warnings))),
             tuple(dict.fromkeys(errors)),
+            source_draft=draft,
+            original_method_name=selected.selected.doc_name,
+            original_oa_method=selected.selected.oa_method,
         ))
         all_errors.extend(errors)
     if not drafts:
