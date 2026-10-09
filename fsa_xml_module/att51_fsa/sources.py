@@ -166,7 +166,8 @@ class AccessReader:
         if not re.match(r"(?is)^\s*SELECT\s", query) or ";" in query:
             raise FsaSourceError("Only one read-only SELECT statement is permitted")
         rows: list[dict[str, Any]] = []
-        rs = self._connection.Execute(query)[0]
+        result = self._connection.Execute(query)
+        rs = result[0] if isinstance(result, tuple) else result
         try:
             while not rs.EOF:
                 row: dict[str, Any] = {}

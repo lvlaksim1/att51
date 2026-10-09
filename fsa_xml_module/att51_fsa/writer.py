@@ -31,10 +31,6 @@ class Protocol:
     attachment: Path | None = None
 
 
-def _node(parent: ET.Element, name: str, value: object) -> ET.Element:
-    return ET.SubElement(parent, name, text=None) if False else _text(parent, name, value)
-
-
 def _text(parent: ET.Element, name: str, value: object) -> ET.Element:
     element = ET.SubElement(parent, name)
     element.text = str(value)
@@ -130,7 +126,7 @@ def validate_xml(xml: bytes, schema: Path) -> tuple[bool, str]:
         cache = win32com.client.Dispatch("MSXML2.XMLSchemaCache.6.0")
         cache.add("", str(Path(schema).resolve()))
         document = win32com.client.Dispatch("MSXML2.DOMDocument.6.0")
-        document.async = False
+        setattr(document, "async", False)
         document.validateOnParse = False
         if not document.loadXML(xml.decode("utf-8")):
             return False, str(document.parseError.reason)
