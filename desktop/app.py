@@ -21,6 +21,9 @@ from updater import Release, UpdateError, apply_update, fetch_latest, newer, LAT
 from source_discovery import discover_installations
 from source_settings import SourceSettings, SOURCE_KEYS
 from whole_base_reports import create_index, create_details
+from fgis_export import create_fgis_export
+from att51_fsa.export_2025 import CustomerSettings
+from att51_fsa.labour_2025 import LabourOptions
 from version import VERSION
 
 APP_NAME = "Att51_export"
@@ -55,9 +58,9 @@ class DesktopApp:
         for key, path in previous_paths.items():
             if key in self.fields:
                 self.fields[key].set(path)
-        self.status = tk.StringVar(value="Готово. Рабочая выгрузка XML ещё не реализована.")
+        self.status = tk.StringVar(value="Готово. XML формируется только при подтверждённой полноте исходных данных.")
         self.update_status = tk.StringVar(value="Обновления: проверка не выполнена")
-        root.title(f"{APP_NAME} — v{VERSION} (диагностика)")
+        root.title(f"{APP_NAME} — v{VERSION}")
         root.geometry("1050x700")
         root.minsize(780, 510)
         icon = included_file("assets/app.ico")
@@ -129,6 +132,7 @@ class DesktopApp:
         for label, command in (
             ("1. Перечень рабочих мест и протоколов", self._create_index),
             ("2. Подробные сведения всех протоколов", self._create_details),
+            ("3. Сформировать XML ФГИС", self._create_fgis_xml),
         ):
             b = ttk.Button(actions, text=label, command=command)
             b.pack(side="left", padx=(0, 10), pady=(0, 6))
@@ -142,7 +146,8 @@ class DesktopApp:
             "Вторая записывает подробные значения всех внутренних XML.\n"
             "Найденные и несопоставленные сведения сохраняются в исходном виде.\n"
             "Отчёты: %ProgramData%\\Att51_export\\reports\\*.txt.\n"
-            "Значения not_exportable: итоговый XML ФГИС пока не формируется.")
+            "XML: только после проверки обязательных полей, ID ФГИС и оригинальной XSD.\n"
+            "При недостатке сведений создаётся отдельный отчёт о блокировках.")
         self.report.config(state="disabled")
 
         bottom = ttk.Frame(self.root, padding=(15, 10, 15, 14))
@@ -309,6 +314,83 @@ class DesktopApp:
                    title="Формирование подробного отчёта по всем протоколам",
                    kind="report_file")
 
+    def _create_fgis_xml(self):
+        try:
+            files, ini = self._report_inputs()
+        except (ValueError, OSError) as error:
+            messagebox.showerror(APP_NAME,human_error(error))
+            return
+        # The original gets these from v5_org_options and the user's export
+        # form. Never guess organization identity or application date.
+        popup=tk.Toplevel(self.root)
+        popup.title("Данные заказчика и параметры выгрузки ФГИС")
+        popup.transient(self.root)
+        popup.grab_set()
+        popup.resizable(False,False)
+        controls=ttk.Frame(popup,padding=14)
+        controls.pack(fill="both",expand=True)
+        prompts=(
+            ("Дата заявки, ДД.ММ.ГГГГ","date",""),
+            ("Тип заказчика (1=ЮЛ, 2=ИП, 4=физлицо)","kind","1"),
+            ("ИНН заказчика","inn",""),
+            ("ОГРН (если есть)","ogrn",""),
+            ("ФИО заказчика-физлица (если есть)","fio",""),
+        )
+        values={}
+        for row,(title,key,initial) in enumerate(prompts):
+            ttk.Label(controls,text=title).grid(row=row,column=0,sticky="w",pady=4)
+            var=tk.StringVar(value=initial)
+            ttk.Entry(controls,textvariable=var,width=35).grid(row=row,column=1,padx=8,pady=4)
+            values[key]=var
+        ttk.Label(controls,text="Состояние данных").grid(row=5,column=0,sticky="w",pady=4)
+        status=tk.StringVar(value="20")
+        ttk.Combobox(controls,textvariable=status,values=("20","13"),state="readonly",
+                     width=33).grid(row=5,column=1,padx=8,pady=4)
+        direct=tk.BooleanVar(value=False)
+        totals=tk.BooleanVar(value=False)
+        ttk.Checkbutton(controls,text="Тяжесть: прямые измерения (не итоговые)",
+                        variable=direct).grid(row=6,column=0,columnspan=2,sticky="w",pady=3)
+        ttk.Checkbutton(controls,text="Добавить итоговые суммы тяжести",
+                        variable=totals).grid(row=7,column=0,columnspan=2,sticky="w",pady=3)
+        ttk.Label(controls,text="Проверка полноты обязательна; при ошибках итоговый XML не создаётся.",
+                  foreground="#72531d").grid(row=8,column=0,columnspan=2,pady=7,sticky="w")
+        footer=ttk.Frame(controls)
+        footer.grid(row=9,column=0,columnspan=2,sticky="e")
+        ttk.Button(footer,text="Отмена",command=popup.destroy).pack(side="right",padx=4)
+        def begin():
+            try:
+                kind=int(values["kind"].get())
+                customer=CustomerSettings(
+                    application_date=values["date"].get().strip(),
+                    customer_kind=kind,inn=values["inn"].get().strip(),
+                    ogrn=values["ogrn"].get().strip(),fio=values["fio"].get().strip(),
+                    data_status=status.get())
+            except ValueError as exc:
+                messagebox.showerror(APP_NAME,"Тип заказчика должен быть числом: "+str(exc))
+                return
+            labour=LabourOptions(heavy_direct=direct.get(),include_heavy_totals=totals.get())
+            popup.destroy()
+            self._work(lambda:create_fgis_export(
+                files["mdb"],files["resources"],ini,customer,
+                included_file("assets/fileProtocolLoad_v4.xsd"),labour=labour),
+                title="Проверка и формирование итогового XML",
+                kind="fgis_result")
+        ttk.Button(footer,text="Проверить и сформировать",command=begin).pack(side="right")
+        popup.focus_set()
+
+    def _open_fgis_result(self, result):
+        self.status.set("XML сформирован: "+str(len(result.files))+" файлов"
+                        if result.ready else "XML не создан: обнаружены блокирующие ошибки")
+        self.report.config(state="normal")
+        self.report.delete("1.0","end")
+        self.report.insert("1.0",result.report.read_text(encoding="utf-8-sig")[:20000])
+        self.report.config(state="disabled")
+        try:
+            if sys.platform=="win32":
+                os.startfile(str(result.report))
+        except OSError:
+            pass
+
     def _open_report(self, filename: Path):
         self.report.config(state="normal")
         self.report.delete("1.0", "end")
@@ -378,12 +460,14 @@ class DesktopApp:
         try:
             while True:
                 kind, value = self.results.get_nowait()
-                if kind in ("report_file", "error"):
+                if kind in ("report_file", "fgis_result", "error"):
                     self.busy = False
                     for b in self.buttons:
                         b.state(["!disabled"])
                     if kind == "report_file":
                         self._open_report(Path(value))
+                    elif kind == "fgis_result":
+                        self._open_fgis_result(value)
                     else:
                         self.status.set(str(value))
                         messagebox.showerror(APP_NAME, str(value))
