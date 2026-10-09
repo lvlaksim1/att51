@@ -61,6 +61,30 @@ Type: filesandordirs; Name: "{app}\data"
 Type: filesandordirs; Name: "{app}\reports"
 
 [Code]
+
+; A previous release (<=0.1.10) did not create AppMutex. Detect that
+; legacy running executable before Inno tries to remove/replace it.
+; This is intentionally a check, not a forced process termination.
+function LegacyAtt51ProcessRunning(): Boolean;
+var ExitCode: Integer;
+begin
+  Result := Exec(
+    ExpandConstant('{cmd}'),
+    '/C tasklist /FI "IMAGENAME eq Att51_export.exe" /NH | findstr /L /I /C:"Att51_export.exe" >NUL',
+    '', SW_HIDE, ewWaitUntilTerminated, ExitCode
+  ) and (ExitCode = 0);
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  Result := '';
+  if LegacyAtt51ProcessRunning() then
+    Result := 'Программа Att51_export всё ещё запущена.' + #13#10 +
+      'Закройте её и завершите процесс Att51_export.exe в диспетчере задач, ' +
+      'затем повторите установку.' + #13#10 +
+      'Файлы приложения ещё не заменялись.';
+end;
+
 function InitializeSetup(): Boolean;
 var InstalledExe: String;
 begin

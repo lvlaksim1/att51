@@ -98,6 +98,29 @@ jobs:
           # Real regression for Windows DeleteFile code 5: a running EXE
           # must be detected BEFORE any attempted replacement.
           $hashBefore = (Get-FileHash $exe -Algorithm SHA256).Hash
+          # The user's failing 0.1.10 did not create AppMutex. This test
+          # reproduces that legacy EXE running without the new named mutex.
+          $legacy = Start-Process -FilePath $exe -ArgumentList '--self-test-hold-legacy-process 45' -PassThru
+          Start-Sleep -Seconds 3
+          try {
+            if ($legacy.HasExited) { throw 'Legacy process exited too early' }
+            foreach ($installer in @($setup, $update)) {
+              $attempt = Start-Process -FilePath $installer -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
+              Write-Host "LEGACY_RUNNING_APP_INSTALLER_EXIT_CODE=$($attempt.ExitCode)"
+              if ($attempt.ExitCode -eq 0) {
+                throw "Legacy running EXE not detected: $installer"
+              }
+              if (-not (Test-Path $exe)) { throw 'Legacy EXE deleted during guard test' }
+              if ((Get-FileHash $exe -Algorithm SHA256).Hash -ne $hashBefore) {
+                throw 'Legacy EXE partially replaced despite active process'
+              }
+            }
+            Write-Host 'LEGACY_RUNNING_APPLICATION_REPLACEMENT_PREVENTED_PASS'
+          } finally {
+            Stop-Process -Id $legacy.Id -Force -ErrorAction SilentlyContinue
+            try { $legacy.WaitForExit(10000) | Out-Null } catch {}
+          }
+
           $holder = Start-Process -FilePath $exe -ArgumentList '--self-test-hold-mutex 45' -PassThru
           Start-Sleep -Seconds 3
           try {

@@ -586,6 +586,11 @@ def main() -> int:
             messagebox.showerror(APP_NAME, human_error(error))
             root.destroy()
             return 2
+    if len(sys.argv) == 3 and sys.argv[1] == "--self-test-hold-legacy-process":
+        # Emulate releases <=0.1.10, which never created an AppMutex.
+        import time
+        time.sleep(min(max(int(sys.argv[2]), 1), 60))
+        return 0
     if len(sys.argv) == 3 and sys.argv[1] == "--self-test-hold-mutex":
         # Dedicated Windows release test: test that both installers refuse
         # to overwrite the currently running EXE. Never open user data.

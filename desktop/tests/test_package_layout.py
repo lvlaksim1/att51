@@ -55,6 +55,15 @@ class InstallationContractTests(unittest.TestCase):
                 self.assertIn("CloseApplications=yes", setup)
                 self.assertIn("RestartApplications=no", setup)
 
+    def test_old_versions_detected_before_file_replacement(self):
+        for name in ("full.iss", "update.iss"):
+            with self.subTest(name=name):
+                code = self.script(name)
+                self.assertIn('function PrepareToInstall(var NeedsRestart: Boolean)', code)
+                self.assertIn('tasklist /FI "IMAGENAME eq Att51_export.exe"', code)
+                self.assertIn("LegacyAtt51ProcessRunning()", code)
+                self.assertNotIn("taskkill", code)
+
     def test_gui_holds_mutex_until_exiting(self):
         source = (DESKTOP / "app.py").read_text(encoding="utf-8")
         self.assertIn("with InstallationMutex():\n        root = tk.Tk()", source)
