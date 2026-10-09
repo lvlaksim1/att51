@@ -1,6 +1,6 @@
 """Att51_export Windows graphical shell; does not run Word or original ATT51.
 
-Until original VBA is completely reproduced this app exposes only diagnostics.
+XML and raw Excel exports are independent; diagnostic readers remain internal.
 No persistent configuration, cache, logs or user exports outside {app}.
 """
 from __future__ import annotations
@@ -23,6 +23,8 @@ from source_discovery import discover_installations
 from source_settings import SourceSettings, SOURCE_KEYS
 from whole_base_reports import create_index, create_details
 from fgis_export import create_fgis_export
+from excel_export import create_excel_export
+from com_workers import run_with_com
 from organization_sources import unique_organization
 from att51_fsa.export_2025 import CustomerSettings
 from att51_fsa.labour_2025 import LabourOptions
@@ -62,7 +64,7 @@ class DesktopApp:
         for key, path in previous_paths.items():
             if key in self.fields:
                 self.fields[key].set(path)
-        self.status = tk.StringVar(value="Готово. XML формируется только при подтверждённой полноте исходных данных.")
+        self.status = tk.StringVar(value="Готово. Выберите XML или Excel для самостоятельной выгрузки.")
         self.update_status = tk.StringVar(value="Обновления: проверка не выполнена")
         root.title(f"{APP_NAME} — v{VERSION}")
         root.geometry("1050x700")
@@ -120,13 +122,13 @@ class DesktopApp:
         ttk.Button(pane, text="Авто", width=9,
                    command=lambda: self._auto_ini(interactive=True)
                    ).grid(row=2, column=3, padx=(8, 0))
-        ttk.Label(pane, text="Если fgis_ra.ini отсутствует, отчёты всё равно создаются. "
+        ttk.Label(pane, text="Excel не требует ID ФГИС; настройки ФГИС используются для XML. "
                              "Выбранные пути сохраняются.",
                   foreground="#456280").grid(
                       row=3, column=0, columnspan=4, sticky="w", pady=(5, 0))
 
         report = ttk.LabelFrame(
-            self.root, text="Общая диагностика всей базы", padding=(10, 8))
+            self.root, text="Выгрузка сведений", padding=(10, 8))
         report.grid(row=2, column=0, padx=14, sticky="nsew")
         report.columnconfigure(0, weight=1)
         report.rowconfigure(1, weight=1)
@@ -134,9 +136,8 @@ class DesktopApp:
         actions.grid(row=0, column=0, sticky="ew")
         self.buttons = []
         for label, command in (
-            ("1. Перечень рабочих мест и протоколов", self._create_index),
-            ("2. Подробные сведения всех протоколов", self._create_details),
-            ("3. Сформировать XML ФГИС", self._create_fgis_xml),
+            ("Выгрузить XML", self._create_fgis_xml),
+            ("Выгрузить Excel", self._create_excel),
         ):
             b = ttk.Button(actions, text=label, command=command)
             b.pack(side="left", padx=(0, 10), pady=(0, 6))
@@ -145,14 +146,11 @@ class DesktopApp:
             report, wrap="word", font=("Segoe UI", 10), undo=False)
         self.report.grid(row=1, column=0, sticky="nsew", pady=(8, 0))
         self.report.insert("1.0",
-            "Первые две кнопки обрабатывают ВСЮ рабочую базу, без исключения факторов.\n"
-            "Первая создаёт список рабочих мест и протоколов.\n"
-            "Вторая записывает подробные значения всех внутренних XML.\n"
-            "Найденные и несопоставленные сведения сохраняются в исходном виде.\n"
-            "Отчёты: %ProgramData%\\Att51_export\\reports\\*.txt.\n"
-            "XML: только после проверки обязательных полей, ID ФГИС и оригинальной XSD.\n"
-            "При недостатке сведений создаётся отдельный отчёт о блокировках.\\n"
-            "not_exportable — состояние неподтверждённых исходных данных.")
+            "XML: подготовка данных с проверкой соответствий ФГИС и исходной XSD.\n"
+            "Excel: сведения из исходных протоколов без ID ФГИС; отсутствующее поле — НЕТ ДАННЫХ.\n"
+            "Каждый показатель занимает отдельную строку, а общие сведения — только первую.\n"
+            "Результаты: %ProgramData%\\Att51_export\\reports\\.\n"
+            "Кнопки работают независимо, предварительные отчёты не нужны.")
         self.report.config(state="disabled")
 
         bottom = ttk.Frame(self.root, padding=(15, 10, 15, 14))
@@ -287,7 +285,7 @@ class DesktopApp:
 
         def worker():
             try:
-                self.results.put((kind, task()))
+                self.results.put((kind, run_with_com(task)))
             except Exception as error:
                 self.results.put(("error", human_error(error)))
         threading.Thread(target=worker, daemon=True).start()
@@ -318,6 +316,35 @@ class DesktopApp:
         self._work(lambda: create_details(files["mdb"], files["resources"], ini),
                    title="Формирование подробного отчёта по всем протоколам",
                    kind="report_file")
+
+    def _create_excel(self):
+        try:
+            source = self._required("mdb")
+        except (ValueError, OSError) as error:
+            messagebox.showerror(APP_NAME, human_error(error))
+            return
+        self._work(lambda: create_excel_export(source["mdb"]),
+                   title="Формирование исходных сведений Excel",
+                   kind="excel_result")
+
+    def _open_excel_result(self, result):
+        self.status.set(
+            "Excel создан: " + str(result.protocol_count) +
+            " протоколов, " + str(result.indicator_count) + " показателей")
+        self.report.config(state="normal")
+        self.report.delete("1.0", "end")
+        self.report.insert(
+            "1.0", "Excel XLS создан:\n" + str(result.file) +
+            "\nПротоколов: " + str(result.protocol_count) +
+            "\nСтрок с показателями: " + str(result.indicator_count) +
+            "\nТолько исходные сведения, без ID ФГИС.")
+        self.report.config(state="disabled")
+        try:
+            if sys.platform == "win32":
+                os.startfile(str(result.file))
+        except OSError as error:
+            messagebox.showwarning(APP_NAME, "Excel создан, но не удалось открыть:\n"
+                                   + str(error))
 
     def _create_fgis_xml(self):
         try:
@@ -515,7 +542,7 @@ class DesktopApp:
         try:
             while True:
                 kind, value = self.results.get_nowait()
-                if kind in ("report_file", "fgis_result", "error"):
+                if kind in ("report_file", "fgis_result", "excel_result", "error"):
                     self.busy = False
                     for b in self.buttons:
                         b.state(["!disabled"])
@@ -523,6 +550,8 @@ class DesktopApp:
                         self._open_report(Path(value))
                     elif kind == "fgis_result":
                         self._open_fgis_result(value)
+                    elif kind == "excel_result":
+                        self._open_excel_result(value)
                     else:
                         self.status.set(str(value))
                         messagebox.showerror(APP_NAME, str(value))
@@ -590,6 +619,20 @@ def main() -> int:
             except Exception:
                 return 13
         return 0
+    if len(sys.argv) == 3 and sys.argv[1] == "--self-test-mdb-thread":
+        # Regression: the same background COM worker as the XML GUI button.
+        # A successful CLI read on the main thread does not cover this case.
+        from concurrent.futures import ThreadPoolExecutor
+        from att51_fsa.sources import AccessReader
+        def read_from_worker():
+            with AccessReader(Path(sys.argv[2])) as source:
+                return source.select("SELECT TOP 1 id FROM struct_rm")
+        try:
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                executor.submit(run_with_com, read_from_worker).result(timeout=30)
+            return 0
+        except Exception:
+            return 18
     if len(sys.argv) == 3 and sys.argv[1] == "--self-test-mdb":
         # ADO integration test runs on the original reference MDB with only
         # read-only SELECT; no mutable Access, schema, or Word calls.
