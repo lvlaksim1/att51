@@ -14,6 +14,13 @@ from .research_objects import PreparedResearchObject, append_research_objects
 
 
 @dataclass(frozen=True)
+class ApprovedPerson:
+    fgis_person_id: str
+    position: str
+    role_ids: tuple[int, ...]
+
+
+@dataclass(frozen=True)
 class Protocol:
     doc_id: str
     creation_date: str
@@ -32,6 +39,12 @@ class Protocol:
     method_doc_ids: tuple[str, ...] = ()
     attachment: Path | None = None
     research_objects: tuple[PreparedResearchObject, ...] = ()
+    approved_users: tuple[ApprovedPerson, ...] = ()
+    customer_full_name: str = ""
+    customer_fio: str = ""
+    territory_feature: bool | None = None
+    is_lab: bool = False
+    is_another_doc: bool = False
 
 
 def _text(parent: ET.Element, name: str, value: object) -> ET.Element:
@@ -51,6 +64,20 @@ def _validate_required(item: Protocol) -> None:
     ):
         if not value:
             raise ValueError(f"Missing mandatory field: {label}")
+    if str(item.customer_kind) not in ("1", "2", "3", "4"):
+        raise ValueError("Unknown customer kind")
+    for equipment_id in item.equipment_ids:
+        if not equipment_id.isdecimal() or int(equipment_id) <= 0:
+            raise ValueError("EquipmentId must be a real positive numeric FGIS ID")
+    if item.equipment_ids and item.no_equipment:
+        raise ValueError("NoEquipmentInfo cannot assert no equipment when IDs exist")
+    for person in item.approved_users:
+        if not person.fgis_person_id.isdecimal() or int(person.fgis_person_id) <= 0:
+            raise ValueError("idFullName must be a real numeric FGIS ID")
+        if not person.position or not person.role_ids:
+            raise ValueError("ApprovedUser requires position and roles")
+        if any(role < 0 or role > 127 for role in person.role_ids):
+            raise ValueError("idRoleName must match XSD xs:byte")
     for key, value in (("DataStatusId", item.data_status),
                        ("ProtocolStatusId", item.protocol_status)):
         if not str(value).isdigit():
@@ -58,13 +85,14 @@ def _validate_required(item: Protocol) -> None:
 
 
 def serialize_protocols(protocols: list[Protocol], *, limit: int = 100,
-                        synthetic_test_mode: bool = False) -> list[bytes]:
+                        synthetic_test_mode: bool = False,
+                        verified_mapping: bool = False) -> list[bytes]:
     """Build original root/protocol structure, split like save_btn_Click.
 
     This is only the supported field subset: do not call it a complete FSA
     export until per-factor ResearchObject and address/person maps are ported.
     """
-    if not synthetic_test_mode:
+    if not (synthetic_test_mode or verified_mapping):
         raise NotImplementedError(
             "Incomplete mapping of original VBA: XML output is disabled for real FSA data. "
             "Synthetic tests require synthetic_test_mode=True."
@@ -93,7 +121,8 @@ def serialize_protocols(protocols: list[Protocol], *, limit: int = 100,
                 _text(scan, "Extension", attached.suffix.lower().lstrip("."))
                 _text(scan, "FileName", attached.stem)
                 _text(scan, "Content", base64.b64encode(attached.read_bytes()).decode("ascii"))
-            _text(entry, "TerritoryFeature", "true")
+            if p.territory_feature is not None:
+                _text(entry, "TerritoryFeature", str(p.territory_feature).lower())
             _text(entry, "ApplicationDate", p.application_date)
             customer = ET.SubElement(entry, "Customer")
             _text(customer, "CustomerKindId", p.customer_kind)
@@ -101,20 +130,32 @@ def serialize_protocols(protocols: list[Protocol], *, limit: int = 100,
                 _text(customer, "InnId", p.inn)
             if p.ogrn:
                 _text(customer, "OgrnId", p.ogrn)
+            if p.customer_full_name:
+                _text(customer, "FullNameDetails", p.customer_full_name)
+            if p.customer_fio:
+                _text(customer, "FioFl", p.customer_fio)
             _text(entry, "AccredScope353", "false")
             _text(entry, "NoEquipmentInfo", str(p.no_equipment).lower())
             if p.equipment_ids:
                 eq = ET.SubElement(entry, "Equipment")
                 for equipment_id in p.equipment_ids:
                     _text(ET.SubElement(eq, "EquipmentDetails"), "EquipmentId", equipment_id)
+            if p.approved_users:
+                approved = ET.SubElement(entry, "ApprovedUser")
+                for user in p.approved_users:
+                    row = ET.SubElement(approved, "ApprovedUserDetails")
+                    _text(row, "idFullName", user.fgis_person_id)
+                    _text(row, "PostName", user.position)
+                    for role in user.role_ids:
+                        _text(row, "idRoleName", role)
             obj = ET.SubElement(entry, "ObjectInfo")
             _text(obj, "TypeObjectId", p.object_type)
             for nd_id in p.method_doc_ids:
                 _text(obj, "MethodDocId", nd_id)
             _text(obj, "FullNameObject", p.object_name)
             append_research_objects(obj, p.research_objects)
-            _text(obj, "IsLab", "false")
-            _text(obj, "IsAnotherDoc", "false")
+            _text(obj, "IsLab", str(p.is_lab).lower())
+            _text(obj, "IsAnotherDoc", str(p.is_another_doc).lower())
         outputs.append(ET.tostring(root, encoding="utf-8", xml_declaration=True))
     return outputs
 
