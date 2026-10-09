@@ -11,7 +11,7 @@ from pathlib import Path
 from oletools.olevba import VBA_Parser
 
 ORIGINAL = Path("extracted/app/Attestation51.dot")
-TARGETS = {"v52_exp_fgis_ra", "v52_exp_fgis_ra2025", "v5_org_options"}
+TARGETS = {"v52_exp_fgis_ra", "v52_exp_fgis_ra2025", "v5_org_options", "v5_res_main", "v5_options_dic"}
 TERMS = (
     "DataStatusId", "ProtocolStatusId", "DocCreationDate",
     "DocStartDate", "DocValidityDate", "ApplicationDate", "CustomerKindId",
@@ -80,6 +80,22 @@ def main() -> None:
                     for i in range(start-1, min(stop,len(lines))):
                         print(f"ROLE_RANGE {i+1:5d} {lines[i][:290]}")
                     print("END_ROLE_RANGE")
+            if name in ("v5_res_main", "v5_options_dic", "v5_org_options"):
+                # Investigate the provenance of person FGIS positions,
+                # normative matching and application date without exposing
+                # unrelated original VBA procedures.
+                specific = ("fgis_state", "fil_pers_data", "read_fgis_ra_data",
+                            "get_nd_by_name", "query_date", "ATT_PERSON",
+                            "get_DocNameId", "DIC_ND")
+                chosen = set()
+                for i, line in enumerate(lines):
+                    if any(term.casefold() in line.casefold() for term in specific):
+                        chosen.update(range(max(i-4,0),min(i+8,len(lines))))
+                for i in sorted(chosen)[:900]:
+                    line = lines[i].rstrip()
+                    if re.search(r"(?i)(password|passwd|token|secret|authorization|Bearer)\\s*=", line):
+                        line = "[redacted]"
+                    print(f"PROVENANCE {name} {i+1:5d} {line[:290]}")
             # Avoid uncontrolled log size, and restrict to known module/terms.
             for i in sorted(selected)[:1300]:
                 line = lines[i].rstrip()
