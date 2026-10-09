@@ -89,11 +89,18 @@ jobs:
           if (-not (Test-Path $exe)) { throw 'Executable not installed in ProgramData' }
           if (Test-Path $wrong) { throw 'Incorrect Program Files location' }
           & $exe --self-test
-          if ($LASTEXITCODE -ne 0) { throw 'Installed app self-test failed' }
+          $installedTestCode = $LASTEXITCODE
+          Write-Host "INSTALLED_SELF_TEST_EXIT_CODE=$installedTestCode"
+          $assets = Join-Path $app '_internal\assets'
+          Write-Host "EXPECTED_ASSETS=$assets"
+          if (Test-Path $assets) { Get-ChildItem -LiteralPath $assets | ForEach-Object { Write-Host "INSTALLED_ASSET=$($_.Name)" } }
+          if ($installedTestCode -ne 0) { throw "Installed app self-test failed, code $installedTestCode" }
           $p = Start-Process -FilePath $update -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Update error $($p.ExitCode)" }
           & $exe --self-test
-          if ($LASTEXITCODE -ne 0) { throw 'Updated app self-test failed' }
+          $updatedCode = $LASTEXITCODE
+          Write-Host "UPDATED_SELF_TEST_EXIT_CODE=$updatedCode"
+          if ($updatedCode -ne 0) { throw "Updated app self-test failed, code $updatedCode" }
           New-Item -ItemType Directory -Force -Path (Join-Path $app 'updates') | Out-Null
           Set-Content -Path (Join-Path $app 'updates\obsolete.download') -Value 'test'
           $uninstaller = Join-Path $app 'unins000.exe'
