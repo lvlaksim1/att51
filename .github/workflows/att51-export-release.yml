@@ -160,8 +160,28 @@ jobs:
             throw "Two separate text reports not written under ProgramData"
           }
           Write-Host 'INSTALLED_FULL_BASE_TEXT_REPORTS_PASS'
+          # Desktop icon positions use stable shortcut file identity.
+          # Ensure the updater never rewrites or recreates that file.
+          $desktop = Join-Path $env:USERPROFILE 'Desktop'
+          New-Item -ItemType Directory -Force -Path $desktop | Out-Null
+          $lnk = Join-Path $desktop 'Att51_export.lnk'
+          $ws = New-Object -ComObject WScript.Shell
+          $shortcut = $ws.CreateShortcut($lnk)
+          $shortcut.TargetPath = $exe
+          $shortcut.WorkingDirectory = $app
+          $shortcut.Save()
+          $shortcut = $null
+          $shortcutHash = (Get-FileHash -LiteralPath $lnk -Algorithm SHA256).Hash
+          $shortcutTimestamp = (Get-Item -LiteralPath $lnk).LastWriteTimeUtc.Ticks
           $p = Start-Process -FilePath $update -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Update error $($p.ExitCode)" }
+          if ((Get-FileHash -LiteralPath $lnk -Algorithm SHA256).Hash -ne $shortcutHash) {
+            throw 'Update changed existing desktop shortcut'
+          }
+          if ((Get-Item -LiteralPath $lnk).LastWriteTimeUtc.Ticks -ne $shortcutTimestamp) {
+            throw 'Update touched shortcut metadata'
+          }
+          Write-Host 'EXISTING_DESKTOP_SHORTCUT_UNCHANGED_PASS'
           $smoke = Start-Process -FilePath $exe -ArgumentList '--self-test' -Wait -PassThru
           $updatedCode = $smoke.ExitCode
           Write-Host "UPDATED_SELF_TEST_EXIT_CODE=$updatedCode"
