@@ -17,17 +17,25 @@ try {
     if ((Get-LocalGroupMember -Group 'Administrators' | Where-Object Name -Like "*\$name").Count -gt 0) {
         throw 'Test user unexpectedly has administrator rights'
     }
+    $launcher = Join-Path $PSScriptRoot 'windows_standard_user_launcher.ps1'
+    $userProfile = Join-Path $env:SystemDrive "Users\$name"
     function RunAsUser([string]$path, [string]$arguments) {
         if ($path -like '*_Setup_*' -or $path -like '*_Update_*') {
             $arguments += ' /LOG'
         }
-        $process = Start-Process -FilePath $path -Credential $cred -LoadUserProfile -ArgumentList $arguments -Wait -PassThru
+        $message = @{
+            Program = $path
+            Arguments = $arguments
+            Profile = $userProfile
+        } | ConvertTo-Json -Compress
+        $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($message))
+        $process = Start-Process -FilePath 'pwsh.exe' -Credential $cred -LoadUserProfile -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$launcher`" $encoded" -Wait -PassThru
         if ($process.ExitCode -ne 0) {
-            $userTemp = Join-Path $env:SystemDrive "Users\$name\AppData\Local\Temp"
+            $userTemp = Join-Path $userProfile 'AppData\Local\Temp'
             Write-Host "STANDARD_USER_TEMP=$userTemp"
             Get-ChildItem $userTemp -Filter 'Setup Log*.txt' -ErrorAction SilentlyContinue |
                 Sort-Object LastWriteTime -Descending | Select-Object -First 1 |
-                ForEach-Object { Get-Content -LiteralPath $_.FullName -Tail 70 }
+                ForEach-Object { Get-Content -LiteralPath $_.FullName -Tail 80 }
             & icacls $env:ProgramData
             throw "$path failed for standard user, exit=$($process.ExitCode)"
         }
