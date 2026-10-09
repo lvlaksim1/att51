@@ -5,13 +5,15 @@ from io import BytesIO
 import json
 from pathlib import Path
 import sys
+from unittest.mock import patch
 from tempfile import TemporaryDirectory
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from updater import (Release, UpdateError, asset_name, asset_url,
                      download_update, fetch_latest, newer, parse_release,
-                     parse_version)
+                     parse_version, build_install_launcher,
+                     launch_install_after_exit, SILENT_INSTALL_ARGS)
 
 
 class FakeReply(BytesIO):
@@ -24,6 +26,44 @@ class FakeReply(BytesIO):
 
 
 class UpdaterTests(unittest.TestCase):
+
+    def test_updater_shows_progress_without_install_wizard(self):
+        self.assertIn("/SILENT", SILENT_INSTALL_ARGS)
+        self.assertNotIn("/VERYSILENT", SILENT_INSTALL_ARGS)
+        self.assertIn("/SUPPRESSMSGBOXES", SILENT_INSTALL_ARGS)
+        self.assertIn("/RUNAFTERUPDATE=1", SILENT_INSTALL_ARGS)
+        script = build_install_launcher(
+            Path("C:/ProgramData/Att51_export/updates/New O'Hara.exe"),
+            updater_pid=4104, app_pid=4103)
+        self.assertLess(script.index("Wait-Process -Id 4103"),
+                        script.index("Wait-Process -Id 4104"))
+        self.assertLess(script.index("Wait-Process -Id 4104"),
+                        script.index("Start-Process"))
+        self.assertIn("New O''Hara.exe", script)
+        self.assertIn("-Wait -PassThru", script)
+        self.assertIn("ExitCode -ne 0", script)
+        for invalid in (-1, 0):
+            with self.assertRaises(UpdateError):
+                build_install_launcher(Path("good.exe"), invalid)
+
+    def test_power_shell_helper_waits_outside_running_att51(self):
+        import base64
+        seen = []
+        def pretend(*args, **kwargs):
+            seen.append((args, kwargs))
+        with patch.object(sys, "platform", "win32"):
+            launch_install_after_exit(Path("C:/Att51_export/updates/update.exe"),
+                                      4103, popen=pretend)
+        self.assertEqual(len(seen), 1)
+        command = seen[0][0][0]
+        self.assertEqual(command[0], "powershell.exe")
+        self.assertIn("-EncodedCommand", command)
+        self.assertIn("-WindowStyle", command)
+        self.assertTrue(seen[0][1]["close_fds"])
+        script = base64.b64decode(command[-1]).decode("utf-16-le")
+        self.assertIn("Wait-Process -Id 4103", script)
+        self.assertIn("RUNAFTERUPDATE=1", script)
+
     def test_tag_numbers_and_comparison(self):
         self.assertTrue(newer(Release("v0.2.1", (0, 2, 1), "", "", 0),
                               "0.2.0"))
