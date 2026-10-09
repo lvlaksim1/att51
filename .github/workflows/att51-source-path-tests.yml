@@ -79,3 +79,4 @@ jobs:
           Start-Sleep -Seconds 3
           if (Test-Path $exe) { throw 'Uninstaller left executable behind' }
           Write-Host 'SOURCE_PATHS_PACKAGE_SMOKE_PASS'
+          ./desktop/tests/windows_standard_user_smoke.ps1 -Version 0.1.1

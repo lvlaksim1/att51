@@ -27,6 +27,7 @@ from updater import Release, UpdateError, apply_update, fetch_latest, newer, LAT
 from source_discovery import discover_installations, discover_protocols
 from protocol_batch import inspect_all_2025
 from internal_xml import inspect_internal_xml
+from source_settings import SourceSettings, SOURCE_KEYS
 from source_evidence import resource_source_evidence
 from version import VERSION
 
@@ -51,6 +52,16 @@ class DesktopApp:
         self.latest: Release | None = None
         self.fields = {name: tk.StringVar(value="") for name in
                        ("mdb", "resources", "xml", "ini", "rm")}
+        self.source_settings = SourceSettings()
+        self._save_after_id = None
+        self._settings_load_warning = ""
+        try:
+            previous_paths = self.source_settings.load()
+        except ValueError as exc:
+            previous_paths = {}
+            self._settings_load_warning = str(exc)
+        for key, path in previous_paths.items():
+            self.fields[key].set(path)
         self.acoustic = tk.BooleanVar(value=False)
         self.acoustic_only = tk.BooleanVar(value=False)
         self.per_operation = tk.BooleanVar(value=False)
@@ -69,6 +80,11 @@ class DesktopApp:
             except tk.TclError:
                 pass
         self._build_ui()
+        for key in SOURCE_KEYS:
+            self.fields[key].trace_add("write", self._paths_changed)
+        root.protocol("WM_DELETE_WINDOW", self._close)
+        if self._settings_load_warning:
+            self.status.set(self._settings_load_warning)
         root.after(100, self._pump)
         root.after(350, self._auto_discover)
         root.after(1200, lambda: self._check_updates(manual=False))
@@ -189,7 +205,7 @@ class DesktopApp:
         self.report.grid(row=1, column=0, sticky="nsew", pady=(8, 0))
         self.report.insert("1.0",
             "Сведения об организации, измерениях и сотрудниках выводятся только здесь.\n"
-            "Программа не записывает отчёты, журналы и настройки на диск.\n"
+            "В папке программы сохраняются только выбранные пути. Отчёты не записываются.\n"
             "Формирование итогового XML для ФГИС ФСА пока недоступно.\n")
         self.report.config(state="disabled")
 
@@ -208,6 +224,32 @@ class DesktopApp:
         self.check_btn = ttk.Button(bar, text="Проверить обновления",
                                     command=lambda: self._check_updates(manual=True))
         self.check_btn.pack(side="right")
+
+    def _paths_changed(self, *_args):
+        if self._save_after_id is not None:
+            self.root.after_cancel(self._save_after_id)
+        self._save_after_id = self.root.after(600, self._save_sources)
+
+    def _save_sources(self) -> bool:
+        if self._save_after_id is not None:
+            self.root.after_cancel(self._save_after_id)
+            self._save_after_id = None
+        try:
+            self.source_settings.save({
+                key: self.fields[key].get().strip() for key in SOURCE_KEYS
+            })
+        except (OSError, ValueError) as exc:
+            self.status.set("Не удалось сохранить пути внутри папки приложения: "
+                            + human_error(exc))
+            return False
+        return True
+
+    def _close(self):
+        if not self._save_sources() and not messagebox.askyesno(
+            APP_NAME, "Пути не удалось сохранить. Закрыть без сохранения?"
+        ):
+            return
+        self.root.destroy()
 
     def _browse(self, name: str, extensions: list[tuple[str, str]]):
         path = filedialog.askopenfilename(
@@ -495,14 +537,17 @@ class DesktopApp:
         if not messagebox.askyesno(
             APP_NAME,
             f"Скачать и установить {release.tag}?\n"
-            "Windows запросит права администратора. Открытые данные не изменяются.",
+            "Установка не запрашивает права администратора. Исходные данные не изменяются.",
         ):
+            return
+        if not self._save_sources():
+            messagebox.showerror(APP_NAME, "Не удалось сохранить пути перед обновлением.")
             return
         import ctypes
         args = f'--apply-update {release.tag} {release.sha256} {release.size}'
         try:
             code = ctypes.windll.shell32.ShellExecuteW(
-                None, "runas", str(Path(sys.executable).resolve()), args,
+                None, "open", str(Path(sys.executable).resolve()), args,
                 str(Path(sys.executable).resolve().parent), 1)
             if code <= 32:
                 raise OSError("Операция отменена или Windows отказала в запуске.")
@@ -562,6 +607,13 @@ class DesktopApp:
 
 
 def main() -> int:
+    if len(sys.argv) == 2 and sys.argv[1] == "--self-test-settings":
+        try:
+            store = SourceSettings()
+            store.save({"mdb": "Z:/Att51-test/example.MDB"})
+            return 0 if store.load().get("mdb") == "Z:/Att51-test/example.MDB" else 15
+        except (OSError, ValueError):
+            return 15
     if len(sys.argv) == 2 and sys.argv[1] == "--self-test":
         # Executed from CI after full installation and update. No UI, writes
         # or network required; failure is signaled only by an exit code.

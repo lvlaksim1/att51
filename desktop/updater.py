@@ -1,4 +1,4 @@
-"""Verified GitHub Releases updater; stores only inside Program Files/Att51_export."""
+"""Verified GitHub Releases updater; stores downloaded updates only under ProgramData/Att51_export."""
 from __future__ import annotations
 from dataclasses import dataclass
 import hashlib

@@ -116,6 +116,7 @@ jobs:
           if (Test-Path (Join-Path $app 'updates\obsolete.download')) { throw 'Update cache remained' }
           if (Test-Path $wrong) { throw 'Program Files folder unexpectedly created' }
           Write-Host 'PROGRAMDATA_SETUP_UPDATE_UNINSTALL_PASS'
+          ./desktop/tests/windows_standard_user_smoke.ps1 -Version '${{ steps.version.outputs.version }}'
 
       - name: Publish exactly two GitHub release assets
         shell: pwsh

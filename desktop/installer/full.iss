@@ -28,7 +28,7 @@ DisableDirPage=yes
 DisableProgramGroupPage=yes
 UsePreviousAppDir=no
 DirExistsWarning=no
-PrivilegesRequired=admin
+PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir={#OutputDir}
@@ -56,7 +56,7 @@ Name: "{autoprograms}\Att51_export"; Filename: "{app}\{#AppExe}"; WorkingDir: "{
 Name: "{autodesktop}\Att51_export"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Dirs]
-Name: "{app}\data"; Permissions: users-modify
+Name: "{app}\data"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\updates"
@@ -64,4 +64,4 @@ Type: filesandordirs; Name: "{app}\data"
 Type: filesandordirs; Name: "{app}\reports"
 
 [Run]
-Filename: "{app}\{#AppExe}"; Description: "Запустить Att51_export"; Flags: postinstall nowait skipifsilent
+Filename: "{app}\{#AppExe}"; Description: "Открыть Att51_export после завершения"; Flags: postinstall nowait skipifsilent

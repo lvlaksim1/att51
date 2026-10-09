@@ -28,7 +28,7 @@ DisableDirPage=yes
 DisableProgramGroupPage=yes
 UsePreviousAppDir=no
 DirExistsWarning=no
-PrivilegesRequired=admin
+PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir={#OutputDir}
@@ -52,7 +52,7 @@ Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 Name: "{autoprograms}\Att51_export"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"
 
 [Dirs]
-Name: "{app}\data"; Permissions: users-modify
+Name: "{app}\data"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\updates"
@@ -73,3 +73,6 @@ begin
   end;
   Result := True;
 end;
+
+[Run]
+Filename: "{app}\{#AppExe}"; Description: "Открыть Att51_export после завершения"; Flags: postinstall nowait skipifsilent

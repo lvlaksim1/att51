@@ -51,6 +51,14 @@ class SourceEvidenceTests(unittest.TestCase):
         self.assertIn("не доказывает", result["guidance"])
         self.assertTrue(result["read_only"])
 
+    def test_missing_resource_setting_only_confirms_default_local_path(self):
+        self.config.write_text("[main]" + chr(10) + "version=1" + chr(10), encoding="utf-8")
+        result = resource_source_evidence(
+            self.local, installations=(self.instance(self.local),))
+        self.assertEqual(result["status"], "matches_original_default_local")
+        self.assertIn("по умолчанию", result["guidance"])
+        self.assertIsNone(result["checked_installations"][0]["res_flag"])
+
     def test_shared_setting_makes_local_selection_suspect(self):
         self.config.write_text(
             "[DB_res]\nres_flag=1\nres_path=" + str(self.external) + "\n",

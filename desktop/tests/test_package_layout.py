@@ -21,7 +21,8 @@ class InstallationContractTests(unittest.TestCase):
                 self.assertIn(r"DefaultDirName={commonappdata}\Att51_export", code)
                 self.assertNotIn("{autopf}", code)
                 self.assertNotIn("{localappdata}", code)
-                self.assertIn("PrivilegesRequired=admin", code)
+                self.assertIn("PrivilegesRequired=lowest", code)
+                self.assertNotIn("PrivilegesRequired=admin", code)
                 self.assertIn("UninstallDisplayIcon={app}", code)
 
     def test_full_installer_offers_optional_desktop_icon(self):
@@ -42,7 +43,39 @@ class InstallationContractTests(unittest.TestCase):
             with self.subTest(installer=name):
                 code = self.script(name)
                 self.assertIn('[Dirs]', code)
-                self.assertIn('Name: "{app}\\data"; Permissions: users-modify', code)
+                self.assertIn('Name: "{app}\\data"', code)
+                self.assertNotIn('Permissions: users-modify', code)
+
+    def test_finish_page_has_checked_launch_in_both_installers(self):
+        for name in ("full.iss", "update.iss"):
+            code = self.script(name)
+            self.assertIn("[Run]", code)
+            post = code.split("[Run]", 1)[1]
+            self.assertIn('Description: "Открыть Att51_export после завершения"', post)
+            self.assertIn("postinstall nowait skipifsilent", post)
+            self.assertNotIn("unchecked", post)
+
+    def test_unprivileged_setup_uses_current_user_shortcuts(self):
+        code = self.script("full.iss")
+        self.assertIn("{autoprograms}", code)
+        self.assertIn("{autodesktop}", code)
+        self.assertNotIn("runasoriginaluser", code)
+
+    def test_automatic_update_does_not_elevate(self):
+        source = (DESKTOP / "app.py").read_text(encoding="utf-8")
+        update = source.split("    def _install_update(self):", 1)[1].split(
+            "    def _pump(self):", 1)[0]
+        self.assertIn('None, "open"', update)
+        self.assertNotIn('None, "runa' + 's"', update)
+        self.assertIn("self._save_sources()", update)
+
+    def test_settings_are_restored_before_automatic_path_discovery(self):
+        source = (DESKTOP / "app.py").read_text(encoding="utf-8")
+        self.assertIn("self.source_settings.load()", source)
+        self.assertIn("self.fields[key].set(path)", source)
+        self.assertIn("self.fields[key].trace_add", source)
+        self.assertIn("self.source_settings.save(", source)
+        self.assertIn('root.protocol("WM_DELETE_WINDOW", self._close)', source)
 
     def test_uninstaller_cleans_own_directories(self):
         for name in ("full.iss", "update.iss"):

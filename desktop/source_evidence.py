@@ -66,12 +66,21 @@ def resource_source_evidence(
             "установку и раздел [DB_res] без передачи всей MDB."
         )
     elif matched and len(found) == 1:
-        status = "matches_original_setting"
-        guidance = (
-            "Выбранный путь соответствует настройке оригинала. "
-            "Отсутствие записей ATT_DEVICE/ATT_PERSON или таблицы FGIS_RA "
-            "не доказывает, что файл неправильный."
-        )
+        if found[0]["res_flag"] is None:
+            status = "matches_original_default_local"
+            guidance = (
+                "Раздел [DB_res] в обнаруженном options.ini не задаёт res_flag; "
+                "оригинал в таком случае обращается к локальному res_orgs.mdb. "
+                "Выбранный файл совпадает с этим путём по умолчанию, но "
+                "это не подтверждает, какая установка используется сейчас."
+            )
+        else:
+            status = "matches_original_setting"
+            guidance = (
+                "Выбранный путь соответствует настройке оригинала. "
+                "Отсутствие записей ATT_DEVICE/ATT_PERSON или таблицы FGIS_RA "
+                "не доказывает, что файл неправильный."
+            )
     elif matched:
         status = "matches_one_of_multiple_installations"
         guidance = "Есть несколько установок оригинала; подтвердите рабочую."
