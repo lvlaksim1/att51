@@ -14,6 +14,7 @@ import tempfile
 
 from att51_fsa.export_2025 import CustomerSettings, prepare_protocol
 from att51_fsa.labour_2025 import LabourOptions
+from att51_fsa.aerosol_2025 import ChemicalOptions
 from att51_fsa.pipeline_2025 import Original2025Options
 from att51_fsa.resources import ResourceCatalog
 from att51_fsa.sources import FsaSourceError, parse_xml
@@ -67,6 +68,7 @@ def create_fgis_export(
     database: Path, resources: Path, ini: Path | None, customer: CustomerSettings,
     original_schema: Path, *,
     labour: LabourOptions | None = None,
+    chemical: ChemicalOptions | None = None,
     directory: Path | None = None,
 ) -> ExportResult:
     target = Path(directory) if directory else application_data_dir().parent / "reports"
@@ -108,7 +110,10 @@ def create_fgis_export(
         issues.append("База ресурсов: " + str(exc))
     if not items:
         issues.append("Нет протоколов для выгрузки")
-    opts = Original2025Options(labour=labour or LabourOptions())
+    opts = Original2025Options(
+        labour=labour or LabourOptions(),
+        chemical=chemical or ChemicalOptions(),
+    )
     seen = set()
     for ix, item in enumerate(items, 1):
         number = f"Протокол {ix}, РМ {item['rm_id']}, фактор {item['factor_id']}"

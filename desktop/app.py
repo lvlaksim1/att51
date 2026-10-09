@@ -26,6 +26,7 @@ from fgis_export import create_fgis_export
 from organization_sources import unique_organization
 from att51_fsa.export_2025 import CustomerSettings
 from att51_fsa.labour_2025 import LabourOptions
+from att51_fsa.aerosol_2025 import ChemicalOptions
 from att51_fsa.sources import FsaSourceError
 from version import VERSION
 
@@ -370,17 +371,32 @@ class DesktopApp:
                         variable=direct).grid(row=7,column=0,columnspan=2,sticky="w",pady=3)
         ttk.Checkbutton(controls,text="Добавить итоговые суммы тяжести",
                         variable=totals).grid(row=8,column=0,columnspan=2,sticky="w",pady=3)
+        chem_uncertainty=tk.BooleanVar(value=False)
+        chem_detailed=tk.BooleanVar(value=False)
+        chem_shift=tk.BooleanVar(value=False)
+        chem_max=tk.BooleanVar(value=False)
+        chem_omit_points=tk.BooleanVar(value=False)
+        chem_rows=(
+            ("АПФД: включить погрешность U0,95", chem_uncertainty),
+            ("АПФД: использовать детальные результаты измерений", chem_detailed),
+            ("АПФД: добавить среднесменные концентрации", chem_shift),
+            ("АПФД: добавить максимальные концентрации", chem_max),
+            ("АПФД: не добавлять отдельные измерения", chem_omit_points),
+        )
+        for index,(title,variable) in enumerate(chem_rows,9):
+            ttk.Checkbutton(controls,text=title,variable=variable).grid(
+                row=index,column=0,columnspan=2,sticky="w",pady=2)
         source_msg = ("Реквизиты найдены в исходных STRUCT_ORG и adv_data.xml. Проверьте их."
                       if source_org else
                       "Автозаполнение недоступно: нужна одна организация и исходные сведения.")
         if autodiscovery_error:
             source_msg += " Ошибка чтения: " + autodiscovery_error
         ttk.Label(controls,text=source_msg,foreground="#456280",wraplength=570
-                  ).grid(row=9,column=0,columnspan=2,pady=3,sticky="w")
+                  ).grid(row=14,column=0,columnspan=2,pady=3,sticky="w")
         ttk.Label(controls,text="При ошибках обязательных полей XML не создаётся.",
-                  foreground="#72531d").grid(row=10,column=0,columnspan=2,pady=5,sticky="w")
+                  foreground="#72531d").grid(row=15,column=0,columnspan=2,pady=5,sticky="w")
         footer=ttk.Frame(controls)
-        footer.grid(row=11,column=0,columnspan=2,sticky="e")
+        footer.grid(row=16,column=0,columnspan=2,sticky="e")
         ttk.Button(footer,text="Отмена",command=popup.destroy).pack(side="right",padx=4)
         def begin():
             try:
@@ -400,10 +416,18 @@ class DesktopApp:
                                      + "\n".join(validation), parent=popup)
                 return
             labour=LabourOptions(heavy_direct=direct.get(),include_heavy_totals=totals.get())
+            chemical=ChemicalOptions(
+                include_uncertainty=chem_uncertainty.get(),
+                use_detailed_results=chem_detailed.get(),
+                include_shift_average=chem_shift.get(),
+                include_maximum=chem_max.get(),
+                omit_point_measurements=chem_omit_points.get(),
+            )
             popup.destroy()
             self._work(lambda:create_fgis_export(
                 files["mdb"],files["resources"],ini,customer,
-                included_file("assets/fileProtocolLoad_v4.xsd"),labour=labour),
+                included_file("assets/fileProtocolLoad_v4.xsd"),
+                labour=labour, chemical=chemical),
                 title="Проверка и формирование итогового XML",
                 kind="fgis_result")
         ttk.Button(footer,text="Проверить и сформировать",command=begin).pack(side="right")
