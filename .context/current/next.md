@@ -155,3 +155,9 @@
 1. Ask user to cancel the old interrupted installer, close Att51_export completely (Task Manager `Att51_export.exe` must not run) and use v0.1.12 **Update** on existing installation; Setup if executable no longer exists.
 2. If error repeats after shutdown, diagnose ACL/ownership and external file locks with user evidence, do not use Skip this file or wholesale uninstallation as blind fixes.
 3. Continue FGIS data task: obtain new v0.1.10+ XML readiness TXT with selected res_orgs.mdb and tables; keep issues #2/#8 open.
+
+## Дальнейший шаг после v0.1.13 — поколение 28
+1. Владелец обновляет приложение проверенным Update v0.1.13 (после чистой обычной установки права ProgramData работали), выбирает исходную MDB + активную `res_orgs.mdb`, при необходимости `fgis_ra.ini`, отмечает фактические режимы АПФД.
+2. Вновь запрашивать `Проверка_и_формирование_XML_ФГИС.txt`; оценить число полностью подготовленных протоколов из 11 и конкретные первичные блокировки. Не утверждать заранее, что будет 11/11 или XML принят ФГИС.
+3. При оставшихся блокировках запросить приватно связанные внутренние XML из `ARMv51_files` для факторов 3/4 и активный `res_orgs.mdb`, чтобы сравнить точные `bm`, `nd_data`, `dic_soot1025`, методики.
+4. Провести эталонное сравнение XML оригинала и v0.1.13 на единой базе, исправить остатки по #2/#8; новые исполняемые правки только через проверенные Setup+Update.

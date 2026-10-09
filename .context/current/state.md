@@ -169,3 +169,9 @@
 - **[verified scenario matching user's screenshot]** Old EXE without named mutex running: both installers exit 7 in preflight, hash of existing EXE unchanged; new mutex instance running: both installers exit 1, hash unchanged. Normal install/update/uninstall, standard user, settings-preservation all pass.
 - **[implementation]** Inno full.iss/update.iss retain new AppMutex from v0.1.11 and now check legacy live `Att51_export.exe` by process-name via `PrepareToInstall` before replacement. No process killed, no app folder cleanup. v0.1.11 replaced by v0.1.12.
 - **[limits]** Existing Windows ACL issues and external antivirus holds can separately cause code 5; no field proof such was the case. FGIS XML project remains open #2/#8.
+
+## Att51_export v0.1.13 — выпущен 09.10.2026, поколение 28
+- **[released]** [v0.1.13](https://github.com/lvlaksim1/att51/releases/tag/v0.1.13): полная установка 14 526 804 байта, обновление 14 526 876 байт, Windows [#37962384408](https://github.com/lvlaksim1/att51/actions/runs/37962384408) completed/success.
+- **[field evidence]** Новая рабочая база: 11 протоколов, 5 подготовлены; 3х фактор 3 АПФД (№ 4/7/10) и 3х фактор 4 шум (№ 5/8/11). База ресурсов 77 приборов, 7 сотрудников, 50 НД, 83 связи FGIS, 1 метод ОА, таблицы на месте. По прежнему XML не выпускался ввиду общих блокировок.
+- **[implemented]** Оригинальные наименования факторов 3/4 и прочих из `get_factor_name`; конвейер АПФД `read_him_params` + среднесменные + максимальные с явными флажками; проверенное текстовое `UniqueMethod` для шумовых НД без цифрового DocNameId при однозначном соответствии. Без догадок о ID.
+- **[scope]** Сравнение сформированного XML на реальной частной базе с оригинальным приложением/приём ФГИС остаётся НЕ подтверждённым. `ARMv51(1).MDB` прочитана как отдельный Jet файл, но связанные XML и `res_orgs.mdb` пока не получены в чате. Нужно запросить новый локальный диагностический TXT. #2/#8 остаются открыты.
