@@ -20,7 +20,7 @@ from att51_fsa.sources import FsaSourceError, parse_xml
 from att51_fsa.writer import serialize_protocols, validate_xml
 
 from source_settings import application_data_dir
-from whole_base_reports import read_inventory, write_report
+from whole_base_reports import read_inventory
 
 
 RESULT_FILE = "Проверка_и_формирование_XML_ФГИС.txt"
@@ -54,6 +54,13 @@ def _save_bytes(data: bytes, target: Path) -> None:
     finally:
         if transient:
             transient.unlink(missing_ok=True)
+
+
+def _save_text(content: str, target: Path) -> Path:
+    # Consistent with diagnostic reports, UTF-8 BOM for Windows Notepad.
+    _save_bytes(b"\\xef\\xbb\\xbf".decode("unicode_escape").encode("latin1") +
+                content.encode("utf-8"), target)
+    return target
 
 
 def create_fgis_export(
@@ -118,7 +125,7 @@ def create_fgis_export(
     if issues:
         lines += ["", "ВЫГРУЗКА ЗАБЛОКИРОВАНА: недостаточно подтверждённых данных."]
         lines += ["- " + item for item in issues]
-        report = write_report("\n".join(lines)+"\n",RESULT_FILE,target)
+        report = _save_text("\n".join(lines)+"\n",target / RESULT_FILE)
         return ExportResult(report,(),len(items),len(prepared))
     output = serialize_protocols(prepared, verified_mapping=True)
     failures=[]
@@ -129,7 +136,7 @@ def create_fgis_export(
     if failures:
         lines+=["","ВЫГРУЗКА ЗАБЛОКИРОВАНА: XSD не пройдена."]
         lines+=["- "+x for x in failures]
-        report=write_report("\n".join(lines)+"\n",RESULT_FILE,target)
+        report=_save_text("\n".join(lines)+"\n",target / RESULT_FILE)
         return ExportResult(report,(),len(items),len(prepared))
     files=[]
     for ix, blob in enumerate(output,1):
@@ -140,5 +147,5 @@ def create_fgis_export(
             "Итоговый XML создан из подтверждённых данных; ФГИС его приём не проверен.",
             "Файлы:"]
     lines+=["- "+str(path) for path in files]
-    report=write_report("\n".join(lines)+"\n",RESULT_FILE,target)
+    report=_save_text("\n".join(lines)+"\n",target / RESULT_FILE)
     return ExportResult(report,tuple(files),len(items),len(prepared))
