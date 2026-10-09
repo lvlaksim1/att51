@@ -148,6 +148,25 @@ class UpdaterTests(unittest.TestCase):
             self.assertEqual(final.read_bytes(), payload)
             self.assertFalse(Path(str(final) + ".download").exists())
 
+    def test_download_reports_actual_verified_byte_progress(self):
+        payload = b"MZ" + b"x" * 140000
+        digest = hashlib.sha256(payload).hexdigest()
+        info = Release("v0.2.0", (0, 2, 0), asset_url("v0.2.0"),
+                       digest, len(payload))
+        amounts = []
+        with TemporaryDirectory() as tmp:
+            base = Path(tmp) / "Att51_export"
+            base.mkdir()
+            result = download_update(
+                info, base,
+                opener=lambda req, timeout: FakeReply(payload, req.full_url),
+                progress=lambda current, total: amounts.append((current, total)))
+            self.assertEqual(result.read_bytes(), payload)
+        self.assertTrue(amounts)
+        self.assertEqual(amounts[-1], (len(payload), len(payload)))
+        self.assertTrue(all(0 < pos <= total == len(payload)
+                            for pos, total in amounts))
+
     def test_wrong_hash_fails_and_deletes_partial(self):
         payload = b"MZ" + b"x" * 140000
         release = Release("v0.2.0", (0, 2, 0), asset_url("v0.2.0"),
