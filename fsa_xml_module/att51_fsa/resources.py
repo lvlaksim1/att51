@@ -346,10 +346,15 @@ class ResourceCatalog:
                 return NdResolution(True, "short_name_like", item, 1, True,
                                     ("original_vba_like_requires_verification",))
         if hashed_name == "":
-            for item in self.normative:
-                if item.name == full_name:
-                    return NdResolution(True, "exact_name_when_hash_empty", item, 1,
-                                        item.method_doc_id in ("", "0", "-1"))
+            matches = [item for item in self.normative if item.name == full_name]
+            if matches:
+                item = matches[0]
+                warnings = ("duplicate_normative_matches",) if len(matches) > 1 else ()
+                return NdResolution(
+                    True, "exact_name_when_hash_empty", item, len(matches),
+                    bool(warnings) or item.method_doc_id in ("", "0", "-1"),
+                    warnings,
+                )
         return NdResolution(False, "not_found", None, 0, True,
                             ("normative_not_found",))
 
