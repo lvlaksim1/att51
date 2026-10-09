@@ -70,3 +70,21 @@ with AccessReader(resource) as connection:
         if table not in names:
             print(f"RESOURCE_SCHEMA_OPTIONAL_ABSENT {table}")
 print("RESOURCE_SCHEMA_READONLY_PASS")
+
+# The resource loader must work against the ORIGINAL installation template.
+# This template does not yet contain the FGIS_RA/DIC_ND_INFO/DIC_ND_SYN
+# tables; the original GUI creates them on first open. Our loader MUST NOT.
+from att51_fsa.resources import ResourceCatalog
+with AccessReader(root / "extracted/app/res_orgs.mdb") as resource_reader:
+    tables_before = resource_reader.table_names()
+    catalog = ResourceCatalog.from_reader(resource_reader)
+    tables_after = resource_reader.table_names()
+    assert tables_after == tables_before, "Resource loader changed MDB schema"
+    assert catalog.diagnostics.device_count >= 0
+    assert catalog.diagnostics.normative_count >= 0
+    print("ORIGINAL_RESOURCE_CATALOG_READONLY_PASS",
+          catalog.diagnostics.device_count,
+          catalog.diagnostics.person_count,
+          catalog.diagnostics.normative_count)
+    if "FGIS_RA" not in tables_after:
+        print("ORIGINAL_TEMPLATE_FGIS_LINKS_ABSENT_CONFIRMED")

@@ -6,3 +6,6 @@ __all__ = ["AccessReader", "AppSources", "Candidate", "FsaSourceError", "read_si
 
 from .selection import ProtocolSelection, select_individual, select_consolidated
 from .measurements import NoiseOptions, ResearchObjectDraft, map_noise_equivalent
+
+from .resources import ResourceCatalog, ResourceResolution, NdResolution, nd_hash, resource_mdb_path
+from .resource_xml import ProtocolResourceAudit, inspect_protocol_resources, inspection_dict
