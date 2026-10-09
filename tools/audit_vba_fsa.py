@@ -114,7 +114,7 @@ def main() -> None:
             # original factor labels, and methodology selection. Source code
             # only, no user MDB / personal information.
             if name == "v52_exp_fgis_ra2025":
-                for proc in ("read_him_params", "get_DocNameId", "get_DocNameId_Helper"):
+                for proc in ("read_him_params", "read_him_params_SS", "read_him_params_MAX", "get_him_id_by_bm", "format_him_ra", "get_DocNameId", "get_DocNameId_Helper"):
                     start = next((i for i, line in enumerate(lines)
                         if re.match(r"(?i)^\s*(?:(?:public|private)\s+)?Function\s+"
                                     + proc + r"\b", line)), None)
