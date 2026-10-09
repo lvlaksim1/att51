@@ -33,3 +33,45 @@ jobs:
         env:
           PYTHONPATH: fsa_xml_module
         run: python -m unittest discover -s desktop/tests -p 'test_*.py' -v
+
+  windows-package-smoke:
+    runs-on: windows-2022
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: 'x86'
+      - name: Install packaging tools
+        shell: pwsh
+        run: |
+          python -m pip install -r desktop/requirements-build.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot install Python dependencies' }
+          choco install innosetup -y --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot install Inno Setup' }
+      - name: Compile diagnostic build without publishing release
+        shell: pwsh
+        run: ./desktop/build.ps1 -Version 0.1.1
+      - name: Verify installed application, update and deletion
+        shell: pwsh
+        run: |
+          $app = Join-Path $env:ProgramData 'Att51_export'
+          $setup = Join-Path $pwd 'desktop\dist\Att51_export_Setup_v0.1.1.exe'
+          $update = Join-Path $pwd 'desktop\dist\Att51_export_Update_v0.1.1.exe'
+          if (Test-Path $app) { throw 'Unexpected installed app' }
+          $p = Start-Process $setup -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /TASKS="!desktopicon"' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Setup failed $($p.ExitCode)" }
+          $exe = Join-Path $app 'Att51_export.exe'
+          if (!(Test-Path $exe)) { throw 'Executable missing from ProgramData' }
+          $p = Start-Process $exe -ArgumentList '--self-test' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "First install self-test failed $($p.ExitCode)" }
+          $p = Start-Process $update -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Update failed $($p.ExitCode)" }
+          $p = Start-Process $exe -ArgumentList '--self-test' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Update self-test failed $($p.ExitCode)" }
+          $p = Start-Process (Join-Path $app 'unins000.exe') -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Uninstall failed $($p.ExitCode)" }
+          Start-Sleep -Seconds 3
+          if (Test-Path $exe) { throw 'Uninstaller left executable behind' }
+          Write-Host 'SOURCE_PATHS_PACKAGE_SMOKE_PASS'
