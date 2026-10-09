@@ -40,7 +40,8 @@ class UpdaterTests(unittest.TestCase):
         self.assertLess(script.index("Wait-Process -Id 4104"),
                         script.index("Start-Process"))
         self.assertIn("New O''Hara.exe", script)
-        self.assertIn("-Wait -PassThru", script)
+        self.assertIn("$installer.WaitForExit()", script)
+        self.assertNotIn("-Wait -PassThru", script)
         self.assertIn("ExitCode -ne 0", script)
         for invalid in (-1, 0):
             with self.assertRaises(UpdateError):
