@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
+import re
 from pathlib import Path
 from typing import Iterable
 
@@ -15,6 +16,94 @@ from att51_fsa.sources import AccessReader, FsaSourceError, files_directory, rea
 
 
 ORIGINAL_DIR = "Аттестация-5.1(СОУТ)"
+
+
+
+def _registry_install_roots() -> tuple[Path, ...]:
+    """Find original installer directories in Windows uninstall entries (read-only).
+
+    The display name gates candidates; inspect_installation verifies actual files.
+    """
+    try:
+        import winreg
+    except ImportError:
+        return ()
+    subkey = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
+    result: list[Path] = []
+    views = tuple(dict.fromkeys((0, getattr(winreg, "KEY_WOW64_32KEY", 0),
+                                 getattr(winreg, "KEY_WOW64_64KEY", 0))))
+    for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+        for view in views:
+            try:
+                root_key = winreg.OpenKey(hive, subkey, 0, winreg.KEY_READ | view)
+            except OSError:
+                continue
+            with root_key:
+                idx = 0
+                while True:
+                    try:
+                        name = winreg.EnumKey(root_key, idx)
+                    except OSError:
+                        break
+                    idx += 1
+                    try:
+                        child = winreg.OpenKey(root_key, name)
+                    except OSError:
+                        continue
+                    with child:
+                        try:
+                            display = str(winreg.QueryValueEx(child, "DisplayName")[0]).casefold()
+                        except OSError:
+                            continue
+                        if "5.1" not in display or not any(
+                            term in display for term in ("аттестац", "attestation")
+                        ):
+                            continue
+                        try:
+                            location = str(winreg.QueryValueEx(child, "InstallLocation")[0]).strip()
+                        except OSError:
+                            location = ""
+                        if location:
+                            result.append(Path(os.path.expandvars(location.strip('"'))))
+                        try:
+                            uninstaller = str(winreg.QueryValueEx(child, "UninstallString")[0])
+                        except OSError:
+                            uninstaller = ""
+                        # Inno Setup usually points here; tolerate quoted/unquoted path.
+                        match = re.search(r'(?i)"?([^"]*?unins\d*\.exe)"?', uninstaller)
+                        if match:
+                            result.append(Path(os.path.expandvars(match.group(1))).parent)
+    return tuple(dict.fromkeys(result))
+
+
+def _virtualstore_folder(root: Path) -> Path | None:
+    """Find the per-user UAC-virtualized view of a legacy Program Files app."""
+    local = os.environ.get("LOCALAPPDATA", "").strip()
+    if not local:
+        return None
+    for key in ("ProgramFiles(x86)", "ProgramFiles", "ProgramW6432"):
+        raw = os.environ.get(key, "").strip()
+        if not raw:
+            continue
+        program_files = Path(raw)
+        try:
+            subfolder = root.relative_to(program_files)
+        except ValueError:
+            continue
+        # E.g. %LOCALAPPDATA%\VirtualStore\Program Files (x86)\Attest...
+        return Path(local) / "VirtualStore" / program_files.relative_to(
+            program_files.anchor) / subfolder
+    return None
+
+
+def _original_subdirectories(base: Path) -> tuple[Path, ...]:
+    """Non-recursive: only plausible original application folders."""
+    try:
+        return tuple(child for child in base.iterdir() if child.is_dir() and
+                     any(token in child.name.casefold() for token in
+                         ("аттест", "attest", "соут")))
+    except OSError:
+        return ()
 
 
 @dataclass(frozen=True)
@@ -44,10 +133,13 @@ def default_install_roots() -> tuple[Path, ...]:
     explicit = os.environ.get("ATT51_ORIGINAL_DIR", "").strip()
     if explicit:
         bases.append(Path(explicit))
-    for key in ("ProgramFiles(x86)", "ProgramFiles"):
+    bases.extend(_registry_install_roots())
+    for key in ("ProgramFiles(x86)", "ProgramFiles", "ProgramW6432"):
         if os.environ.get(key):
-            bases.append(Path(os.environ[key]) / ORIGINAL_DIR)
-    # Nonstandard installations can be selected explicitly in the GUI.
+            base = Path(os.environ[key])
+            bases.append(base / ORIGINAL_DIR)
+            bases.extend(_original_subdirectories(base))
+    # No drive-wide scan; nonstandard locations also have an explicit GUI picker.
     return tuple(dict.fromkeys(bases))
 
 
@@ -80,11 +172,16 @@ def _databases_from_setting(path: Path | None) -> tuple[Path, ...]:
 def inspect_installation(root: Path) -> OriginalInstallation | None:
     """Accept a folder only when both original Word add-in and INI exist."""
     root = Path(root)
-    options = root / "options.ini"
+    virtual = _virtualstore_folder(root)
+    virtual_options = virtual / "options.ini" if virtual is not None else None
+    options = (virtual_options if virtual_options is not None and
+               virtual_options.is_file() else root / "options.ini")
     if not options.is_file() or not (root / "Attestation51.dot").is_file():
         return None
 
     warnings: list[str] = []
+    if virtual_options is not None and options == virtual_options:
+        warnings.append("Использованы настройки оригинальной программы из VirtualStore.")
     configured_db = read_ini(options, "DB", "sout_path")
     mdbs = _databases_from_setting(_configured_path(configured_db, root))
     if not configured_db:
@@ -108,11 +205,17 @@ def inspect_installation(root: Path) -> OriginalInstallation | None:
     else:
         # Original VBA uses this path when res_flag is not 1.
         local = root / "res_orgs.mdb"
+        if virtual is not None and (virtual / "res_orgs.mdb").is_file():
+            local = virtual / "res_orgs.mdb"
+            warnings.append("Использована рабочая ресурсная MDB из VirtualStore.")
         resources = (local,) if local.is_file() else ()
         if not resources:
             warnings.append("Локальный res_orgs.mdb оригинальной установки отсутствует.")
 
     fgis_ini = root / "fgis_ra.ini"
+    if virtual is not None and (virtual / "fgis_ra.ini").is_file():
+        fgis_ini = virtual / "fgis_ra.ini"
+        warnings.append("Параметры ФГИС обнаружены в VirtualStore.")
     settings = (fgis_ini,) if fgis_ini.is_file() else ()
     if not settings:
         warnings.append("fgis_ra.ini не найден: параметры не подставляются.")

@@ -40,6 +40,16 @@ class PathsTest(unittest.TestCase):
             with self.assertRaises(FsaSourceError):
                 resolve_relative_file(root, r"C:\other.docx")
 
+    def test_original_ini_with_unkeyed_legacy_option(self):
+        # Installer options.ini has a value without '=' in [postfix_sv].
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "options.ini"
+            path.write_bytes(
+                ("[postfix_sv]\nАэроионизация - ИОН\n"
+                 "[DB]\nsout_path=C:\\Базы\\RM.MDB\n").encode("cp1251"))
+            self.assertEqual(read_ini(path, "DB", "sout_path"),
+                             r"C:\Базы\RM.MDB")
+
     def test_russian_ini(self):
         with TemporaryDirectory() as directory:
             path = Path(directory) / "options.ini"

@@ -90,6 +90,48 @@ class SourceDiscoveryTests(unittest.TestCase):
         self.ini.write_bytes(f"[DB]\nsout_path={self.mdb}\n[main]\ncaption=Тест\n".encode("cp1251"))
         self.assertEqual(tuple(p.resolve() for p in self.detect()[0].databases), (self.mdb.resolve(),))
 
+    def test_user_virtualstore_overrides_installer_defaults(self):
+        program_files = self.base / "Program Files (x86)"
+        real = program_files / ORIGINAL_DIR
+        real.mkdir(parents=True)
+        (real / "Attestation51.dot").touch()
+        (real / "options.ini").write_text("[main]\ntin=1\n", encoding="utf-8")
+        (real / "res_orgs.mdb").touch()
+        local_appdata = self.base / "UserLocal"
+        shadow = local_appdata / "VirtualStore" / program_files.relative_to(
+            program_files.anchor) / ORIGINAL_DIR
+        shadow.mkdir(parents=True)
+        (shadow / "options.ini").write_text(
+            f"[DB]\nsout_path={self.mdb}\n[DB_res]\nres_flag=0\n",
+            encoding="utf-8")
+        (shadow / "res_orgs.mdb").touch()
+        (shadow / "fgis_ra.ini").touch()
+        with patch.dict(os.environ, {
+            "ProgramFiles(x86)": str(program_files),
+            "LOCALAPPDATA": str(local_appdata),
+        }):
+            info = discover_installations((real,))[0]
+        self.assertEqual(info.databases, (self.mdb,))
+        self.assertEqual(info.resources, (shadow / "res_orgs.mdb",))
+        self.assertEqual(info.settings, (shadow / "fgis_ra.ini",))
+        self.assertTrue(any("VirtualStore" in w for w in info.warnings))
+
+    def test_recognize_renamed_original_under_program_files(self):
+        program_files = self.base / "Program Files (x86)"
+        other = program_files / "Аттестация СОУТ 5.1 рабочая"
+        other.mkdir(parents=True)
+        (other / "Attestation51.dot").touch()
+        (other / "options.ini").write_text(
+            f"[DB]\nsout_path={self.mdb}\n", encoding="utf-8")
+        with patch.dict(os.environ, {
+            "ProgramFiles(x86)": str(program_files),
+            "ProgramFiles": str(self.base / "other_program_files"),
+            "ProgramW6432": str(self.base / "other_program_w6432"),
+        }):
+            from source_discovery import default_install_roots
+            self.assertIn(other, default_install_roots())
+            self.assertEqual(discover_installations()[0].databases, (self.mdb,))
+
     def test_duplicate_root_is_deduplicated(self):
         self.assertEqual(len(discover_installations((self.install, self.install))), 1)
 

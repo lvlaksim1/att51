@@ -29,7 +29,8 @@ def read_ini(path: Path, section: str, key: str) -> str:
             break
         except UnicodeDecodeError:
             continue
-    parser = configparser.ConfigParser(interpolation=None, strict=False)
+    parser = configparser.ConfigParser(interpolation=None, strict=False,
+                                       allow_no_value=True)
     parser.optionxform = str.lower
     parser.read_string(decoded)
     return parser.get(section, key, fallback="").strip()
