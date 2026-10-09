@@ -234,12 +234,11 @@ class AppSources:
         if not self.documents_root.is_dir():
             raise FsaSourceError(f"Missing linked document directory: {self.documents_root}")
         with AccessReader(self.workplace_mdb) as main, AccessReader(self.resources_mdb) as resources:
-            mappings = resources.select("SELECT rec_type, rec_guid, IntValue FROM FGIS_RA")
-            available = {
-                (int(row["rec_type"]), str(row["rec_guid"]).lower()): row["IntValue"]
-                for row in mappings
-                if row.get("rec_guid") is not None and row.get("rec_type") is not None
-            }
+            # Use the same first-GUID-then-factory-number rules as the real
+            # res_orgs.mdb adapter; missing optional tables are reported,
+            # never created as the original GUI would do.
+            from .resources import ResourceCatalog
+            catalog = ResourceCatalog.from_reader(resources)
             if rm_ids is None:
                 rm_ids = [int(row["id"]) for row in main.select(
                     "SELECT id FROM struct_rm WHERE deleted=0 AND id>0 ORDER BY id"
@@ -271,9 +270,9 @@ class AppSources:
                         continue
                     # Original get_xml_data skips equipment lookup when fgis_state=2.
                     missing = tuple(
-                        g for g, _ in entry.equipment
+                        g or num for g, num in entry.equipment
                         if entry.fgis_state not in ("1", "2")
-                        and g and (0, g.lower()) not in available
+                        and catalog.device(g, num).requires_review
                     )
                     status = "excluded_by_fgis_state" if entry.fgis_state == "1" else (
                         "unmapped_equipment" if missing else "ready_for_further_mapping"
@@ -286,5 +285,5 @@ class AppSources:
             "resources_mdb": str(self.resources_mdb),
             "documents_root": str(self.documents_root),
             "candidates": [asdict(c) for c in reports],
-            "note": "Source inspection ONLY; ND/person/indicator mappings and final XML generation are not yet equivalent to original.",
+            "note": "Read-only source inspection: individual equipment mapping uses the original GUID/serial/FGIS rules; full ND/person/indicator output and final XML are incomplete.",
         }
