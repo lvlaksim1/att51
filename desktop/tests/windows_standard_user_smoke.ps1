@@ -18,8 +18,19 @@ try {
         throw 'Test user unexpectedly has administrator rights'
     }
     function RunAsUser([string]$path, [string]$arguments) {
+        if ($path -like '*_Setup_*' -or $path -like '*_Update_*') {
+            $arguments += ' /LOG'
+        }
         $process = Start-Process -FilePath $path -Credential $cred -LoadUserProfile -ArgumentList $arguments -Wait -PassThru
-        if ($process.ExitCode -ne 0) { throw "$path failed for standard user, exit=$($process.ExitCode)" }
+        if ($process.ExitCode -ne 0) {
+            $userTemp = Join-Path $env:SystemDrive "Users\$name\AppData\Local\Temp"
+            Write-Host "STANDARD_USER_TEMP=$userTemp"
+            Get-ChildItem $userTemp -Filter 'Setup Log*.txt' -ErrorAction SilentlyContinue |
+                Sort-Object LastWriteTime -Descending | Select-Object -First 1 |
+                ForEach-Object { Get-Content -LiteralPath $_.FullName -Tail 70 }
+            & icacls $env:ProgramData
+            throw "$path failed for standard user, exit=$($process.ExitCode)"
+        }
     }
     RunAsUser $setup '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /TASKS="!desktopicon"'
     $exe = Join-Path $app 'Att51_export.exe'
