@@ -24,6 +24,7 @@ from att51_fsa.resource_xml import inspect_protocol_resources_file, inspection_d
 from att51_fsa.pipeline_2025 import Original2025Options, analyze_2025_file, diagnostic_dict
 from att51_fsa.writer import validate_xml
 from updater import Release, UpdateError, apply_update, fetch_latest, newer, LATEST_WEB
+from source_discovery import discover_installations, discover_protocols
 from version import VERSION
 
 APP_NAME = "Att51_export"
@@ -66,6 +67,7 @@ class DesktopApp:
                 pass
         self._build_ui()
         root.after(100, self._pump)
+        root.after(350, self._auto_discover)
         root.after(1200, lambda: self._check_updates(manual=False))
 
     def _build_ui(self):
@@ -102,8 +104,17 @@ class DesktopApp:
                 pane, text="Обзор…", width=11,
                 command=lambda n=name, ext=extensions: self._browse(n, ext),
             ).grid(row=row, column=2, pady=3)
+        findbar = ttk.Frame(pane)
+        findbar.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(8, 2))
+        ttk.Button(findbar, text="Найти по настройкам",
+                   command=lambda: self._discover_paths(interactive=True)
+                   ).pack(side="left", padx=(0, 8))
+        ttk.Button(findbar, text="Указать папку Аттестации…",
+                   command=self._browse_installation).pack(side="left", padx=(0, 8))
+        ttk.Button(findbar, text="Выбрать XML протокола…",
+                   command=self._find_protocols).pack(side="left")
         opts = ttk.Frame(pane)
-        opts.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(8, 2))
+        opts.grid(row=5, column=0, columnspan=3, sticky="ew", pady=(8, 2))
         ttk.Label(opts, text="Номер рабочего места:").pack(side="left")
         ttk.Entry(opts, textvariable=self.fields["rm"], width=12).pack(side="left", padx=(6, 16))
         for text, var in (
@@ -114,7 +125,7 @@ class DesktopApp:
         ):
             ttk.Checkbutton(opts, text=text, variable=var).pack(side="left", padx=4)
         micro = ttk.Frame(pane)
-        micro.grid(row=5, column=0, columnspan=3, sticky="w", pady=(3, 0))
+        micro.grid(row=6, column=0, columnspan=3, sticky="w", pady=(3, 0))
         ttk.Checkbutton(micro, text="Итоговые значения микроклимата",
                         variable=self.micro_results).pack(side="left")
         ttk.Checkbutton(micro, text="Экспозиционная доза",
@@ -167,7 +178,114 @@ class DesktopApp:
             parent=self.root, title="Выберите исходный файл",
             filetypes=extensions + [("Все файлы", "*.*")])
         if path:
+            if name == "mdb" and self.fields[name].get().strip() != path:
+                self.fields["xml"].set("")
             self.fields[name].set(path)
+
+    def _choose_candidate(self, title: str, choices, describe=str):
+        """Explicit selection for multiple plausible sources; no arbitrary first."""
+        if not choices:
+            return None
+        dialog = tk.Toplevel(self.root)
+        dialog.title(title)
+        dialog.transient(self.root)
+        dialog.geometry("780x310")
+        dialog.minsize(550, 230)
+        frame = ttk.Frame(dialog, padding=12)
+        frame.pack(fill="both", expand=True)
+        ttk.Label(frame, text=title).pack(anchor="w")
+        listing = tk.Listbox(frame, exportselection=False, height=9)
+        listing.pack(fill="both", expand=True, pady=8)
+        for candidate in choices:
+            listing.insert("end", str(describe(candidate)))
+        selected = [None]
+        def accept():
+            selection = listing.curselection()
+            if selection:
+                selected[0] = choices[selection[0]]
+            dialog.destroy()
+        listing.bind("<Double-Button-1>", lambda event: accept())
+        row = ttk.Frame(frame)
+        row.pack(fill="x")
+        ttk.Button(row, text="Отмена", command=dialog.destroy).pack(side="right")
+        ttk.Button(row, text="Выбрать", command=accept).pack(side="right", padx=8)
+        dialog.grab_set()
+        self.root.wait_window(dialog)
+        return selected[0]
+
+    def _auto_discover(self):
+        self._discover_paths(interactive=False)
+
+    def _browse_installation(self):
+        folder = filedialog.askdirectory(parent=self.root,
+                                          title="Папка оригинальной Аттестации-5.1")
+        if folder:
+            self._discover_paths(explicit_root=Path(folder), interactive=True)
+
+    def _discover_paths(self, *, explicit_root=None, interactive=False):
+        try:
+            installs = discover_installations(
+                (explicit_root,) if explicit_root is not None else None)
+            if not installs:
+                self.status.set(
+                    "Исходная программа не найдена по штатному пути. "
+                    "Укажите её папку или выберите файлы вручную.")
+                return
+            if len(installs) > 1:
+                if not interactive:
+                    self.status.set(
+                        "Найдено несколько установок Аттестации. "
+                        "Нажмите «Найти по настройкам» и выберите одну.")
+                    return
+                installation = self._choose_candidate(
+                    "Выберите оригинальную установку", installs,
+                    lambda x: x.folder)
+                if installation is None:
+                    return
+            else:
+                installation = installs[0]
+            ambiguous = []
+            for name, choices in (
+                ("mdb", installation.databases),
+                ("resources", installation.resources),
+                ("ini", installation.settings),
+            ):
+                # Manual choices are never silently overwritten.
+                if self.fields[name].get().strip():
+                    continue
+                if len(choices) == 1:
+                    self.fields[name].set(str(choices[0]))
+                elif len(choices) > 1:
+                    if interactive:
+                        selected = self._choose_candidate(
+                            "Выберите исходный файл", choices)
+                        if selected is not None:
+                            self.fields[name].set(str(selected))
+                    else:
+                        ambiguous.append(name)
+            problem = "; ".join(installation.warnings)
+            if ambiguous:
+                problem += "; неоднозначный источник: " + ", ".join(ambiguous)
+            self.status.set(
+                "Проверены настройки оригинальной программы. " +
+                (problem or "Доступные исходные пути заполнены.") +
+                " XML выбирается по записи протокола.")
+        except Exception as error:
+            self.status.set("Не удалось прочитать настройки источников: " +
+                            human_error(error))
+
+    def _find_protocols(self):
+        try:
+            database = self._required("mdb")["mdb"]
+            rm = self.fields["rm"].get().strip()
+            rm_id = int(rm) if rm else None
+            if rm_id is not None and rm_id <= 0:
+                raise ValueError("Номер рабочего места должен быть положительным.")
+        except Exception as error:
+            messagebox.showerror(APP_NAME, human_error(error))
+            return
+        self._work(lambda: discover_protocols(database, rm_id),
+                   title="Чтение записей протоколов", kind="protocols")
 
     def _required(self, *names: str) -> dict[str, Path]:
         found = {}
@@ -181,7 +299,7 @@ class DesktopApp:
             found[name] = p
         return found
 
-    def _work(self, task, *, title="Чтение данных"):
+    def _work(self, task, *, title="Чтение данных", kind="report"):
         if self.busy:
             return
         self.busy = True
@@ -191,7 +309,7 @@ class DesktopApp:
 
         def worker():
             try:
-                self.results.put(("report", task()))
+                self.results.put((kind, task()))
             except Exception as error:
                 self.results.put(("error", human_error(error)))
         threading.Thread(target=worker, daemon=True).start()
@@ -330,12 +448,29 @@ class DesktopApp:
         try:
             while True:
                 kind, value = self.results.get_nowait()
-                if kind in ("report", "error"):
+                if kind in ("report", "error", "protocols"):
                     self.busy = False
                     for b in self.buttons:
                         b.state(["!disabled"])
                     if kind == "report":
                         self._show_report(value)
+                    elif kind == "protocols":
+                        protocols = value
+                        if not protocols:
+                            self.status.set(
+                                "Для выбранной MDB/РМ не найдены связанные XML. "
+                                "Проверьте путь, сохранение протокола или выберите вручную.")
+                        else:
+                            chosen = protocols[0] if len(protocols) == 1 else (
+                                self._choose_candidate(
+                                    "Выберите протокол", protocols,
+                                    lambda p: p.label))
+                            if chosen is not None:
+                                self.fields["xml"].set(str(chosen.xml))
+                                self.fields["rm"].set(str(chosen.rm_id))
+                                self.status.set(
+                                    "Внутренний XML определён по sout_factors.file; "
+                                    "файл не изменялся.")
                     else:
                         self.status.set(str(value))
                         messagebox.showerror(APP_NAME, str(value))
