@@ -93,6 +93,13 @@ class FgisLink:
 
 
 @dataclass(frozen=True)
+class OaMethod:
+    nd_guid: str
+    method: str
+    params: str
+
+
+@dataclass(frozen=True)
 class Normative:
     local_id: str
     guid: str
@@ -137,6 +144,7 @@ class CatalogDiagnostics:
     person_count: int
     normative_count: int
     fgis_link_count: int
+    oa_method_count: int = 0
 
 
 class ResourceCatalog:
@@ -152,11 +160,13 @@ class ResourceCatalog:
 
     def __init__(self, devices: Iterable[Device], people: Iterable[Person],
                  normative: Iterable[Normative], links: Iterable[FgisLink],
-                 diagnostics: CatalogDiagnostics):
+                 diagnostics: CatalogDiagnostics,
+                 oa_methods: Iterable[OaMethod] = ()):
         self.devices = tuple(devices)
         self.people = tuple(people)
         self.normative = tuple(normative)
         self.links = tuple(links)
+        self.oa_methods = tuple(oa_methods)
         self.diagnostics = diagnostics
 
     @classmethod
@@ -168,6 +178,7 @@ class ResourceCatalog:
         links: Iterable[Mapping[str, Any]],
         nd_info: Iterable[Mapping[str, Any]] = (),
         synonyms: Iterable[Mapping[str, Any]] = (),
+        oa_methods: Iterable[Mapping[str, Any]] = (),
         *,
         present_tables: Iterable[str] | None = None,
     ) -> "ResourceCatalog":
@@ -213,14 +224,21 @@ class ResourceCatalog:
             for row in links
             if row.get("rec_type") is not None
         ]
+        oa_entries = [
+            OaMethod(_str(row.get("nd_guid")), _str(row.get("method")),
+                     _str(row.get("params")))
+            for row in oa_methods if _str(row.get("nd_guid")).strip()
+        ]
         present = set(present_tables) if present_tables is not None else set(cls.REQUIRED + cls.OPTIONAL)
         absent = tuple(name for name in cls.REQUIRED + cls.OPTIONAL if name not in present)
         diag = CatalogDiagnostics(
             tables_present=tuple(sorted(present)), tables_absent=absent,
             device_count=len(devices_result), person_count=len(people_result),
             normative_count=len(normatives), fgis_link_count=len(links_result),
+            oa_method_count=len(oa_entries),
         )
-        return cls(devices_result, people_result, normatives, links_result, diag)
+        return cls(devices_result, people_result, normatives, links_result, diag,
+                   oa_methods=oa_entries)
 
     @classmethod
     def from_reader(cls, reader: AccessReader) -> "ResourceCatalog":
@@ -233,7 +251,7 @@ class ResourceCatalog:
         return cls.from_rows(
             read("ATT_DEVICE"), read("ATT_PERSON"), read("DIC_ND"),
             read("FGIS_RA"), read("DIC_ND_INFO"), read("DIC_ND_SYN"),
-            present_tables=names,
+            oa_methods=read("DIC_ND_OA_METHODS"), present_tables=names,
         )
 
     @classmethod
@@ -333,6 +351,15 @@ class ResourceCatalog:
                                         item.method_doc_id in ("", "0", "-1"))
         return NdResolution(False, "not_found", None, 0, True,
                             ("normative_not_found",))
+
+    def oa_method_for(self, nd_guid: str, parameter_tag: str) -> str:
+        """Original v5_options_dic.GetOAMethod: first GUID + substring hit."""
+        if not nd_guid or not parameter_tag:
+            return ""
+        for item in self.oa_methods:
+            if item.nd_guid == nd_guid and parameter_tag in item.params:
+                return item.method
+        return ""
 
     def nd_preference(self, name: str) -> str | None:
         """Exact GetNDFromDistDic-like resource lookup for method priorities."""
