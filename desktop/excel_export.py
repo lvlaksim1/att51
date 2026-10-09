@@ -6,6 +6,7 @@ module only renders the accepted pre-ID labels in the original A-Z layout.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, date
 import os
 from pathlib import Path
 import tempfile
@@ -55,6 +56,31 @@ class ExcelResult:
     indicator_count: int
 
 
+DATE_COLUMNS = (2, 3, 4, 17, 19, 21)  # B,C,D,Q,S,U
+
+
+def excel_date_serial(value: object) -> float | str:
+    """Real Excel 1900-system date, displayed as DD.MM.YYYY.
+
+    Empty source fields remain explicit and are never silently guessed.
+    """
+    if isinstance(value, datetime):
+        result = value.date()
+    elif isinstance(value, date):
+        result = value
+    else:
+        source = str(value).strip()
+        for fmt in ("%Y-%m-%d", "%d.%m.%Y"):
+            try:
+                result = datetime.strptime(source, fmt).date()
+                break
+            except ValueError:
+                continue
+        else:
+            return str(value)
+    return float((result - date(1899, 12, 30)).days)
+
+
 def _save_excel97(path: Path, rows: list[list[str]]) -> None:
     """Save true BIFF8 XLS using locally installed Excel, with atomic replace."""
     try:
@@ -84,19 +110,22 @@ def _save_excel97(path: Path, rows: list[list[str]]) -> None:
         area = sheet.Range(sheet.Cells(1, 1), sheet.Cells(len(data), len(HEADERS)))
         area.NumberFormat = "@"  # No date serials, no scientific notation, no formula evaluation.
         area.Value2 = tuple(tuple(cell for cell in row) for row in data)
+        # Write source dates as actual numeric Excel dates, not displayed text.
+        # Preserve every other column, including leading-zero INNs, as text.
+        for col in DATE_COLUMNS:
+            cells = sheet.Range(sheet.Cells(2, col), sheet.Cells(len(data), col))
+            cells.NumberFormat = "dd.mm.yyyy"
+            dates = tuple((excel_date_serial(row[col - 1]),) for row in rows)
+            if dates:
+                cells.Value2 = dates
         header = sheet.Range("A1:Z1")
         header.Font.Bold = True
         header.Interior.Color = 0xDDEBDD
         header.WrapText = True
         header.RowHeight = 44
-        sheet.Range("A:Z").ColumnWidth = 22
-        sheet.Range("G:G").ColumnWidth = 35
-        sheet.Range("J:K").ColumnWidth = 36
-        sheet.Range("N:O").ColumnWidth = 36
-        sheet.Range("R:R").ColumnWidth = 36
-        sheet.Range("W:W").ColumnWidth = 36
         sheet.Range("A2:Z" + str(len(data))).WrapText = True
         sheet.Range("A1:Z1").AutoFilter()
+        sheet.Range("A:Z").EntireColumn.AutoFit()
         sheet.Activate()
         application.ActiveWindow.SplitRow = 1
         application.ActiveWindow.FreezePanes = True
