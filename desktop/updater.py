@@ -134,7 +134,64 @@ def download_update(info: Release, install_dir: Path, *, opener=urllib.request.u
         temporary.unlink(missing_ok=True)
 
 
-def apply_update(tag: str, checksum: str, length: str) -> None:
+
+# The update process must exit before Inno Setup replaces Att51_export.exe.
+# The detached Windows helper owns no installed application files.
+SILENT_INSTALL_ARGS = (
+    "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART",
+    "/NOCANCEL", "/CLOSEAPPLICATIONS", "/RUNAFTERUPDATE=1",
+)
+
+
+def _ps_quote(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+def build_install_launcher(installer: Path, updater_pid: int, app_pid: int = 0) -> str:
+    """Wait for old app/updater to exit; show installer progress, no wizard."""
+    if updater_pid <= 0 or app_pid < 0:
+        raise UpdateError("Некорректный идентификатор процесса обновления.")
+    if Path(installer).suffix.lower() != ".exe":
+        raise UpdateError("Некорректный путь к установщику.")
+    args = ", ".join(_ps_quote(x) for x in SILENT_INSTALL_ARGS)
+    waiting = (app_pid, updater_pid) if app_pid else (updater_pid,)
+    waits = "\n".join(
+        f"Wait-Process -Id {pid} -ErrorAction SilentlyContinue" for pid in waiting
+    )
+    return (
+        "$ErrorActionPreference = 'Stop'\n" + waits + "\n"
+        + "try {\n"
+        + f"  $installer = Start-Process -FilePath {_ps_quote(str(installer))} "
+          f"-ArgumentList @({args}) -Wait -PassThru\n"
+        + "  if ($installer.ExitCode -ne 0) { "
+          "throw ('Установка не завершена. Код: ' + $installer.ExitCode) }\n"
+        + "} catch {\n"
+        + "  Add-Type -AssemblyName System.Windows.Forms\n"
+        + "  [void][System.Windows.Forms.MessageBox]::Show("
+          "('Не удалось обновить Att51_export: ' + $_.Exception.Message), "
+          "'Att51_export', 'OK', 'Error')\n"
+        + "  exit 1\n"
+        + "}\n"
+    )
+
+
+def launch_install_after_exit(installer: Path, app_pid: int = 0, *,
+                              popen=subprocess.Popen) -> None:
+    """System PowerShell waits outside the installed EXE; no extra application."""
+    import base64
+    import sys
+    if sys.platform != "win32":
+        raise UpdateError("Автоматическая установка доступна только в Windows.")
+    script = build_install_launcher(installer, os.getpid(), app_pid)
+    encoded = base64.b64encode(script.encode("utf-16-le")).decode("ascii")
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    popen(["powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive",
+           "-WindowStyle", "Hidden", "-EncodedCommand", encoded],
+          cwd=str(Path(installer).parent), close_fds=True, creationflags=flags)
+
+
+def apply_update(tag: str, checksum: str, length: str,
+                 app_pid: str = "0") -> None:
     import sys
     if not getattr(sys, "frozen", False):
         raise UpdateError("Обновление запускается только в установленной программе.")
@@ -144,12 +201,14 @@ def apply_update(tag: str, checksum: str, length: str) -> None:
         raise UpdateError("Некорректная контрольная сумма.")
     try:
         size = int(length)
+        original_pid = int(app_pid)
     except ValueError as exc:
-        raise UpdateError("Некорректный размер обновления.") from exc
+        raise UpdateError("Некорректные параметры обновления.") from exc
+    if original_pid < 0:
+        raise UpdateError("Некорректный идентификатор приложения.")
     current = fetch_latest()
     if (not current.verified or current.tag != tag
             or current.sha256 != checksum.lower() or current.size != size):
         raise UpdateError("Выпуск GitHub изменился; проверьте обновления заново.")
     path = download_update(current, install_dir)
-    subprocess.Popen([str(path), "/SP-", "/NORESTART", "/CLOSEAPPLICATIONS"],
-                     cwd=str(install_dir), close_fds=True)
+    launch_install_after_exit(path, original_pid)
