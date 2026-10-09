@@ -37,7 +37,7 @@ def main() -> None:
                 if any(term.casefold() in line.casefold() for term in TERMS):
                     selected.update(range(max(0, i-5), min(len(lines),i+9)))
             if name == "v52_exp_fgis_ra2025":
-                target_procs = ("read_tyag_params_direct", "read_tyag_params_itog", "read_napr_params")
+                target_procs = ("read_tyag_params_direct", "read_tyag_params_itog", "read_napr_params", "read_fact_coll")
                 for proc in target_procs:
                     found_start = None
                     for i, line in enumerate(lines):
@@ -48,7 +48,7 @@ def main() -> None:
                         print(f"PROCEDURE_NOT_FOUND {proc}")
                         continue
                     print(f"BEGIN_PROCEDURE {proc} line={found_start+1}")
-                    limit = min(found_start + 280, len(lines))
+                    limit = min(found_start + 500, len(lines))
                     for i in range(found_start, limit):
                         line = lines[i].rstrip()
                         print(f"PROC {proc} {i+1:5d} {line[:300]}")
