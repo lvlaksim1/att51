@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
+from .research_objects import PreparedResearchObject, append_research_objects
+
 
 @dataclass(frozen=True)
 class Protocol:
@@ -29,6 +31,7 @@ class Protocol:
     no_equipment: bool = False
     method_doc_ids: tuple[str, ...] = ()
     attachment: Path | None = None
+    research_objects: tuple[PreparedResearchObject, ...] = ()
 
 
 def _text(parent: ET.Element, name: str, value: object) -> ET.Element:
@@ -109,6 +112,7 @@ def serialize_protocols(protocols: list[Protocol], *, limit: int = 100,
             for nd_id in p.method_doc_ids:
                 _text(obj, "MethodDocId", nd_id)
             _text(obj, "FullNameObject", p.object_name)
+            append_research_objects(obj, p.research_objects)
             _text(obj, "IsLab", "false")
             _text(obj, "IsAnotherDoc", "false")
         outputs.append(ET.tostring(root, encoding="utf-8", xml_declaration=True))
