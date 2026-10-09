@@ -43,6 +43,8 @@ class SourceDiscoveryTests(unittest.TestCase):
         self.assertEqual(tuple(p.resolve() for p in found[0].databases), (self.mdb.resolve(),))
         self.assertEqual(tuple(p.resolve() for p in found[0].resources), ((self.install / "res_orgs.mdb").resolve(),))
         self.assertEqual(found[0].settings, ())
+        self.assertTrue(any("Необязательный fgis_ra.ini отсутствует" in w
+                            for w in found[0].warnings))
 
     def test_external_resource_is_authoritative(self):
         external = self.base / "shared"

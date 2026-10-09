@@ -219,7 +219,7 @@ def inspect_installation(root: Path) -> OriginalInstallation | None:
         warnings.append("Параметры ФГИС обнаружены в VirtualStore.")
     settings = (fgis_ini,) if fgis_ini.is_file() else ()
     if not settings:
-        warnings.append("fgis_ra.ini не найден: параметры не подставляются.")
+        warnings.append("Необязательный fgis_ra.ini отсутствует: пользовательские параметры ФГИС не подставлены.")
 
     return OriginalInstallation(root, mdbs, resources, settings, tuple(warnings))
 
