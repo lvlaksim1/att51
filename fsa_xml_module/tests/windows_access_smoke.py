@@ -28,8 +28,9 @@ sample = Protocol(
     start_date="2026-10-08", validity_date="2026-10-08",
     application_date="2026-10-07", customer_kind=1,
     object_type=1, object_name="SYNTHETIC TEST", no_equipment=True,
+    data_status="20", protocol_status="6",
 )
-xml = serialize_protocols([sample])[0]
+xml = serialize_protocols([sample], synthetic_test_mode=True)[0]
 schema_path = root / "extracted/app/fileProtocolLoad_v4.xsd"
 ok, reason = validate_xml(xml, schema_path)
 assert ok, f"Original MSXML rejects minimal supported structure: {reason}"

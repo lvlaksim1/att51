@@ -83,10 +83,11 @@ class ExportWriterTest(unittest.TestCase):
             start_date="2026-09-30", validity_date="2026-09-30",
             application_date="2026-09-29", customer_kind=1, object_type=1,
             object_name="TEST only", inn="1234567890", no_equipment=True,
+            data_status="20", protocol_status="6",
         )
 
     def test_valid_minimal_output_against_original_schema(self):
-        payload = serialize_protocols([self.sample()])[0]
+        payload = serialize_protocols([self.sample()], synthetic_test_mode=True)[0]
         root = ET.fromstring(payload)
         self.assertEqual(root.findall("./protocol")[0].findtext("DocId"), "TEST-001")
         if ORIGINAL_XSD.is_file():
@@ -94,15 +95,19 @@ class ExportWriterTest(unittest.TestCase):
             self.assertTrue(ok, error)
 
     def test_split_into_100_record_files(self):
-        contents = serialize_protocols([self.sample()] * 101)
+        contents = serialize_protocols([self.sample()] * 101, synthetic_test_mode=True)
         self.assertEqual([len(ET.fromstring(part).findall("protocol"))
                           for part in contents], [100, 1])
+
+    def test_block_real_export_until_complete_mapping(self):
+        with self.assertRaisesRegex(NotImplementedError, "Incomplete mapping"):
+            serialize_protocols([self.sample()])
 
     def test_disallow_bad_status_from_original_vba(self):
         import dataclasses
         sample = dataclasses.replace(self.sample(), data_status="20 - Черновик")
         with self.assertRaisesRegex(ValueError, "DataStatusId"):
-            serialize_protocols([sample])
+            serialize_protocols([sample], synthetic_test_mode=True)
 
 
 class InspectionTest(unittest.TestCase):

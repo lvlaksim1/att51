@@ -21,8 +21,8 @@ class Protocol:
     customer_kind: int
     object_type: int
     object_name: str
-    data_status: str = "20"
-    protocol_status: str = "6"
+    data_status: str
+    protocol_status: str
     inn: str = ""
     ogrn: str = ""
     equipment_ids: tuple[str, ...] = ()
@@ -54,12 +54,18 @@ def _validate_required(item: Protocol) -> None:
             raise ValueError(f"{key} must be an integer for the original XSD; got {value!r}")
 
 
-def serialize_protocols(protocols: list[Protocol], *, limit: int = 100) -> list[bytes]:
+def serialize_protocols(protocols: list[Protocol], *, limit: int = 100,
+                        synthetic_test_mode: bool = False) -> list[bytes]:
     """Build original root/protocol structure, split like save_btn_Click.
 
     This is only the supported field subset: do not call it a complete FSA
     export until per-factor ResearchObject and address/person maps are ported.
     """
+    if not synthetic_test_mode:
+        raise NotImplementedError(
+            "Incomplete mapping of original VBA: XML output is disabled for real FSA data. "
+            "Synthetic tests require synthetic_test_mode=True."
+        )
     if not 1 <= limit <= 100:
         raise ValueError("Original fileProtocolLoad_v4.xsd allows 1..100 protocols per file")
     if not protocols:
