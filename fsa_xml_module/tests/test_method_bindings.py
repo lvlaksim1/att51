@@ -38,7 +38,9 @@ class ResourceBoundMethodTests(unittest.TestCase):
         self.assertEqual(output.selected.oa_method, "Approval-1")
         self.assertEqual(output.selected.source_rule, "first_pass_nd_id")
         self.assertFalse(output.selected.requires_review)
-        self.assertEqual(output.matching_rules, ("hash_with_factor",))
+        # This synthetic English ND contains no characters retained by the
+        # original Russian ND hash, so get_nd_by_name uses the last exact-name pass.
+        self.assertEqual(output.matching_rules, ("exact_name_when_hash_empty",))
         self.assertTrue(output.not_exportable)
 
     def test_priority_from_dop4_resource(self):
