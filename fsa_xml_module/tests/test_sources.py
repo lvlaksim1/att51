@@ -135,9 +135,15 @@ class InspectionTest(unittest.TestCase):
                     return self
                 def __exit__(self, *args):
                     pass
+                def table_names(self):
+                    return frozenset({"ATT_DEVICE", "ATT_PERSON", "DIC_ND", "FGIS_RA"})
                 def select(self, query):
-                    if "FROM FGIS_RA" in query:
+                    if "FROM [FGIS_RA]" in query:
                         return [{"rec_type": 0, "rec_guid": "GUID1", "IntValue": 199}]
+                    if "FROM [ATT_DEVICE]" in query:
+                        return [{"id": 1, "mguid": "GUID1", "factory_num": "123", "name": "Device"}]
+                    if "FROM [ATT_PERSON]" in query or "FROM [DIC_ND]" in query:
+                        return []
                     if "FROM struct_rm" in query:
                         return [{"id": 7}]
                     if "FROM sout_factors" in query:
@@ -169,8 +175,10 @@ class InspectionTest(unittest.TestCase):
                 def __init__(self, path): pass
                 def __enter__(self): return self
                 def __exit__(self, *args): pass
+                def table_names(self):
+                    return frozenset({"ATT_DEVICE", "ATT_PERSON", "DIC_ND"})
                 def select(self, query):
-                    if "FROM FGIS_RA" in query:
+                    if any("FROM [" + x + "]" in query for x in ("ATT_DEVICE", "ATT_PERSON", "DIC_ND")):
                         return []
                     if "FROM sout_factors" in query:
                         return [{"factor_id": 4, "file": r"ABC\\noise.docx"}]
