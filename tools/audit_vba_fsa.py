@@ -116,13 +116,13 @@ def main() -> None:
             if name == "v52_exp_fgis_ra2025":
                 for proc in ("read_him_params", "get_DocNameId", "get_DocNameId_Helper"):
                     start = next((i for i, line in enumerate(lines)
-                        if re.match(r"(?i)^\\s*(?:(?:public|private)\\s+)?Function\\s+"
-                                    + proc + r"\\b", line)), None)
+                        if re.match(r"(?i)^\s*(?:(?:public|private)\s+)?Function\s+"
+                                    + proc + r"\b", line)), None)
                     if start is not None:
                         print(f"FACTOR_METHOD_BEGIN {proc} {start+1}")
                         for i in range(start, min(start+700, len(lines))):
                             print(f"FACTOR_METHOD {proc} {i+1:5d} {lines[i][:310]}")
-                            if i>start and re.match(r"(?i)^\\s*End Function\\s*$",lines[i]):
+                            if i>start and re.match(r"(?i)^\s*End Function\s*$",lines[i]):
                                 break
                         print(f"FACTOR_METHOD_END {proc}")
             if name == "v52_exp_fgis_ra":
