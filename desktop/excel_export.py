@@ -10,12 +10,9 @@ import os
 from pathlib import Path
 import tempfile
 
-from att51_fsa.export_2025 import CustomerSettings
-from att51_fsa.labour_2025 import LabourOptions
-from att51_fsa.aerosol_2025 import ChemicalOptions
 from att51_fsa.sources import FsaSourceError
 
-from excel_shared_source import build_shared_excel_rows
+from excel_shared_source import prepared_batch_rows
 from source_settings import application_data_dir
 
 
@@ -123,15 +120,9 @@ def _save_excel97(path: Path, rows: list[list[str]]) -> None:
         Path(temporary).unlink(missing_ok=True)
 
 
-def create_excel_export(
-    database: Path, resources: Path, ini: Path | None, customer: CustomerSettings,
-    *, labour: LabourOptions | None = None,
-    chemical: ChemicalOptions | None = None,
-    directory: Path | None = None,
-    writer=None,
-) -> ExcelResult:
-    rows, count, indicators = build_shared_excel_rows(
-        database, resources, ini, customer, labour=labour, chemical=chemical)
+def create_excel_export(batch, *, directory: Path | None = None, writer=None) -> ExcelResult:
+    """Format an already-prepared common batch, no original-file reads."""
+    rows, count, indicators = prepared_batch_rows(batch)
     target = (Path(directory) if directory is not None else
               application_data_dir().parent / "reports") / FILENAME
     (writer or _save_excel97)(target, rows)

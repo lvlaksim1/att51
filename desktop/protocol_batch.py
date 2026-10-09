@@ -1,113 +1,113 @@
-"""Read-only diagnostic of all XML protocols linked from the original MDB.
+"""The single read-only input and selection pipeline for both XML and Excel.
 
-A selected XML is not a global source of data. Each protocol's XML is resolved
-from sout_factors.file by source_discovery; the real output remains disabled.
+Neither format writer reads MDB, original protocol XML or resource catalogs.
+Only this common service reads them and invokes verified prepare_protocol.
 """
 from __future__ import annotations
 
-from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
 
-from att51_fsa.pipeline_2025 import (
-    Original2025Options, analyze_2025,
-)
+from att51_fsa.export_2025 import CustomerSettings, PreparedProtocol, prepare_protocol
+from att51_fsa.labour_2025 import LabourOptions
+from att51_fsa.aerosol_2025 import ChemicalOptions
+from att51_fsa.pipeline_2025 import Original2025Options
 from att51_fsa.resources import ResourceCatalog
 from att51_fsa.sources import FsaSourceError, parse_xml
-from source_discovery import discover_protocols
-from internal_xml import FACTOR_NAMES
-from factor_structure import inspect_factor_structure
+from whole_base_reports import read_inventory
 
 
-def inspect_all_2025(
-    workplace_mdb: Path,
-    resources_mdb: Path,
-    options: Original2025Options,
-    *,
-    rm_id: int | None = None,
-    working_fgis_ini: Path | None = None,
-) -> dict:
-    """Inspect every existing XML linked by the MDB; never generate FGIS XML."""
-    workplace_mdb, resources_mdb = Path(workplace_mdb), Path(resources_mdb)
-    if working_fgis_ini is not None:
-        working_fgis_ini = Path(working_fgis_ini)
-        if not working_fgis_ini.is_file():
-            raise FileNotFoundError(f"Не найдены указанные настройки ФГИС: {working_fgis_ini}")
+@dataclass(frozen=True)
+class ProtocolBatch:
+    total: int
+    protocols: tuple[PreparedProtocol, ...]
+    issues: tuple[str, ...]
+    resource_lines: tuple[str, ...]
+    @property
+    def ready(self) -> bool:
+        return bool(self.protocols) and not self.issues
+    @property
+    def measurement_count(self) -> int:
+        return sum(len(proposal.protocol.research_objects)
+                   for proposal in self.protocols if proposal.protocol is not None)
 
-    # One read of the MDB protocol index and one resource catalog for all rows.
-    protocols = discover_protocols(workplace_mdb, rm_id=rm_id)
-    catalog = ResourceCatalog.from_mdb(resources_mdb)
-    records: list[dict] = []
-    counts: Counter[str] = Counter()
-    info = catalog.diagnostics
-    resource_may_be_template = (
-        info.device_count == 0 and info.person_count == 0 and
-        "FGIS_RA" in info.tables_absent
-    )
-    for protocol in protocols:
-        record = {
-            "rm_id": protocol.rm_id,
-            "factor_id_mdb": protocol.factor_id,
-            "factor_name": FACTOR_NAMES.get(str(protocol.factor_id), ""),
-            "xml": str(protocol.xml),
-        }
+
+def prepare_batch(
+    database: Path, resources: Path, ini: Path | None, customer: CustomerSettings,
+    *, labour: LabourOptions | None = None,
+    chemical: ChemicalOptions | None = None,
+) -> ProtocolBatch:
+    """Never emit only a subset of source protocols; fail closed on any issue."""
+    issues: list[str] = list(customer.validate())
+    resource_lines: list[str] = []
+    try:
+        _, items, _ = read_inventory(Path(database))
+    except (FsaSourceError, OSError, ValueError) as exc:
+        items = []
+        issues.append("База рабочих мест: " + str(exc))
+    try:
+        catalog = ResourceCatalog.from_mdb(Path(resources))
+        info = catalog.diagnostics
+        resource_lines = [
+            "Ресурсы: приборов " + str(info.device_count)
+            + ", сотрудников " + str(info.person_count)
+            + ", нормативных документов " + str(info.normative_count)
+            + ", связей ID ФГИС " + str(info.fgis_link_count)
+            + ", методов ОА " + str(info.oa_method_count),
+            "Отсутствующие таблицы в выбранной базе: "
+            + (", ".join(info.tables_absent) if info.tables_absent else "нет"),
+        ]
+        if "FGIS_RA" in info.tables_absent:
+            issues.append("В выбранной базе нет таблицы FGIS_RA: сопоставление ID "
+                          "ФГИС невозможно. Возможно, выбран не тот ресурсный файл.")
+        elif info.fgis_link_count == 0:
+            issues.append("В выбранной базе таблица FGIS_RA не содержит связей "
+                          "с ID ФГИС; проверьте выбор рабочей базы ресурсов.")
+    except (FsaSourceError, OSError, ValueError) as exc:
+        catalog = None
+        issues.append("База ресурсов: " + str(exc))
+    if not items:
+        issues.append("Нет протоколов для выгрузки")
+    prepared: list[PreparedProtocol] = []
+    seen: set[tuple[str, str]] = set()
+    opts = Original2025Options(labour=labour or LabourOptions(),
+                               chemical=chemical or ChemicalOptions())
+    for ix, item in enumerate(items, 1):
+        context = (f"Протокол {ix}, РМ {item['rm_id']}, "
+                   f"фактор {item['factor_id']}")
+        path = item["xml"]
+        if path is None or not path.is_file():
+            issues.append(context + ": отсутствует связанный внутренний XML")
+            continue
         try:
-            original_xml = parse_xml(protocol.xml)
-            result = analyze_2025(
-                original_xml, catalog, options,
-                working_fgis_ini=working_fgis_ini,
-            )
-            record.update({
-                "number": result.number,
-                "factor_id_xml": result.factor_id,
-                "status": result.status,
-                "supported": result.supported,
-                "measurement_count": len(result.measurement_traces),
-                "errors": list(result.errors),
-                "resource_errors": list(result.resource_errors),
-                "resource_warnings": list(result.resource_warnings),
-            })
-            if result.status == "unsupported_factor":
-                if str(protocol.factor_id) in FACTOR_NAMES:
-                    record["measurement_structure_evidence"] = inspect_factor_structure(
-                        original_xml
-                    )
-                record["explanation"] = (
-                    "Обнаруженный внутренний XML не повреждён. "
-                    "Преобразование данного фактора в ФГИС ещё не реализовано."
-                )
-            if result.factor_id != str(protocol.factor_id):
-                record["factor_mismatch"] = True
-                record["errors"].append("XML factor ID differs from MDB")
-        except (FsaSourceError, ValueError, OSError) as error:
-            record.update({
-                "status": "source_read_error",
-                "supported": False,
-                "errors": [f"{type(error).__name__}: {error}"],
-            })
-        counts[record["status"]] += 1
-        records.append(record)
-    return {
-        "workplace_mdb": str(workplace_mdb),
-        "resources_mdb": str(resources_mdb),
-        "rm_filter": rm_id,
-        "found_linked_xml": len(protocols),
-        "statuses": dict(sorted(counts.items())),
-        "fgis_ini": str(working_fgis_ini) if working_fgis_ini else None,
-        "resource_source_warning": (
-            "В справочнике нет приборов, сотрудников и таблицы FGIS_RA. "
-            "Это не доказывает, что выбран неправильный файл; сверяйте "
-            "источник с настройкой оригинала [DB_res]."
-            if resource_may_be_template else None
-        ),
-        "warnings": (
-            ["Пользовательский fgis_ra.ini отсутствует: идентификаторы "
-             "из локальных переопределений не могут быть учтены."]
-            if working_fgis_ini is None else []
-        ) + [
-            "Проверяются только существующие XML, указанные в sout_factors.file; "
-            "для списка отсутствующих XML используйте «Проверить протоколы базы».",
-        ],
-        "protocols": records,
-        "not_exportable": True,
-        "note": "Частичная диагностика шести видов факторов; итоговый XML ФГИС не формируется.",
-    }
+            original = parse_xml(path)
+            doc = original if original.tag == "Document" else original.find(".//Document")
+            factor = doc.find("./factor") if doc is not None else None
+            if factor is None or factor.get("facid", "") != item["factor_id"]:
+                issues.append(context + ": фактор XML и основной MDB не совпадают")
+                continue
+            if catalog is None:
+                continue
+            result = prepare_protocol(
+                original, catalog, customer, options=opts,
+                working_ini=Path(ini) if ini else None)
+            if result.blockers:
+                issues.extend(context + ": " + message
+                              for message in result.blockers
+                              if message not in customer.validate())
+            if result.protocol is not None:
+                key = (result.protocol.doc_id, result.protocol.creation_date)
+                if key in seen:
+                    issues.append(context + ": повторение номера и даты протокола")
+                seen.add(key)
+                if result.source is None or (
+                    len(result.source.measurements) !=
+                    len(result.protocol.research_objects)
+                ):
+                    issues.append(context + ": отсутствует единый исходный набор показателей")
+                else:
+                    prepared.append(result)
+        except (FsaSourceError, OSError, ValueError) as exc:
+            issues.append(context + ": ошибка исходных данных: " + str(exc))
+    return ProtocolBatch(len(items), tuple(prepared),
+                         tuple(dict.fromkeys(issues)), tuple(resource_lines))

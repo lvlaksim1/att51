@@ -21,7 +21,7 @@ from att51_fsa.sources import FsaSourceError, parse_xml
 from att51_fsa.writer import serialize_protocols, validate_xml
 
 from source_settings import application_data_dir
-from whole_base_reports import read_inventory
+from protocol_batch import prepare_batch
 
 
 RESULT_FILE = "Проверка_и_формирование_XML_ФГИС.txt"
@@ -79,80 +79,20 @@ def create_fgis_export(
         "Оригинальные MDB/XML/INI не изменяются. Несопоставленные ID не подменяются.",
         "Выбранная база ресурсов: " + str(resources),
     ]
-    common_issues: tuple[str, ...] = customer.validate()
-    issues: list[str] = list(common_issues)
-    prepared = []
-    try:
-        places, items, _ = read_inventory(Path(database))
-    except (FsaSourceError, OSError, ValueError) as exc:
-        items = []
-        issues.append("База рабочих мест: " + str(exc))
-    try:
-        catalog = ResourceCatalog.from_mdb(Path(resources))
-        info = catalog.diagnostics
-        lines += [
-            ("Ресурсы: приборов " + str(info.device_count) +
-             ", сотрудников " + str(info.person_count) +
-             ", нормативных документов " + str(info.normative_count) +
-             ", связей ID ФГИС " + str(info.fgis_link_count) +
-             ", методов ОА " + str(info.oa_method_count)),
-            "Отсутствующие таблицы в выбранной базе: " +
-            (", ".join(info.tables_absent) if info.tables_absent else "нет"),
-        ]
-        if "FGIS_RA" in info.tables_absent:
-            issues.append("В выбранной базе нет таблицы FGIS_RA: сопоставление ID "
-                          "ФГИС невозможно. Возможно, выбран не тот ресурсный файл.")
-        elif info.fgis_link_count == 0:
-            issues.append("В выбранной базе таблица FGIS_RA не содержит связей "
-                          "с ID ФГИС; проверьте выбор рабочей базы ресурсов.")
-    except (FsaSourceError, OSError, ValueError) as exc:
-        catalog = None
-        issues.append("База ресурсов: " + str(exc))
-    if not items:
-        issues.append("Нет протоколов для выгрузки")
-    opts = Original2025Options(
-        labour=labour or LabourOptions(),
-        chemical=chemical or ChemicalOptions(),
-    )
-    seen = set()
-    for ix, item in enumerate(items, 1):
-        number = f"Протокол {ix}, РМ {item['rm_id']}, фактор {item['factor_id']}"
-        xml = item["xml"]
-        if xml is None or not xml.is_file():
-            issues.append(number + ": отсутствует связанный внутренний XML")
-            continue
-        try:
-            original = parse_xml(xml)
-            doc = original if original.tag=="Document" else original.find(".//Document")
-            fac = doc.find("./factor") if doc is not None else None
-            if fac is None or fac.get("facid", "") != item["factor_id"]:
-                issues.append(number+": фактор XML и основной MDB не совпадают")
-                continue
-            if catalog is None:
-                continue
-            proposed = prepare_protocol(original,catalog,customer,options=opts,
-                                        working_ini=Path(ini) if ini else None)
-            if proposed.blockers:
-                issues.extend(number + ": " + s for s in proposed.blockers
-                              if s not in common_issues and not
-                              (any("Неверная дата заявки" in x for x in common_issues)
-                               and "v5_org_options.query_date" in s))
-            if proposed.protocol:
-                key = (proposed.protocol.doc_id, proposed.protocol.creation_date)
-                if key in seen:
-                    issues.append(number+": повторение номера и даты протокола")
-                seen.add(key)
-                prepared.append(proposed.protocol)
-        except (FsaSourceError, OSError, ValueError) as exc:
-            issues.append(number + ": ошибка исходных данных: " + str(exc))
+    batch = prepare_batch(
+        Path(database), Path(resources), ini, customer,
+        labour=labour, chemical=chemical)
+    issues = list(batch.issues)
+    prepared = [item.protocol for item in batch.protocols]
+    lines.extend(batch.resource_lines)
     issues = list(dict.fromkeys(issues))
-    lines += [f"Протоколов в рабочей MDB: {len(items)}",
+    lines += [f"Протоколов в рабочей MDB: {batch.total}",
               f"Полностью подготовлено для проверки: {len(prepared)}"]
     if issues:
         lines += ["", "ВЫГРУЗКА ЗАБЛОКИРОВАНА: недостаточно подтверждённых данных."]
         lines += ["- " + item for item in issues]
         report = _save_text("\n".join(lines)+"\n",target / RESULT_FILE)
-        return ExportResult(report,(),len(items),len(prepared))
+        return ExportResult(report,(),batch.total,len(prepared))
     output = serialize_protocols(prepared, verified_mapping=True)
     failures=[]
     for ix, blob in enumerate(output,1):
@@ -163,7 +103,7 @@ def create_fgis_export(
         lines+=["","ВЫГРУЗКА ЗАБЛОКИРОВАНА: XSD не пройдена."]
         lines+=["- "+x for x in failures]
         report=_save_text("\n".join(lines)+"\n",target / RESULT_FILE)
-        return ExportResult(report,(),len(items),len(prepared))
+        return ExportResult(report,(),batch.total,len(prepared))
     files=[]
     for ix, blob in enumerate(output,1):
         dest=target / ("fsa_prot.xml" if len(output)==1 else f"fsa_prot{ix}.xml")
@@ -174,4 +114,4 @@ def create_fgis_export(
             "Файлы:"]
     lines+=["- "+str(path) for path in files]
     report=_save_text("\n".join(lines)+"\n",target / RESULT_FILE)
-    return ExportResult(report,tuple(files),len(items),len(prepared))
+    return ExportResult(report,tuple(files),batch.total,len(prepared))
