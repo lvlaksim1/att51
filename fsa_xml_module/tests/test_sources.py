@@ -23,8 +23,8 @@ class PathsTest(unittest.TestCase):
         )
         self.assertEqual(sidecar_for_document(r"C:\A\B.DOC"),
                          r"C:\A\xml\B.xml")
-        self.assertEqual(str(files_directory(Path("/data/ARMv51.MDB"))),
-                         "/data/ARMv51_files")
+        self.assertEqual(files_directory(Path("/data/ARMv51.MDB")),
+                         Path("/data/ARMv51_files"))
 
     def test_original_factor_conditions(self):
         for factor in (1, 11, 15, 17, 26, 35, 37, 41, 10009, 10099):
