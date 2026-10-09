@@ -24,7 +24,7 @@ from source_settings import SourceSettings, SOURCE_KEYS
 from whole_base_reports import create_index, create_details
 from fgis_export import create_fgis_export
 from excel_export import create_excel_export
-from protocol_batch import prepare_batch
+from export_batch import prepare_batch
 from com_workers import run_with_com
 from organization_sources import unique_organization
 from att51_fsa.export_2025 import CustomerSettings

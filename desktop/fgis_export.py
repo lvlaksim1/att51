@@ -21,7 +21,7 @@ from att51_fsa.sources import FsaSourceError, parse_xml
 from att51_fsa.writer import serialize_protocols, validate_xml
 
 from source_settings import application_data_dir
-from protocol_batch import prepare_batch
+from export_batch import prepare_batch
 
 
 RESULT_FILE = "Проверка_и_формирование_XML_ФГИС.txt"
