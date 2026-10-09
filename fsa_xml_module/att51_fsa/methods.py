@@ -149,3 +149,74 @@ def resolve_method(
         doc_name_id="-1", doc_name="", oa_method="", nd_guid="",
         source_rule="third_pass_no_methods", requires_review=True,
     )
+
+
+@dataclass(frozen=True)
+class BoundMethodResult:
+    """Inspect-only result: specific ND paths and why a method was chosen."""
+    selected: MethodResolution
+    protocol_methods: tuple[MethodCandidate, ...]
+    source_errors: tuple[str, ...]
+    matching_rules: tuple[str, ...]
+    not_exportable: bool = True
+
+
+def bind_methods_from_catalog(
+    measure: ResearchForMethod,
+    protocol_methods: Iterable[MethodCandidate],
+    catalog: "ResourceCatalog",
+    *,
+    factor_id: str,
+) -> BoundMethodResult:
+    """Connect get_DocNameId with resource MDB lookups (v5_options_dic).
+
+    The original FSA form first passes every ND through get_nd_by_name,
+    fills DocNameId from DIC_ND_INFO.dop2 when Val is nonzero, and applies
+    get_DocNameId in the original 3-pass order.
+    Missing documents are NOT silently substituted.
+    """
+    from dataclasses import replace
+    from .resources import nd_hash
+
+    preferences: dict[str, str] = {}
+    errors: list[str] = []
+    traces: list[str] = []
+
+    def map_method(item: MethodCandidate) -> MethodCandidate:
+        matched = catalog.nd(nd_hash(item.doc_name), item.doc_name, str(factor_id))
+        traces.append(matched.source_rule)
+        if not matched.found or matched.normative is None:
+            errors.append("normative_missing_from_resource_mdb")
+            return item
+        issues = catalog.nd_diagnostics(matched, "1")
+        errors.extend(x for x in issues if x.startswith("fatal_"))
+        if matched.requires_review and "original_vba_like_requires_verification" in matched.warnings:
+            errors.append("normative_short_name_match_requires_verification")
+        resource = matched.normative
+        preferences[item.doc_name] = resource.preference
+        return replace(
+            item,
+            doc_name_id=(
+                resource.method_doc_id
+                if resource.method_doc_id not in ("", "0") else item.doc_name_id
+            ),
+            oa_method=resource.oa_method,
+            nd_guid=resource.guid,
+        )
+
+    common = tuple(map_method(m) for m in protocol_methods)
+    if measure.own_methods:
+        own = tuple(map_method(m) for m in measure.own_methods)
+        annotated = replace(measure, own_methods=own)
+    else:
+        annotated = measure
+    chosen = resolve_method(annotated, common, preferences)
+    if not chosen.doc_name_id or chosen.doc_name_id in ("0", "-1"):
+        errors.append("method_fgis_id_missing")
+    if errors and not chosen.requires_review:
+        chosen = replace(chosen, requires_review=True)
+    return BoundMethodResult(
+        selected=chosen, protocol_methods=common,
+        source_errors=tuple(dict.fromkeys(errors)),
+        matching_rules=tuple(traces),
+    )
