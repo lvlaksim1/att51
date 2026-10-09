@@ -22,7 +22,7 @@ AppVersion={#AppVersion}
 AppPublisher=lvlaksim1
 AppPublisherURL=https://github.com/lvlaksim1/att51
 AppSupportURL=https://github.com/lvlaksim1/att51/issues
-DefaultDirName={autopf}\Att51_export
+DefaultDirName={commonappdata}\Att51_export
 DefaultGroupName=Att51_export
 DisableDirPage=yes
 DisableProgramGroupPage=yes
@@ -60,10 +60,10 @@ Type: filesandordirs; Name: "{app}\reports"
 function InitializeSetup(): Boolean;
 var InstalledExe: String;
 begin
-  InstalledExe := ExpandConstant('{autopf}\Att51_export\Att51_export.exe');
+  InstalledExe := ExpandConstant('{commonappdata}\Att51_export\Att51_export.exe');
   if not FileExists(InstalledExe) then
   begin
-    MsgBox('Att51_export не обнаружен в папке Program Files\Att51_export.' + #13#10 +
+    MsgBox('Att51_export не обнаружен в папке ProgramData\Att51_export.' + #13#10 +
       'Для первой установки используйте Att51_export_Setup.', mbError, MB_OK);
     Result := False;
     Exit;

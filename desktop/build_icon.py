@@ -1,6 +1,6 @@
 """Create reproducible multi-resolution Att51_export Windows icon.
 
-Visual identity: blue rounded application tile, white XML document, green
+Visual identity: blue rounded application tile, white document, green
 up-arrow showing the preparation of a structured XML export.
 Build-time only, requires Pillow; app itself does not generate icon files.
 """
@@ -55,11 +55,11 @@ def build():
     for y, width in ((374, 366), (455, 344), (536, 286)):
         d.rounded_rectangle((332, y, 332 + width, y + 25), radius=8,
                             fill=(36, 102, 169))
-    # Distinct XML ribbon at bottom of document.
+    # Distinct EXPORT ribbon at bottom of document.
     d.rounded_rectangle((165, 672, 684, 871), radius=37, fill=(19, 105, 196))
     d.rounded_rectangle((171, 681, 678, 860), radius=31,
                         outline=(129, 206, 255, 255), width=8)
-    d.text((230, 694), "XML", font=font(154), fill=(255, 255, 255))
+    d.text((194, 720), "EXPORT", font=font(79), fill=(255, 255, 255))
     # Green export/up arrow, offset to lower right.
     d.polygon([(754, 559), (875, 432), (987, 558),
                (921, 558), (921, 840), (821, 840),
