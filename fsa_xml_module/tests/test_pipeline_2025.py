@@ -138,7 +138,7 @@ class PipelineTests(unittest.TestCase):
 
     def test_supported_factors_have_distinct_ids(self):
         self.assertEqual(SUPPORTED_FACTORS,
-                         frozenset(("4", "5", "6", "11", "12", "10099")))
+                         frozenset(("4", "5", "6", "11", "12", "13", "14", "10099")))
 
     def test_diagnostic_json_has_no_export_status(self):
         r = analyze_2025(prot(), catalog(), Original2025Options())
