@@ -11,7 +11,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
-from .sources import AccessReader, FsaSourceError, parse_xml, resolve_relative_file
+from .sources import AccessReader, FsaSourceError, parse_xml, read_sidecar, resolve_relative_file
 
 
 @dataclass(frozen=True)
@@ -86,7 +86,13 @@ def select_individual(
                     continue
                 doc = resolve_relative_file(root, file)
                 sidecar = doc.parent / "xml" / (doc.stem + ".xml")
-                state = "available" if sidecar.is_file() else "missing_xml"
+                state = "missing_xml"
+                if sidecar.is_file():
+                    try:
+                        internal = read_sidecar(sidecar)
+                        state = "excluded_by_fgis_state" if internal.fgis_state == "1" else "available"
+                    except FsaSourceError:
+                        state = "malformed_xml"
                 choices.append(ProtocolSelection(
                     "individual", str(doc), str(sidecar), state,
                     workplace_id, factor_id,
