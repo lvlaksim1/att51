@@ -42,8 +42,8 @@ try {
 
   $exe = Join-Path $publish 'Att51_export\Att51_export.exe'
   if (-not (Test-Path $exe)) { throw 'Executable not generated' }
-  & $exe --self-test
-  if ($LASTEXITCODE -ne 0) { throw "Executable self-test failed: $LASTEXITCODE" }
+  $smoke = Start-Process -FilePath $exe -ArgumentList '--self-test' -Wait -PassThru
+  if ($smoke.ExitCode -ne 0) { throw "Executable self-test failed: $($smoke.ExitCode)" }
 
   $iscc = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Inno Setup 6\ISCC.exe'
   if (-not (Test-Path $iscc)) { $iscc = Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe' }
