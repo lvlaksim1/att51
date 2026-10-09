@@ -80,6 +80,38 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual((item.indicator_id, item.directory, item.measurement_id),
                              ("199", "DM-55254", "994"))
 
+    def test_specific_oa_method_overrides_default_for_acoustic_indicator(self):
+        c = ResourceCatalog.from_rows(
+            devices=[], people=[],
+            normative=[{"id": 1, "mguid": "ND-1",
+                        "name": "ГОСТ 12.1.003-83",
+                        "factor_id": 4, "typ": 1}],
+            links=[],
+            nd_info=[{"nd_id": 1, "key_ctxt": "ГОСТ",
+                      "dop2": 123, "dop4": "shum_izm",
+                      "dop5": "Default {350}"}],
+            oa_methods=[{"nd_guid": "ND-1", "method": "Special OA {777}",
+                         "params": "temp;shum_izm"}],
+            present_tables={"ATT_DEVICE", "ATT_PERSON", "DIC_ND",
+                            "DIC_ND_INFO", "DIC_ND_OA_METHODS"},
+        )
+        root = prot()
+        izm = ET.SubElement(root, "izm_res_data")
+        ET.SubElement(izm, "izm", level="85", nd_izm1="2")
+        result = analyze_2025(
+            root, c, Original2025Options(
+                acoustic_measurements=True,
+                both_measurements_and_equivalent=True,
+                acoustic_level_per_operation=True,
+            )
+        )
+        self.assertEqual(len(result.measurement_traces), 1)
+        value = result.measurement_traces[0]
+        self.assertEqual(value.prepared.indicator_id, "9")
+        self.assertEqual(value.prepared.oa_method_id, "777")
+        self.assertIn("oa_method_selected_from_indicator_specific_resource",
+                      value.warnings)
+
     def test_missing_method_is_not_fabricated(self):
         r = analyze_2025(prot(method=False), catalog(), Original2025Options())
         self.assertEqual(r.status, "requires_correction")
