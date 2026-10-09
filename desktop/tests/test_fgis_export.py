@@ -13,8 +13,8 @@ class SafetyExportTests(unittest.TestCase):
     def test_block_missing_resource_before_writing_xml(self):
         with tempfile.TemporaryDirectory() as d:
             directory=Path(d)
-            with patch("fgis_export.read_inventory",return_value=([],[],directory)), \
-                 patch("fgis_export.ResourceCatalog.from_mdb",side_effect=ValueError("empty")):
+            with patch("export_batch.read_inventory",return_value=([],[],directory)), \
+                 patch("export_batch.ResourceCatalog.from_mdb",side_effect=ValueError("empty")):
                 result=create_fgis_export(directory/"arm.mdb",directory/"resources.mdb",None,
                                           CustomerSettings("01.02.2026",1,inn="1234567890"),
                                           directory/"missing.xsd",directory=directory)
@@ -30,8 +30,8 @@ class SafetyExportTests(unittest.TestCase):
                 devices=[], people=[], normative=[], links=[],
                 present_tables=ResourceCatalog.REQUIRED
             )
-            with patch("fgis_export.read_inventory", return_value=([], [], directory)), \
-                 patch("fgis_export.ResourceCatalog.from_mdb", return_value=cat):
+            with patch("export_batch.read_inventory", return_value=([], [], directory)), \
+                 patch("export_batch.ResourceCatalog.from_mdb", return_value=cat):
                 result = create_fgis_export(
                     directory/"org.mdb", directory/"res_orgs.mdb", None,
                     CustomerSettings("01.02.2026", 1, inn="1234567890"),
@@ -48,8 +48,8 @@ class SafetyExportTests(unittest.TestCase):
             xml.write_text('<Document num_doc="A"><factor facid="14"/></Document>',
                            encoding="utf-8")
             rows=[{"rm_id":"1","factor_id":"13","xml":xml}]
-            with patch("fgis_export.read_inventory",return_value=([],rows,directory)), \
-                 patch("fgis_export.ResourceCatalog.from_mdb",return_value=__import__("att51_fsa.resources",fromlist=["ResourceCatalog"]).ResourceCatalog.from_rows([], [], [], [])):
+            with patch("export_batch.read_inventory",return_value=([],rows,directory)), \
+                 patch("export_batch.ResourceCatalog.from_mdb",return_value=__import__("att51_fsa.resources",fromlist=["ResourceCatalog"]).ResourceCatalog.from_rows([], [], [], [])):
                 result=create_fgis_export(directory/"arm.mdb",directory/"res.mdb",None,
                                           CustomerSettings("01.02.2026",1,inn="1234567890"),
                                           directory/"missing.xsd",directory=directory)
