@@ -55,6 +55,13 @@ def main() -> None:
                         if i>found_start and re.match(r"(?i)^\s*End Function\s*$", line):
                             break
                     print(f"END_PROCEDURE {proc}")
+            if name == "v52_exp_fgis_ra":
+                # These are the original field provenance and date functions.
+                for start, stop in ((4273, 4347), (3520, 3542), (2430, 2514)):
+                    print(f"BEGIN_ORIGINAL_RANGE {start}-{stop}")
+                    for i in range(start-1, min(stop, len(lines))):
+                        print(f"RANGE {i+1:5d} {lines[i][:290]}")
+                    print("END_ORIGINAL_RANGE")
             # Avoid uncontrolled log size, and restrict to known module/terms.
             for i in sorted(selected)[:1300]:
                 line = lines[i].rstrip()
