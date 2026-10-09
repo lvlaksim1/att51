@@ -137,9 +137,8 @@ class ComThreadTests(unittest.TestCase):
         calls=[]
         fake=types.SimpleNamespace(CoInitialize=lambda:calls.append("init"),
                                    CoUninitialize=lambda:calls.append("uninit"))
-        with patch("com_workers.__import__") as imp, patch.dict(
+        with patch.object(sys, "platform", "win32"), patch.dict(
                 sys.modules, {"pythoncom":fake}):
-            imp.return_value=types.SimpleNamespace(platform="win32")
             def task():
                 calls.append("task")
                 return 5
@@ -150,9 +149,8 @@ class ComThreadTests(unittest.TestCase):
         calls=[]
         fake=types.SimpleNamespace(CoInitialize=lambda:calls.append("init"),
                                    CoUninitialize=lambda:calls.append("uninit"))
-        with patch("com_workers.__import__") as imp, patch.dict(
+        with patch.object(sys, "platform", "win32"), patch.dict(
                 sys.modules, {"pythoncom":fake}):
-            imp.return_value=types.SimpleNamespace(platform="win32")
             with self.assertRaisesRegex(RuntimeError,"boom"):
                 run_with_com(lambda: (_ for _ in ()).throw(RuntimeError("boom")))
         self.assertEqual(calls,["init","uninit"])
