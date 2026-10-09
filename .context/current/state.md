@@ -36,3 +36,10 @@
 - Windows просмотр схемы оригинальной res_orgs.mdb выявил отсутствие установочных FGIS_RA/DIC_ND_INFO/DIC_ND_SYN, что не является неисправностью модуля: приложение обычно создаёт эти таблицы позднее. Модуль их не создаёт, а указывает отсутствие; источник Actions #37870387468.
 - Завершено 69 синтетических испытаний на Linux в Actions #37871192950 (этап test success); отдельная Windows-часть последней проверки подлежит сверке. Предыдущие ADO/Jet/MSXML Windows проверки успешны.
 - Исходные функции и таблицы, схема загрузки и открытые пробелы подробно описаны в research/FSA_RESOURCE_MAPPING.md; статус основной задачи #2 остаётся ACTIVE, **полный XML не генерируется**.
+
+## Состояние XML-модуля после этапа ResearchObjectInfo
+- Код: fsa_xml_module/att51_fsa/{measurements,research_objects,pipeline_2025,resources,methods,writer}.py.
+- Отдельно проверено шесть факторных ветвей 4/5/6/11/12/10099, привязка к методу из DIC_ND_INFO/ОА из DIC_ND_OA_METHODS, пользовательские параметры fgis_ra.ini, XSD-блок ResearchObjectInfo.
+- Диагностика: python -m att51_fsa inspect-2025, только чтение, not_exportable=true. Реальный fsa_prot.xml по-прежнему не формируется.
+- Испытания: GitHub Actions №37872417247 success, 98 тестов, Jet/ADO/исходная XSD на Windows; не проверено сравнение с реальной исходной выгрузкой.
+- Документ: research/FSA_RESEARCHOBJECT_2025.md. Задача #2 активна.

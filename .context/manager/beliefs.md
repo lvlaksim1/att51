@@ -47,3 +47,9 @@
 - В исходной res_orgs.mdb из установщика имеются ATT_DEVICE, ATT_PERSON, DIC_ND, ATT_DOP_INFO. **Отсутствуют FGIS_RA, DIC_ND_INFO, DIC_ND_SYN, DIC_ND_OA_METHODS**; оригинал может создавать их при открытии. Независимый модуль НЕ изменяет схему. Источник: настоящая ADO OpenSchema проверка Windows Actions #37870387468; статические процедуры v5_res_main.chk_fgis_ra и v5_options_dic.CreateTable_DIC_ND_INFO.
 - В fsa_xml_module/att51_fsa/resources.py перенесены: поиск прибора mguid→factory_num (с цифрами), сотрудника mguid→snils, ID ФГИС rec_type+rec_guid→IntValue; поиск НД по фактору/хешу/синонимам/сокращению/имени; [DB_res] res_flag/res_path. Статическое основание: исходные VBA в Attestation51.dot. Измерения и источники сопоставляются в resource_xml.py; выбор методики из реальной ресурсной записи — methods.bind_methods_from_catalog.
 - **69 синтетических испытаний** исходных правил успешны (Actions #37871192950, этап test); оригинальные образцовые MDB читаются через Jet/ADO. Тест рабочей наполненной базы и полная эквивалентность оригинальному экспорту **не доказаны**. Источник: CI/test + исходный код; research/FSA_RESOURCE_MAPPING.md.
+
+## B10. Преобразования ФГИС ФСА 2025 — установлено статически, проверено испытаниями
+- Факторы 4/5/6/11/12/10099 теперь имеют отдельные процедуры в fsa_xml_module/att51_fsa/measurements.py; остальные ветви не перенесены.
+- research_objects.py повторяет порядок XSD ResearchObjectInfo, исходные коды 1→DM-53535, 2→DM-55254 и переназначения из fgis_ra.ini.
+- pipeline_2025.py объединяет внутренний XML, выбранный фактор, DIC_ND/INFO, методы ОА из DIC_ND_OA_METHODS и подготовку полей; вывод строго диагностический, not_exportable=true.
+- Подтверждение: 98/98 автоматических испытаний и Windows Jet/ADO/XSD, GitHub Actions №37872417247 — success. Это не доказательство идентичности полного fsa_prot.xml на заполненных данных. Источник: research/FSA_RESEARCHOBJECT_2025.md.

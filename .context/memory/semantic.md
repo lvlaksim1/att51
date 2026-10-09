@@ -33,3 +33,9 @@
 - НД: хеш prot_api.get_nd_hash (цифры и пять русских гласных), поэтапное сопоставление v5_options_dic.get_nd_by_name с фактором/синонимами/коротким названием/точным именем; дополнительные MethodDocId=dop2, приоритет=dop4, OA-method=dop5. Источник: оригинальный VBA, research/FSA_RESOURCE_MAPPING.md.
 - Установочная res_orgs.mdb **не имеет** таблиц FGIS_RA/DIC_ND_INFO/DIC_ND_SYN. Windows ADO OpenSchema проверено в Actions #37870387468. Для настоящего экспорта нужна **рабочая** ресурсная база, которую оригинал мог дополнить. Модуль намеренно не обновляет схемы.
 - Новый ResourceCatalog и inspect-resources — независимое чтение источников без Word. Успешность 69 синтетических испытаний не является доказательством полной эквивалентности ФСА. Источник: GitHub CI #37871192950; authority: проверенный репозиторий.
+
+## Постоянная память: ResearchObjectInfo ФГИС ФСА
+- Исходный v52_exp_fgis_ra.save_XML требует порядок IndicatorId, UniqueIndicator, Directory, FactValue, MeasurementId, UniqueMeasurement (опц.), DocNameId, UniqueMethod (опц.), DocNameMethodikId/UniqueMethodik (опц.).
+- Исходные коды Directory 1=DM-53535, 2=DM-55254; настройки fgis_ra.ini и таблица DIC_ND_OA_METHODS могут индивидуально заменять значения и методики.
+- Поддержаны факторы 4,5,6,11,12,10099 в отдельном read-only pipeline_2025; новая команда inspect-2025 выдаёт диагностику, не файл для ФСА.
+- 98/98 автоматических испытаний и Windows-проверки MDB/XSD успешны (Actions №37872417247). Полная эквивалентность оригинальной выгрузке не доказана. Источник: research/FSA_RESEARCHOBJECT_2025.md.
