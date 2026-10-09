@@ -151,5 +151,36 @@ class InspectionTest(unittest.TestCase):
                              "ready_for_further_mapping")
 
 
+    def test_state_two_skips_equipment_mapping_like_original(self):
+        with TemporaryDirectory() as directory:
+            base = Path(directory)
+            mdb = base / "ARMv51.MDB"
+            mdb.touch()
+            resources = base / "res_orgs.mdb"
+            resources.touch()
+            sidecar = files_directory(mdb) / "ABC" / "xml" / "noise.xml"
+            sidecar.parent.mkdir(parents=True)
+            sidecar.write_text(
+                '<Document num_doc="TEST" fgis_state="2">'
+                '<factor facid="4"><si_guids>'
+                '<si_guid guid="UNMAPPED" num="123"/>'
+                '</si_guids></factor></Document>', encoding="utf-8")
+            class FakeAccess:
+                def __init__(self, path): pass
+                def __enter__(self): return self
+                def __exit__(self, *args): pass
+                def select(self, query):
+                    if "FROM FGIS_RA" in query:
+                        return []
+                    if "FROM sout_factors" in query:
+                        return [{"factor_id": 4, "file": r"ABC\\noise.docx"}]
+                    raise AssertionError(query)
+            with patch("att51_fsa.sources.AccessReader", FakeAccess):
+                info = AppSources(mdb, resources).inspect([1])
+            self.assertEqual(info["candidates"][0]["status"],
+                             "ready_for_further_mapping")
+
+
+
 if __name__ == "__main__":
     unittest.main()
