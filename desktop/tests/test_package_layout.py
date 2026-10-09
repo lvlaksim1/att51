@@ -91,12 +91,18 @@ class InstallationContractTests(unittest.TestCase):
         source = (DESKTOP / "app.py").read_text(encoding="utf-8")
         update = source.split("    def _install_update(self):", 1)[1].split(
             "    def _pump(self):", 1)[0]
-        self.assertIn('None, "open"', update)
-        self.assertNotIn('None, "runa' + 's"', update)
+        self.assertIn("start_update_overlay(", update)
+        self.assertIn("ready.is_file()", update)
         self.assertIn("self._save_sources()", update)
         self.assertNotIn("messagebox.askyesno(", update)
         self.assertIn("os.getpid()", update)
         self.assertIn('text="Обновить"', source)
+        script = (DESKTOP / "update_overlay.ps1").read_text(encoding="utf-8")
+        self.assertIn("'/VERYSILENT'", script)
+        self.assertIn("install.progress", script)
+        self.assertIn("newapp.ready", script)
+        self.assertIn("SetProgress 100", script)
+        self.assertNotIn("MessageBox", script)
 
     def test_update_preserves_existing_shortcuts(self):
         update = self.script("update.iss")
