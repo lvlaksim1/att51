@@ -10,6 +10,7 @@ from .measurements import NoiseOptions, extract_noise_from_file
 from .writer import validate_xml
 from .resources import ResourceCatalog, resource_mdb_path
 from .resource_xml import inspect_protocol_resources_file, inspection_dict
+from .pipeline_2025 import Original2025Options, analyze_2025_file, diagnostic_dict
 from dataclasses import asdict
 
 
@@ -58,6 +59,18 @@ def main(argv: list[str] | None = None) -> int:
     resources.add_argument("--additional-equipment", action="store_true")
     resources.add_argument("--output", type=Path, help="Local JSON report (may contain personnel names)")
 
+    combined = subs.add_parser("inspect-2025", help="Read-only original 2025 sidecar-to-method mapping")
+    combined.add_argument("--xml", type=Path, required=True, help="Original internal XML")
+    combined.add_argument("--resources", type=Path, required=True, help="Working res_orgs.mdb")
+    combined.add_argument("--fgis-ini", type=Path, help="Working fgis_ra.ini (original overrides)")
+    combined.add_argument("--acoustic", action="store_true")
+    combined.add_argument("--acoustic-only", action="store_true")
+    combined.add_argument("--per-operation", action="store_true")
+    combined.add_argument("--uncertainty", action="store_true")
+    combined.add_argument("--micro-results", action="store_true")
+    combined.add_argument("--micro-dose", action="store_true")
+    combined.add_argument("--output", type=Path, help="Local JSON report; do not publish")
+
     args = p.parse_args(argv)
 
     def show(data):
@@ -68,6 +81,25 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(result)
     try:
+        if args.operation == "inspect-2025":
+            if args.acoustic_only and not args.acoustic:
+                raise FsaSourceError("--acoustic-only requires --acoustic")
+            if args.per_operation and not args.acoustic:
+                raise FsaSourceError("--per-operation requires --acoustic")
+            original_options = Original2025Options(
+                acoustic_measurements=args.acoustic,
+                both_measurements_and_equivalent=args.acoustic_only,
+                acoustic_level_per_operation=args.per_operation,
+                include_uncertainty=args.uncertainty,
+                micro_use_result_values=args.micro_results,
+                micro_include_exposure_dose=args.micro_dose,
+            )
+            result = analyze_2025_file(
+                args.xml, args.resources, original_options,
+                working_fgis_ini=args.fgis_ini,
+            )
+            show(diagnostic_dict(result))
+            return 0
         if args.operation == "inspect-resources":
             db_path = args.resources if args.resources else resource_mdb_path(args.app_dir)
             catalog = ResourceCatalog.from_mdb(db_path)
