@@ -11,7 +11,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from .original_header import build_header, original_protocol_date, fgis_date
-from .pipeline_2025 import Original2025Options, analyze_2025
+from .pipeline_2025 import FieldTrace, Original2025Options, analyze_2025
 from .resource_xml import inspect_protocol_resources
 from .resources import ResourceCatalog
 from .sources import FsaSourceError, read_ini
@@ -52,6 +52,9 @@ class PreparedProtocol:
     protocol: Protocol | None
     blockers: tuple[str, ...]
     warnings: tuple[str, ...] = ()
+    # Captured before FGIS IDs replace source values; precisely the same
+    # accepted traces, and in the same order, as protocol.research_objects.
+    source_traces: tuple[FieldTrace, ...] = ()
 
 
 def _doc(xml: ET.Element) -> ET.Element:
@@ -199,4 +202,5 @@ def prepare_protocol(
                                if t.prepared is not None),
         no_equipment=False, territory_feature=True, is_lab=False,
         is_another_doc=False,
-    ), (), tuple(dict.fromkeys(warnings)))
+    ), (), tuple(dict.fromkeys(warnings)),
+       tuple(t for t in analysis.measurement_traces if t.prepared is not None))
