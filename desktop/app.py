@@ -336,6 +336,7 @@ class DesktopApp:
             "inn": source_org.inn if source_org else "",
             "ogrn": source_org.ogrn if source_org else "",
             "fio": source_org.fio if source_org else "",
+            "full_name": source_org.name if source_org else "",
         }
         popup=tk.Toplevel(self.root)
         popup.title("Данные заказчика и параметры выгрузки ФГИС")
@@ -347,6 +348,7 @@ class DesktopApp:
         prompts=(
             ("Дата заявки, ДД.ММ.ГГГГ","date",""),
             ("Тип заказчика (1=ЮЛ, 2=ИП, 4=физлицо)","kind","1"),
+            ("Наименование организации","full_name",""),
             ("ИНН заказчика","inn",""),
             ("ОГРН (если есть)","ogrn",""),
             ("ФИО заказчика-физлица (если есть)","fio",""),
@@ -357,27 +359,27 @@ class DesktopApp:
             var=tk.StringVar(value=originals.get(key, initial))
             ttk.Entry(controls,textvariable=var,width=35).grid(row=row,column=1,padx=8,pady=4)
             values[key]=var
-        ttk.Label(controls,text="Состояние данных").grid(row=5,column=0,sticky="w",pady=4)
+        ttk.Label(controls,text="Состояние данных").grid(row=6,column=0,sticky="w",pady=4)
         status=tk.StringVar(value="20")
         ttk.Combobox(controls,textvariable=status,values=("20","13"),state="readonly",
-                     width=33).grid(row=5,column=1,padx=8,pady=4)
+                     width=33).grid(row=6,column=1,padx=8,pady=4)
         direct=tk.BooleanVar(value=False)
         totals=tk.BooleanVar(value=False)
         ttk.Checkbutton(controls,text="Тяжесть: прямые измерения (не итоговые)",
-                        variable=direct).grid(row=6,column=0,columnspan=2,sticky="w",pady=3)
+                        variable=direct).grid(row=7,column=0,columnspan=2,sticky="w",pady=3)
         ttk.Checkbutton(controls,text="Добавить итоговые суммы тяжести",
-                        variable=totals).grid(row=7,column=0,columnspan=2,sticky="w",pady=3)
+                        variable=totals).grid(row=8,column=0,columnspan=2,sticky="w",pady=3)
         source_msg = ("Реквизиты найдены в исходных STRUCT_ORG и adv_data.xml. Проверьте их."
                       if source_org else
                       "Автозаполнение недоступно: нужна одна организация и исходные сведения.")
         if autodiscovery_error:
             source_msg += " Ошибка чтения: " + autodiscovery_error
         ttk.Label(controls,text=source_msg,foreground="#456280",wraplength=570
-                  ).grid(row=8,column=0,columnspan=2,pady=3,sticky="w")
+                  ).grid(row=9,column=0,columnspan=2,pady=3,sticky="w")
         ttk.Label(controls,text="При ошибках обязательных полей XML не создаётся.",
-                  foreground="#72531d").grid(row=9,column=0,columnspan=2,pady=5,sticky="w")
+                  foreground="#72531d").grid(row=10,column=0,columnspan=2,pady=5,sticky="w")
         footer=ttk.Frame(controls)
-        footer.grid(row=10,column=0,columnspan=2,sticky="e")
+        footer.grid(row=11,column=0,columnspan=2,sticky="e")
         ttk.Button(footer,text="Отмена",command=popup.destroy).pack(side="right",padx=4)
         def begin():
             try:
@@ -386,6 +388,7 @@ class DesktopApp:
                     application_date=values["date"].get().strip(),
                     customer_kind=kind,inn=values["inn"].get().strip(),
                     ogrn=values["ogrn"].get().strip(),fio=values["fio"].get().strip(),
+                    full_name=values["full_name"].get().strip(),
                     data_status=status.get())
             except ValueError as exc:
                 messagebox.showerror(APP_NAME,"Тип заказчика должен быть числом: "+str(exc))

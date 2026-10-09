@@ -19,7 +19,7 @@ def build(*, with_fgis=True):
             {"id": 2, "mguid": "DEVICE_B", "factory_num": "X", "name": "Device B"},
         ],
         people=[
-            {"mguid": "PERSON_A", "snils": "123-456-789 00", "fio": "Tester A", "dolg": "Lab"},
+            {"mguid": "PERSON_A", "snils": "123-456-789 00", "fio": "Tester A", "dolg": "Lab", "no_dop_fld2": "FGIS approved position"},
             {"mguid": "PERSON_B", "snils": "not assigned", "fio": "Tester B"},
         ],
         normative=[
@@ -64,6 +64,13 @@ class ResourceLookupTests(unittest.TestCase):
         self.assertEqual(data.source_rule, "factory_num")
         self.assertEqual(data.local_guid, "DEVICE_A")
         self.assertFalse(build().device("UNAVAILABLE", "X").found)
+
+    def test_position_uses_original_att_person_no_dop_fld2(self):
+        catalog = build()
+        item = next(p for p in catalog.people if p.guid == "PERSON_A")
+        self.assertEqual(item.fgis_position, "FGIS approved position")
+        self.assertEqual(item.job, "Lab")
+        self.assertNotEqual(item.fgis_position, item.job)
 
     def test_person_prefers_guid_then_snils(self):
         d = build()

@@ -49,7 +49,7 @@ class SafetyExportTests(unittest.TestCase):
                            encoding="utf-8")
             rows=[{"rm_id":"1","factor_id":"13","xml":xml}]
             with patch("fgis_export.read_inventory",return_value=([],rows,directory)), \
-                 patch("fgis_export.ResourceCatalog.from_mdb",return_value=object()):
+                 patch("fgis_export.ResourceCatalog.from_mdb",return_value=__import__("att51_fsa.resources",fromlist=["ResourceCatalog"]).ResourceCatalog.from_rows([], [], [], [])):
                 result=create_fgis_export(directory/"arm.mdb",directory/"res.mdb",None,
                                           CustomerSettings("01.02.2026",1,inn="1234567890"),
                                           directory/"missing.xsd",directory=directory)

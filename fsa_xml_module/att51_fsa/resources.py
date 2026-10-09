@@ -202,7 +202,7 @@ class ResourceCatalog:
             Person(_str(row.get("mguid")), _str(row.get("snils")),
                    _str(row.get("fio")), _str(row.get("name_f")),
                    _str(row.get("name_i")), _str(row.get("name_o")),
-                   _str(row.get("dolg")))
+                   _str(row.get("dolg")), _str(row.get("no_dop_fld2")))
             for row in people
         ]
         normatives: list[Normative] = []
