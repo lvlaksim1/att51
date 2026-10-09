@@ -87,7 +87,8 @@ def _virtualstore_folder(root: Path) -> Path | None:
             continue
         program_files = Path(raw)
         try:
-            subfolder = root.relative_to(program_files)
+            subfolder = root.resolve(strict=False).relative_to(
+                program_files.resolve(strict=False))
         except ValueError:
             continue
         # E.g. %LOCALAPPDATA%\VirtualStore\Program Files (x86)\Attest...
