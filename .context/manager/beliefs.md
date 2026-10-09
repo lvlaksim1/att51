@@ -53,3 +53,10 @@
 - research_objects.py повторяет порядок XSD ResearchObjectInfo, исходные коды 1→DM-53535, 2→DM-55254 и переназначения из fgis_ra.ini.
 - pipeline_2025.py объединяет внутренний XML, выбранный фактор, DIC_ND/INFO, методы ОА из DIC_ND_OA_METHODS и подготовку полей; вывод строго диагностический, not_exportable=true.
 - Подтверждение: 98/98 автоматических испытаний и Windows Jet/ADO/XSD, GitHub Actions №37872417247 — success. Это не доказательство идентичности полного fsa_prot.xml на заполненных данных. Источник: research/FSA_RESEARCHOBJECT_2025.md.
+
+## B11. Доказанный порядок выпуска Windows Att51_export
+- Эталон изучен в lvlaksim1/MailRu-Desktop: Inno Setup full/update, GitHubUpdateService, выпускающий GitHub Actions workflow. В att51 реализована собственная версия по этому принципу.
+- Путь установщика строго {commonappdata}\Att51_export, фактически C:\ProgramData\Att51_export; при установке/обновлении/удалении требуются права администратора, обычный просмотр данных не требует. Иконка генерируется с текстом EXPORT, не XML.
+- Встроенное обновление GitHub: проверка последнего релиза, строгое имя актива, сверка версии, SHA-256 и размера, повышение прав лишь при установке, загрузка в ProgramData\Att51_export\updates; без проверяемого SHA автозапуск установки запрещён.
+- v0.1.0 опубликован только после реального Windows-цикла Setup→самопроверка→Update→самопроверка→Uninstall и 98+20 автоматических испытаний: GitHub Actions #37875093384 success. Два бинарных файла в GitHub Release, в исходном дереве бинарники не накапливаются.
+- Версия приложения пока исследовательская: GUI позволяет проверять MDB/XML/INI и значения ResearchObjectInfo, но **не** выдаёт полный fsa_prot.xml. Источники: desktop/, GitHub release v0.1.0, рабочий журнал Actions.

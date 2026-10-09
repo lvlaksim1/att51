@@ -44,3 +44,9 @@
 - Объединение: pipeline_2025.py и CLI inspect-2025, исключительно чтение/диагностика, флаг not_exportable=true.
 - GitHub Actions №37872417247 полностью успешен: 98 синтетических тестов + Windows Jet/ADO/MSXML. Подробности: research/FSA_RESEARCHOBJECT_2025.md.
 - Следующий приоритет: ApprovedUser, Customer/Address и прочие факторы, затем эталонное сравнение на одинаковых данных. Полный экспорт пока заблокирован, issue #2 остаётся открытой.
+
+## Передача работы менеджеру: Windows-релиз v0.1.0 завершён
+- Владелец скорректировал первоначальную папку Program Files на **ProgramData\Att51_export** и запретил текст XML в иконке, потребовав EXPORT. Изменения учтены в двух Inno-установщиках, исходном генераторе и тестах.
+- Выпущены два файла v0.1.0 с GitHub Releases, механизм встроенных обновлений основан на GitHub SHA-256. Windows Actions #37875093384 успешен: 98 FSA + 20 desktop тестов, пробная установка, обновление и удаление.
+- Источники: https://github.com/lvlaksim1/att51/releases/tag/v0.1.0 и desktop/README.md. Текущий выпуск **не** формирует полный рабочий XML.
+- Следующий приоритет: продолжать FSA XML Original VBA issue #2 (ApprovedUser/Customer/Address и факторы); сохранить инварианты релизов.
