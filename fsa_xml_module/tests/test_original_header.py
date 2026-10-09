@@ -33,6 +33,20 @@ class OriginalHeaderTests(unittest.TestCase):
         with self.assertRaises(FsaSourceError):
             original_protocol_date("", "")
 
+    def test_original_factor_3_and_4_names(self):
+        for factor, expected in (
+            (3, "Аэрозоли преимущественно фиброгенного действия"),
+            (4, "Шум"),
+        ):
+            with self.subTest(factor=factor):
+                h = build_header(
+                    number="N-12", protocol_date="20.03.2026",
+                    measurement_dates=("19.03.2026",),
+                    application_date="18.03.2026", factor_id=factor,
+                    data_status=20,
+                )
+                self.assertEqual(h.object_name, expected)
+
     def test_original_13_dates_and_object(self):
         h = build_header(number="X-01", protocol_date="24.03.2026",
                          measurement_dates=("11.03.2026", "12.03.2026"),

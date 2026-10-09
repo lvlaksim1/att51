@@ -49,6 +49,23 @@ def prot(*, state="0", method=True, factor="4"):
 
 
 class PipelineTests(unittest.TestCase):
+    def test_unique_method_fallback_builds_text_not_fake_id(self):
+        resources = ResourceCatalog.from_rows(
+            devices=[], people=[],
+            normative=[{"id": 2, "mguid": "ND-X", "name": "ГОСТ 12.1.003-83",
+                        "factor_id": 4, "typ": 1}],
+            links=[],
+            nd_info=[{"nd_id": 2, "dop2": "", "dop4": "",
+                      "dop5": "Valid OA Method {350}"}],
+        )
+        result = analyze_2025(prot(), resources, Original2025Options())
+        trace = result.measurement_traces[0]
+        self.assertIsNotNone(trace.prepared)
+        self.assertEqual(trace.prepared.doc_name_id, "")
+        self.assertEqual(trace.prepared.unique_method, "ГОСТ 12.1.003-83")
+        self.assertEqual(trace.prepared.oa_method_id, "350")
+        self.assertNotIn("method_fgis_id_missing", trace.errors)
+
     def test_original_sources_to_prepared_research_value(self):
         r = analyze_2025(prot(), catalog(), Original2025Options())
         self.assertEqual(r.status, "intermediate_mapping_complete_not_working_xml")

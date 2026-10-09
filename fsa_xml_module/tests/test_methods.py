@@ -4,7 +4,9 @@ Source: v52_exp_fgis_ra2025.get_DocNameId in original Attestation51.dot.
 """
 import unittest
 
-from att51_fsa.methods import MethodCandidate, ResearchForMethod, resolve_method
+from att51_fsa.methods import (MethodCandidate, ResearchForMethod, resolve_method,
+                                bind_methods_from_catalog)
+from att51_fsa.resources import ResourceCatalog
 
 
 def candidate(nd_id, doc_id, doc_name, **attrs):
@@ -12,6 +14,45 @@ def candidate(nd_id, doc_id, doc_name, **attrs):
 
 
 class MethodResolutionTests(unittest.TestCase):
+    def _catalog_without_method_id(self, *, factor=4, duplicates=False):
+        rows = [{"id": 7, "mguid": "ND-7", "name": "Method Delta",
+                 "factor_id": factor, "typ": 1}]
+        if duplicates:
+            rows.append({"id": 9, "mguid": "ND-9", "name": "Method Delta",
+                         "factor_id": factor, "typ": 1})
+        return ResourceCatalog.from_rows(
+            [], [], rows, [],
+            nd_info=[{"nd_id": 7, "dop2": "", "dop4": "", "dop5": "OA {14}"}],
+        )
+
+    def test_real_nd_without_numeric_method_id_has_verified_unique_method(self):
+        catalog = self._catalog_without_method_id()
+        result = bind_methods_from_catalog(
+            ResearchForMethod(indicator_id="3472", nd_izm1="7"),
+            [candidate("7", "", "Method Delta")], catalog, factor_id="4",
+        )
+        self.assertEqual(result.selected.doc_name_id, "")
+        self.assertEqual(result.selected.doc_name, "Method Delta")
+        self.assertFalse(result.selected.requires_review)
+        self.assertNotIn("method_fgis_id_missing", result.source_errors)
+        self.assertIn("verified_original_unique_method_fallback", result.matching_rules)
+
+    def test_does_not_guess_unique_method_for_different_factor(self):
+        catalog = self._catalog_without_method_id(factor=5)
+        result = bind_methods_from_catalog(
+            ResearchForMethod(indicator_id="3472", nd_izm1="7"),
+            [candidate("7", "", "Method Delta")], catalog, factor_id="4",
+        )
+        self.assertIn("method_fgis_id_missing", result.source_errors)
+
+    def test_does_not_guess_unique_method_for_duplicate_nd(self):
+        catalog = self._catalog_without_method_id(duplicates=True)
+        result = bind_methods_from_catalog(
+            ResearchForMethod(indicator_id="3472", nd_izm1="7"),
+            [candidate("7", "", "Method Delta")], catalog, factor_id="4",
+        )
+        self.assertIn("method_fgis_id_missing", result.source_errors)
+
     def test_first_pass_single_explicit_id(self):
         methods = [
             candidate("22", "444", "Method A"),

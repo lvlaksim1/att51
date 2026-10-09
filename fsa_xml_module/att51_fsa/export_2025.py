@@ -14,7 +14,7 @@ from .original_header import build_header, original_protocol_date, fgis_date
 from .pipeline_2025 import Original2025Options, analyze_2025
 from .resource_xml import inspect_protocol_resources
 from .resources import ResourceCatalog
-from .sources import FsaSourceError
+from .sources import FsaSourceError, read_ini
 from .writer import ApprovedPerson, Protocol
 
 
@@ -85,11 +85,16 @@ def prepare_protocol(
         blockers.append("Нет Document/@num_doc")
     try:
         src_date = original_protocol_date(doc.get("fill_date",""), doc.get("sign_date",""))
+        object_name_override = (
+            read_ini(Path(working_ini), "FullNameObject", facid)
+            if working_ini is not None else ""
+        )
         h = build_header(
             number=number, protocol_date=src_date,
             measurement_dates=(factor.get("izm_date",""),),
             application_date=customer.application_date,
             factor_id=facid, data_status=customer.data_status,
+            object_name_override=object_name_override,
         )
     except (FsaSourceError, ValueError) as exc:
         blockers.append(str(exc))

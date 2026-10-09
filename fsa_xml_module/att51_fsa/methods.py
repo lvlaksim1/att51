@@ -181,6 +181,7 @@ def bind_methods_from_catalog(
     preferences: dict[str, str] = {}
     errors: list[str] = []
     traces: list[str] = []
+    verified_unique_methods: set[str] = set()
 
     def map_method(item: MethodCandidate) -> MethodCandidate:
         matched = catalog.nd(nd_hash(item.doc_name), item.doc_name, str(factor_id))
@@ -193,6 +194,17 @@ def bind_methods_from_catalog(
         if matched.requires_review and "original_vba_like_requires_verification" in matched.warnings:
             errors.append("normative_short_name_match_requires_verification")
         resource = matched.normative
+        # Original get_DocNameId_Helper (VBA lines 259-280) explicitly
+        # selects a textual UniqueMethod when DocNameId is empty. Accept
+        # this only for an unambiguous exact-factor match to a real ND;
+        # fuzzy and cross-factor matches remain review-only.
+        if (resource.method_doc_id in ("", "0", "-1")
+                and matched.source_rule == "hash_with_factor"
+                and matched.alternatives == 1
+                and nd_hash(resource.name) == nd_hash(item.doc_name)
+                and bool(item.doc_name.strip())
+                and not matched.warnings):
+            verified_unique_methods.add(item.doc_name)
         preferences[item.doc_name] = resource.preference
         return replace(
             item,
@@ -212,7 +224,11 @@ def bind_methods_from_catalog(
         annotated = measure
     chosen = resolve_method(annotated, common, preferences)
     if not chosen.doc_name_id or chosen.doc_name_id in ("0", "-1"):
-        errors.append("method_fgis_id_missing")
+        if chosen.doc_name in verified_unique_methods and not errors:
+            traces.append("verified_original_unique_method_fallback")
+            chosen = replace(chosen, requires_review=False)
+        else:
+            errors.append("method_fgis_id_missing")
     if errors and not chosen.requires_review:
         chosen = replace(chosen, requires_review=True)
     return BoundMethodResult(
