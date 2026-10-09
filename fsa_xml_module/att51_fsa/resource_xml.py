@@ -141,7 +141,8 @@ def inspect_protocol_resources(root: ET.Element, catalog: ResourceCatalog, *,
         elif not result.fgis_id or result.fgis_id == "0":
             warnings.append("person_fgis_id_missing")
 
-    for item in _assessment_nds(ctx):
+    # Original get_ND_data: individual ND at Document/nd_data, summary at Document/info/nd_data.
+    for item in _assessment_nds(ctx if summary else document):
         original = item.get("name", "")
         # get_nd_hash occurs in v52_exp_fgis_ra.AddDistinctNdData.
         # del_bad_chars can alter text before hashing in original VBA; the
