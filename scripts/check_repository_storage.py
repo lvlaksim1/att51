@@ -15,7 +15,6 @@ FORBIDDEN_SUFFIXES = {".exe", ".msi", ".zip", ".7z", ".rar", ".dll", ".pdb"}
 EXCEPTION_PREFIX = "extracted/"
 KNOWN_SENSITIVE_PATHS = {
     "extracted/win/att_reg/att.reg",
-    "extracted/app/dop_info.ini",
 }
 
 

@@ -27,4 +27,3 @@ __pycache__/
 
 # Never publish known potentially sensitive registration or account data.
 /extracted/win/att_reg/att.reg
-/extracted/app/dop_info.ini
