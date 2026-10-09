@@ -57,8 +57,8 @@ class InstallationContractTests(unittest.TestCase):
 
     def test_gui_holds_mutex_until_exiting(self):
         source = (DESKTOP / "app.py").read_text(encoding="utf-8")
-        self.assertIn("with InstallationMutex():\\n        root = tk.Tk()", source)
-        self.assertIn("with InstallationMutex():\\n            time.sleep(", source)
+        self.assertIn("with InstallationMutex():\n        root = tk.Tk()", source)
+        self.assertIn("with InstallationMutex():\n            time.sleep(", source)
 
     def test_finish_page_has_checked_launch_in_both_installers(self):
         for name in ("full.iss", "update.iss"):
