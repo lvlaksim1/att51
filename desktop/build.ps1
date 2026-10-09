@@ -25,6 +25,8 @@ try {
   & python desktop/build_icon.py $icon
   if ($LASTEXITCODE -ne 0 -or -not (Test-Path $icon)) { throw 'Icon generation failed' }
   $xsd = Join-Path $root 'extracted\app\fileProtocolLoad_v4.xsd'
+  $updaterScript = Join-Path $root 'desktop\update_overlay.ps1'
+  if (-not (Test-Path -LiteralPath $updaterScript)) { throw 'Missing updater overlay' }
   if (-not (Test-Path $xsd)) { throw 'Missing original XSD' }
 
   $pyArgs = @(
@@ -32,6 +34,7 @@ try {
     '--name', 'Att51_export', '--icon', $icon,
     '--paths', (Join-Path $root 'fsa_xml_module'),
     '--add-data', ($icon + ';assets'), '--add-data', ($xsd + ';assets'),
+    '--add-data', ($updaterScript + ';assets'),
     '--hidden-import', 'win32com.client',
     '--hidden-import', 'pythoncom', '--hidden-import', 'pywintypes',
     '--hidden-import', 'win32timezone',
