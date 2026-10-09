@@ -25,6 +25,9 @@ class OrganizationSource:
     fio: str
     query_date: str
     xml_file: Path | None
+    address1: str = ""
+    address2: str = ""
+    contacts: str = ""
 
 
 def _field(record: dict, key: str) -> str:
@@ -68,6 +71,8 @@ def load_organizations(database: Path) -> tuple[OrganizationSource, ...]:
             name=_field(row, "org"), inn=_field(row, "inn"),
             ogrn=_field(row, "short_caption"), fio=_field(row, "fio"),
             query_date=request, xml_file=xml if xml is not None and xml.is_file() else None,
+            address1=_field(row, "adr"), address2=_field(row, "adr2"),
+            contacts=_field(row, "contact"),
         ))
     return tuple(output)
 

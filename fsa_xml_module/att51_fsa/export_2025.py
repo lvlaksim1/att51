@@ -27,9 +27,15 @@ class CustomerSettings:
     full_name: str = ""
     fio: str = ""
     data_status: str = "20"
+    address_variant: int = 1
+    address: str = ""
+    address_type: str = ""
+    contacts: str = ""
 
     def validate(self) -> tuple[str, ...]:
         issues = []
+        if self.address_variant not in (1, 2):
+            issues.append("Номер варианта адреса должен быть 1 или 2")
         if self.customer_kind not in (1, 2, 4):
             issues.append("Нужно выбрать подтверждённый тип заказчика: 1, 2 или 4")
         if self.customer_kind in (1, 2) and not self.inn.strip():
