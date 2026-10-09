@@ -36,6 +36,25 @@ def main() -> None:
             for i, line in enumerate(lines):
                 if any(term.casefold() in line.casefold() for term in TERMS):
                     selected.update(range(max(0, i-5), min(len(lines),i+9)))
+            if name == "v52_exp_fgis_ra2025":
+                target_procs = ("read_tyag_params_direct", "read_tyag_params_itog", "read_napr_params")
+                for proc in target_procs:
+                    found_start = None
+                    for i, line in enumerate(lines):
+                        if re.match(r"(?i)^\\s*(?:(?:public|private)\\s+)?Function\\s+" + proc + r"\\b", line):
+                            found_start = i
+                            break
+                    if found_start is None:
+                        print(f"PROCEDURE_NOT_FOUND {proc}")
+                        continue
+                    print(f"BEGIN_PROCEDURE {proc} line={found_start+1}")
+                    limit = min(found_start + 280, len(lines))
+                    for i in range(found_start, limit):
+                        line = lines[i].rstrip()
+                        print(f"PROC {proc} {i+1:5d} {line[:300]}")
+                        if i>found_start and re.match(r"(?i)^\\s*End Function\\s*$", line):
+                            break
+                    print(f"END_PROCEDURE {proc}")
             # Avoid uncontrolled log size, and restrict to known module/terms.
             for i in sorted(selected)[:1300]:
                 line = lines[i].rstrip()
