@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - "extracted/.transfer/part_*.bin"
+      - ".github/workflows/materialize-att51.yml"
   workflow_dispatch:
 
 permissions:
@@ -29,7 +30,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f -- extracted/app extracted/sys extracted/win
+          git add -f -- extracted/app extracted/sys
           git rm -rf -- extracted/.transfer
           python3 scripts/check_repository_storage.py
           if git diff --cached --quiet; then
