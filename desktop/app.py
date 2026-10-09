@@ -22,8 +22,10 @@ from source_discovery import discover_installations
 from source_settings import SourceSettings, SOURCE_KEYS
 from whole_base_reports import create_index, create_details
 from fgis_export import create_fgis_export
+from organization_sources import unique_organization
 from att51_fsa.export_2025 import CustomerSettings
 from att51_fsa.labour_2025 import LabourOptions
+from att51_fsa.sources import FsaSourceError
 from version import VERSION
 
 APP_NAME = "Att51_export"
@@ -321,8 +323,20 @@ class DesktopApp:
         except (ValueError, OSError) as error:
             messagebox.showerror(APP_NAME,human_error(error))
             return
-        # The original gets these from v5_org_options and the user's export
-        # form. Never guess organization identity or application date.
+        # The original uses STRUCT_ORG and 000_org_data/{mguid}/adv_data.xml.
+        # Auto-fill only when this MDB contains exactly one organization.
+        try:
+            source_org = unique_organization(files["mdb"])
+            autodiscovery_error = ""
+        except (ValueError, OSError, FsaSourceError) as exc:
+            source_org = None
+            autodiscovery_error = str(exc)
+        originals = {
+            "date": source_org.query_date if source_org else "",
+            "inn": source_org.inn if source_org else "",
+            "ogrn": source_org.ogrn if source_org else "",
+            "fio": source_org.fio if source_org else "",
+        }
         popup=tk.Toplevel(self.root)
         popup.title("Данные заказчика и параметры выгрузки ФГИС")
         popup.transient(self.root)
@@ -340,7 +354,7 @@ class DesktopApp:
         values={}
         for row,(title,key,initial) in enumerate(prompts):
             ttk.Label(controls,text=title).grid(row=row,column=0,sticky="w",pady=4)
-            var=tk.StringVar(value=initial)
+            var=tk.StringVar(value=originals.get(key, initial))
             ttk.Entry(controls,textvariable=var,width=35).grid(row=row,column=1,padx=8,pady=4)
             values[key]=var
         ttk.Label(controls,text="Состояние данных").grid(row=5,column=0,sticky="w",pady=4)
@@ -353,10 +367,17 @@ class DesktopApp:
                         variable=direct).grid(row=6,column=0,columnspan=2,sticky="w",pady=3)
         ttk.Checkbutton(controls,text="Добавить итоговые суммы тяжести",
                         variable=totals).grid(row=7,column=0,columnspan=2,sticky="w",pady=3)
-        ttk.Label(controls,text="Проверка полноты обязательна; при ошибках итоговый XML не создаётся.",
-                  foreground="#72531d").grid(row=8,column=0,columnspan=2,pady=7,sticky="w")
+        source_msg = ("Реквизиты найдены в исходных STRUCT_ORG и adv_data.xml. Проверьте их."
+                      if source_org else
+                      "Автозаполнение недоступно: нужна одна организация и исходные сведения.")
+        if autodiscovery_error:
+            source_msg += " Ошибка чтения: " + autodiscovery_error
+        ttk.Label(controls,text=source_msg,foreground="#456280",wraplength=570
+                  ).grid(row=8,column=0,columnspan=2,pady=3,sticky="w")
+        ttk.Label(controls,text="При ошибках обязательных полей XML не создаётся.",
+                  foreground="#72531d").grid(row=9,column=0,columnspan=2,pady=5,sticky="w")
         footer=ttk.Frame(controls)
-        footer.grid(row=9,column=0,columnspan=2,sticky="e")
+        footer.grid(row=10,column=0,columnspan=2,sticky="e")
         ttk.Button(footer,text="Отмена",command=popup.destroy).pack(side="right",padx=4)
         def begin():
             try:
