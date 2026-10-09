@@ -40,8 +40,8 @@ class SourceDiscoveryTests(unittest.TestCase):
     def test_single_configured_db_without_guesswork(self):
         found = self.detect()
         self.assertEqual(len(found), 1)
-        self.assertEqual(found[0].databases, (self.mdb,))
-        self.assertEqual(found[0].resources, (self.install / "res_orgs.mdb",))
+        self.assertEqual(tuple(p.resolve() for p in found[0].databases), (self.mdb.resolve(),))
+        self.assertEqual(tuple(p.resolve() for p in found[0].resources), ((self.install / "res_orgs.mdb").resolve(),))
         self.assertEqual(found[0].settings, ())
 
     def test_external_resource_is_authoritative(self):
@@ -52,7 +52,7 @@ class SourceDiscoveryTests(unittest.TestCase):
             f"[DB]\nsout_path={self.mdb}\n[DB_res]\nres_flag=1\nres_path={external}\n",
             encoding="utf-8")
         result = self.detect()[0]
-        self.assertEqual(result.resources, (external / "res_orgs.mdb",))
+        self.assertEqual(tuple(p.resolve() for p in result.resources), ((external / "res_orgs.mdb").resolve(),))
 
     def test_missing_shared_resource_never_falls_back(self):
         self.ini.write_text(
@@ -84,11 +84,11 @@ class SourceDiscoveryTests(unittest.TestCase):
     def test_fgis_ini_from_original_root_only(self):
         fgis = self.install / "fgis_ra.ini"
         fgis.touch()
-        self.assertEqual(self.detect()[0].settings, (fgis,))
+        self.assertEqual(tuple(p.resolve() for p in self.detect()[0].settings), (fgis.resolve(),))
 
     def test_cp1251_options_supported(self):
         self.ini.write_bytes(f"[DB]\nsout_path={self.mdb}\n[main]\ncaption=Тест\n".encode("cp1251"))
-        self.assertEqual(self.detect()[0].databases, (self.mdb,))
+        self.assertEqual(tuple(p.resolve() for p in self.detect()[0].databases), (self.mdb.resolve(),))
 
     def test_duplicate_root_is_deduplicated(self):
         self.assertEqual(len(discover_installations((self.install, self.install))), 1)
