@@ -39,6 +39,8 @@ class ResearchObjectDraft:
     source_xpath: str
     nd_izm1: str = ""
     indicator_id_2: str = ""
+    chemical_id: str = ""
+    chemical_name: str = ""
 
     def as_dict(self) -> dict[str, str]:
         return asdict(self)

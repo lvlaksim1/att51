@@ -22,6 +22,7 @@ from .research_objects import (
     load_working_overrides, prepare_research_object, original_oa_parameter_tag,
 )
 from .labour_2025 import LabourOptions, map_labour_2025
+from .aerosol_2025 import ChemicalOptions, map_aerosol_2025
 from .resource_xml import inspect_protocol_resources
 from .resources import ResourceCatalog
 from .sources import FsaSourceError, parse_xml
@@ -37,6 +38,7 @@ class Original2025Options:
     micro_use_result_values: bool = False
     micro_include_exposure_dose: bool = False
     labour: LabourOptions = LabourOptions()
+    chemical: ChemicalOptions = ChemicalOptions()
 
 
 @dataclass(frozen=True)
@@ -65,7 +67,7 @@ class Protocol2025Diagnostic:
     not_exportable: bool = True
 
 
-SUPPORTED_FACTORS = frozenset(("4", "5", "6", "11", "12", "13", "14", "10099"))
+SUPPORTED_FACTORS = frozenset(("3", "4", "5", "6", "11", "12", "13", "14", "10099"))
 
 
 def _doc(root: ET.Element) -> ET.Element:
@@ -95,7 +97,8 @@ def _original_methods(doc: ET.Element) -> tuple[MethodCandidate, ...]:
     return tuple(result)
 
 
-def map_supported_2025(doc: ET.Element, options: Original2025Options) -> list[ResearchObjectDraft]:
+def map_supported_2025(doc: ET.Element, options: Original2025Options,
+                       working_fgis_ini: Path | None = None) -> list[ResearchObjectDraft]:
     factor = doc.find("factor")
     if factor is None:
         raise FsaSourceError("Missing original factor data")
@@ -106,6 +109,8 @@ def map_supported_2025(doc: ET.Element, options: Original2025Options) -> list[Re
         options.acoustic_level_per_operation,
         options.include_uncertainty,
     )
+    if facid == "3":
+        return map_aerosol_2025(doc, options.chemical, working_ini=working_fgis_ini)
     if facid == "4":
         return map_noise_equivalent(doc, acoustic)
     if facid == "5":
@@ -152,7 +157,7 @@ def analyze_2025(
             (), (), (), (),
         )
     methods = _original_methods(document)
-    drafts = map_supported_2025(document, options)
+    drafts = map_supported_2025(document, options, working_fgis_ini)
     all_errors: list[str] = list(original_resources.errors)
     traces: list[FieldTrace] = []
     for draft in drafts:
@@ -160,10 +165,11 @@ def analyze_2025(
             indicator_id=draft.indicator_id,
             indicator_id_2=draft.indicator_id_2,
             nd_izm1=draft.nd_izm1,
+            him_id=draft.chemical_id,
         )
         selected = bind_methods_from_catalog(value, methods, catalog, factor_id=factor)
         warnings = list(selected.source_errors)
-        oa_parameter = original_oa_parameter_tag(draft)
+        oa_parameter = original_oa_parameter_tag(draft, him_id=draft.chemical_id)
         oa_specific = catalog.oa_method_for(selected.selected.nd_guid, oa_parameter)
         if oa_parameter and oa_specific:
             warnings.append("oa_method_selected_from_indicator_specific_resource")
@@ -176,6 +182,7 @@ def analyze_2025(
             overrides = load_working_overrides(
                 draft, selected.selected, Path(working_fgis_ini),
                 preferred_oa_method=oa_specific,
+                chemical_id=draft.chemical_id,
             )
         prepared = prepare_research_object(draft, selected.selected, overrides)
         errors = list(prepared.errors)

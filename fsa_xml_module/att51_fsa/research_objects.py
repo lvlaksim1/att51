@@ -210,7 +210,9 @@ def prepare_research_object(
             except FsaSourceError:
                 errors.append("invalid_method_indicator_mapping")
         directory = original_directory_name(orig_directory)
-        unique_indicator = ""
+        unique_indicator = draft.chemical_name if draft.indicator_id_2 == "66" else ""
+        if draft.indicator_id_2 == "66" and not draft.chemical_name.strip():
+            errors.append("chemical_substance_name_missing")
         if directory == "Unknown":
             errors.append("unknown_original_directory")
     if method.doc_name_id and method.doc_name_id not in ("0", "-1"):

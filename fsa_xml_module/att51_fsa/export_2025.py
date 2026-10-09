@@ -77,7 +77,7 @@ def prepare_protocol(
         return PreparedProtocol(None, ("Нет Document/factor",))
     number, facid = doc.get("num_doc", "").strip(), factor.get("facid", "")
     blockers = list(customer.validate())
-    if facid not in ("4", "5", "6", "11", "12", "13", "14", "10099"):
+    if facid not in ("3", "4", "5", "6", "11", "12", "13", "14", "10099"):
         blockers.append("Фактор не имеет проверенного алгоритма 2025: " + facid)
     if doc.get("fgis_state") == "1":
         blockers.append("Оригинальная программа исключает протокол по fgis_state=1")
@@ -160,7 +160,7 @@ def prepare_protocol(
             elif not nd.method_doc_id and not nd.warnings:
                 blockers.append("Нормативный документ без подтверждённого идентификатора/правила иной НД")
     analysis = None
-    if facid in ("4", "5", "6", "11", "12", "13", "14", "10099"):
+    if facid in ("3", "4", "5", "6", "11", "12", "13", "14", "10099"):
         try:
             analysis=analyze_2025(doc,resources,options or Original2025Options(),
                                   working_fgis_ini=working_ini)
