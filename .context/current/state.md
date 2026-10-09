@@ -141,3 +141,10 @@
 - **[verified]** В XSD `ApplicationDate`, четыре даты, два статуса, `CustomerKindId`, `TypeObjectId`, `FullNameObject`, `IsLab`, `IsAnotherDoc` требуют корректных значений. Условные `Equipment`/`ApprovedUser` не разрешают фабрикацию ID или неверное указание отсутствия оборудования.
 - **[open]** Проверка точных полей MDB и оригинальных правил VBA для 13/14, методик, ролей; прием порталом не проверялся. Источники MDB владельца в текущей среде не доступны напрямую, пересоздать значения из отчёта нельзя.
 - **[unchanged]** Выпуск Att51_export v0.1.8 с Setup+Update остаётся последним. Изменений приложения в этом исследовательском шаге нет; #2 и #8 продолжаются.
+
+
+## Att51_export v0.1.9 released — generation 24, 09.10.2026
+- **[released]** [Release v0.1.9](https://github.com/lvlaksim1/att51/releases/tag/v0.1.9), Setup 14 506 924 bytes, Update 14 507 179 bytes. [Windows Release Actions #37941837472](https://github.com/lvlaksim1/att51/actions/runs/37941837472) completed/success; full install/update/uninstall and tests.
+- **[implemented]** Third GUI command “Сформировать XML ФГИС”, in addition to two independent reports. Original VBA header/status, factor 13/14 mappings, people roles, equipment/ND mapping, XSD output with fail-closed validation. Missing required values produce reports/Проверка_и_формирование_XML_ФГИС.txt and prevent final XML; no fake IDs.
+- **[unverified]** Real output on user's private MDB not verified (previously absent FGIS IDs), portal acceptance not verified, original modes/summaries and provenance query_date not fully recovered. Issues #2 and #8 open.
+- **[source]** research/FSA_VBA_XML_IMPL_2026-10-09.md. No private customer data in GitHub.

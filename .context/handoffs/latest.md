@@ -143,3 +143,9 @@
 - Выполнен обзор всех пяти записей и оригинальной `fileProtocolLoad_v4.xsd`, составлен обезличенный файл `research/FSA_XML_SUFFICIENCY_AUDIT.md`. Подтверждены исходные измерения и связи, но обязательные даты, статусы, заказчик, объект, методики и числовые соответствия ФГИС не доказаны. `NoEquipmentInfo` нельзя использовать как обход наличия фактических приборов.
 - Номера и имена РМ во всех пяти блоках не извлечены; искать точные столбцы/связи в рабочей MDB, не путать отсутствие в диагностическом TXT с отсутствием в исходной базе.
 - Дальше: исходная MDB `STRUCT_RM`/`struct_org` и реальные алгоритмы VBA факторов 13/14, затем XSD+эталон. Задачи #2 и #8 открыты; нет изменений приложения, релиз v0.1.8 остаётся последним. При следующей правке приложения обязателен новый успешный Windows Setup+Update. Закрытые пользовательские данные не помещать в GitHub.
+
+
+## Transfer after v0.1.9 — generation 24, 09.10.2026
+- Same permanent manager_id project-manager; product and manager authority main. Static original VBA inspection completed, provenance written to research/FSA_VBA_XML_IMPL_2026-10-09.md; numerical FGIS statuses 13/20 and 6, factor 13 direct/summary and 14 original mappings, person role 1/2/3, source dates and customer are confirmed.
+- Published Att51_export v0.1.9 with verified Setup+Update via Actions #37941837472 success. GUI third command builds FGIS XML only from XSD-validated complete mappings, otherwise creates local blocker TXT. Former two TXT commands retained.
+- Real customer MDB output and FGIS portal acceptance not confirmed; previously found 5/5 internal XML but missing FGIS IDs. Keep #2 and #8 active; don't publicize private user files. Further code releases require both Windows-tested installers.

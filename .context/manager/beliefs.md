@@ -157,3 +157,9 @@
 - `Equipment` и `ApprovedUser` формально условные блоки XSD, однако имеющиеся реальные приборы/люди не позволяют семантически выдавать отсутствие оборудования за факт. GUID не подставляются в числовые XSD ID.
 - Номер и имя рабочего места не извлеклись в 5/5 полевых записей. Это дефект текущей эвристики/недоказанная схема поля, но не доказательство отсутствия реквизитов в MDB. Полные данные `struct_org` не исследованы на реальной базе.
 - Исходная `fileProtocolLoad_v4.xsd` — критерий структуры исходного экспортёра, **не** гарантия приёма порталом ФГИС. Полная доказательная карта в `research/FSA_XML_SUFFICIENCY_AUDIT.md`.
+
+
+## Verified FGIS XML findings and v0.1.9 — 09.10.2026, generation 24
+- Original VBA statically inspected via read-only GitHub Actions. The full field provenance and factor 13/14 mapping are documented in research/FSA_VBA_XML_IMPL_2026-10-09.md. Original exporter writes human status labels contrary to xs:int; independent writer uses checked numeric 13/20/6.
+- Original dates: fill_date, fallback sign_date, measurement interval from factor/@izm_date; ApplicationDate comes from v5_org_options.query_date. Role codes: izm=1, boss=2, exp=3; FGIS position source: pers.fgis_state, not arbitrary job field.
+- v0.1.9 implements strict XSD-checked XML generation for verified complete sources, with a local blocker report for missing application date, resources, FGIS IDs, methods, or personnel. Original full end-to-end equivalence and portal acceptance remain unverified; neither can be claimed yet.
