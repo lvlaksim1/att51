@@ -15,6 +15,7 @@ from .pipeline_2025 import FieldTrace, Original2025Options, analyze_2025
 from .resource_xml import inspect_protocol_resources
 from .resources import ResourceCatalog
 from .sources import FsaSourceError, read_ini
+from .source_snapshot import SourceSnapshot, snapshot_for_protocol
 from .writer import ApprovedPerson, Protocol
 
 
@@ -61,6 +62,7 @@ class PreparedProtocol:
     # Captured before FGIS IDs replace source values; precisely the same
     # accepted traces, and in the same order, as protocol.research_objects.
     source_traces: tuple[FieldTrace, ...] = ()
+    source: SourceSnapshot | None = None
 
 
 def _doc(xml: ET.Element) -> ET.Element:
@@ -194,7 +196,9 @@ def prepare_protocol(
     if unique_blockers or h is None:
         return PreparedProtocol(None, unique_blockers,
                                 tuple(dict.fromkeys(warnings)))
-    return PreparedProtocol(Protocol(
+    selected_traces = tuple(t for t in analysis.measurement_traces
+                            if t.prepared is not None)
+    protocol = Protocol(
         doc_id=h.doc_id, creation_date=h.creation_date,
         start_date=h.start_date, validity_date=h.validity_date,
         application_date=h.application_date, customer_kind=customer.customer_kind,
@@ -208,5 +212,8 @@ def prepare_protocol(
                                if t.prepared is not None),
         no_equipment=False, territory_feature=True, is_lab=False,
         is_another_doc=False,
-    ), (), tuple(dict.fromkeys(warnings)),
-       tuple(t for t in analysis.measurement_traces if t.prepared is not None))
+    )
+    source = snapshot_for_protocol(doc, protocol, selected_traces,
+                                   resource_info, resources, customer)
+    return PreparedProtocol(protocol, (), tuple(dict.fromkeys(warnings)),
+                            selected_traces, source)
