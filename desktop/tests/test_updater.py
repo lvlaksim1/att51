@@ -103,7 +103,7 @@ class UpdaterTests(unittest.TestCase):
             folder = Path(tmp) / "Att51_export"
             folder.mkdir()
             final = download_update(release, folder, opener=opener)
-            self.assertEqual(final.parent, folder / "updates")
+            self.assertEqual(final.parent.resolve(), (folder / "updates").resolve())
             self.assertEqual(final.read_bytes(), payload)
             self.assertFalse(Path(str(final) + ".download").exists())
 
