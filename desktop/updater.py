@@ -216,3 +216,36 @@ def apply_update(tag: str, checksum: str, length: str,
         raise UpdateError("Выпуск GitHub изменился; проверьте обновления заново.")
     path = download_update(current, install_dir, progress=progress)
     launch_install_after_exit(path, original_pid)
+
+
+def start_update_overlay(info: Release, install_dir: Path, script: Path,
+                         main_pid: int, *, popen=subprocess.Popen):
+    """Show the external single progress window before shutting down the GUI.
+
+    The child verifies the download and performs installation while this
+    app's executable is not running. No files are placed outside {app}.
+    """
+    import sys
+    if sys.platform != "win32" or not getattr(sys, "frozen", False):
+        raise UpdateError("Обновление доступно только в установленной Windows-версии.")
+    if (not info.verified or not _HASH.fullmatch(info.sha256)
+            or info.download_url != asset_url(info.tag) or
+            info.size < 100000 or main_pid <= 0):
+        raise UpdateError("Не удалось подтвердить выпуск GitHub.")
+    folder = Path(install_dir).resolve(strict=True)
+    if folder.name.casefold() != "att51_export":
+        raise UpdateError("Недопустимая папка приложения.")
+    script = Path(script).resolve(strict=True)
+    marker = folder / "updates" / "overlay.ready"
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.unlink(missing_ok=True)
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    command = [
+        "powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive", "-STA",
+        "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden",
+        "-File", str(script), "-Tag", info.tag, "-Checksum", info.sha256,
+        "-Size", str(info.size), "-ApplicationPid", str(main_pid),
+        "-InstallDir", str(folder),
+    ]
+    return (popen(command, cwd=str(folder), close_fds=True,
+                  creationflags=flags), marker)
