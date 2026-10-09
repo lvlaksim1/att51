@@ -65,6 +65,50 @@ class UpdaterTests(unittest.TestCase):
         self.assertIn("Wait-Process -Id 4103", script)
         self.assertIn("RUNAFTERUPDATE=1", script)
 
+    def test_independent_updater_is_visible_before_old_app_exits(self):
+        from updater import start_update_overlay
+        from unittest.mock import patch
+        import types
+        class Process:
+            def poll(self): return None
+        calls = []
+        with TemporaryDirectory() as tmp:
+            app = Path(tmp) / "Att51_export"
+            app.mkdir()
+            ps = app / "update_overlay.ps1"
+            ps.write_text("# Test", encoding="utf-8")
+            info = Release("v0.2.0", (0, 2, 0), asset_url("v0.2.0"),
+                           "f"*64, 200000, True)
+            with patch.object(sys, "platform", "win32"), \
+                 patch.object(sys, "frozen", True, create=True):
+                process, marker_path = start_update_overlay(
+                    info, app, ps, 1234,
+                    popen=lambda *args, **kwargs: (
+                        calls.append((args, kwargs)) or Process()))
+            self.assertIsInstance(process, Process)
+            self.assertEqual(marker_path, app / "updates" / "overlay.ready")
+            self.assertEqual(calls[0][0][0][0], "powershell.exe")
+            args = calls[0][0][0]
+            self.assertIn("-STA", args)
+            self.assertIn("-File", args)
+            self.assertIn(str(ps.resolve()), args)
+            self.assertIn("-ApplicationPid", args)
+            self.assertNotIn("Att51_export.exe", args)
+
+    def test_untrusted_metadata_cannot_start_overlay(self):
+        from updater import start_update_overlay
+        with TemporaryDirectory() as tmp:
+            app = Path(tmp) / "Att51_export"
+            app.mkdir()
+            file = app / "test.ps1"
+            file.write_text("test", encoding="utf-8")
+            unverified = Release("v0.2.0", (0, 2, 0), asset_url("v0.2.0"),
+                                 "", 200000, False)
+            with patch.object(sys, "platform", "win32"), \
+                 patch.object(sys, "frozen", True, create=True):
+                with self.assertRaises(UpdateError):
+                    start_update_overlay(unverified, app, file, 123)
+
     def test_tag_numbers_and_comparison(self):
         self.assertTrue(newer(Release("v0.2.1", (0, 2, 1), "", "", 0),
                               "0.2.0"))
