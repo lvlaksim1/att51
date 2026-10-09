@@ -155,3 +155,10 @@
 - **[from user field report]** В v0.1.9: 5 протоколов, 0 подготовлены. Дата заявки введена с ошибкой (пятнадцатипозиционный год), FGIS ID приборов/сотрудников и НД/методики не сопоставились в выбранной базе, 47 зависимых позиций измерений не завершены. Нельзя из одного отчёта решить, отсутствуют ли реальные записи, или указан не тот `res_orgs.mdb`.
 - **[code]** v0.1.10: по единственной организации автоматическое чтение `STRUCT_ORG` + `000_org_data/<mguid>/adv_data.xml`, дату и реквизиты; `ATT_PERSON.no_dop_fld2` как должность ФГИС; предварительная проверка даты; местный отчёт с путём ресурса, размерами таблиц, точными незарегистрированными ссылками и сгруппированными ошибками; положительный синтетический сквозной XML+XSD тест.
 - **[limits]** Реальный XML на частной MDB и приём порталом НЕ подтверждены. Неверные или отсутствующие FGIS ID не замещаются строками. Полный список оригинальных вариантов/сводных протоколов ещё не перенесён. #2 и #8 остаются открыты.
+
+
+## Att51_export v0.1.11 — опубликован, поколение 26 (09.10.2026)
+- **[released]** [v0.1.11](https://github.com/lvlaksim1/att51/releases/tag/v0.1.11): Setup 14 518 543 bytes, Update 14 518 784 bytes. Windows workflow [#37956272223](https://github.com/lvlaksim1/att51/actions/runs/37956272223) completed/success.
+- **[reproduced/verified]** Running EXE mutex guard: both silent installers exited 1 (refused install) while app-running test process held named mutex; executable hash unchanged; `RUNNING_APPLICATION_REPLACEMENT_PREVENTED_PASS`. Following normal full install, update, uninstall under ProgramData PASS, and standard-user cycle + persisted source settings PASS.
+- **[user evidence]** v0.1.10 full Setup screenshot `DeleteFile failed code 5` for `ProgramData/Att51_export/Att51_export.exe`. Running executable is probable but not proven unique cause; permissions or file-protection software may also cause access denied. New code prevents partial installer from *its own known running GUI*.
+- **[unfinished]** Independent FGIS XML user database still blocked pending resources/ND methods; #2/#8 unresolved. No field XML acceptance verified.

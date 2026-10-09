@@ -143,3 +143,9 @@
 2. Проверить в отчёте полный путь выбранной ресурсной базы, наличие `FGIS_RA`, числа `ATT_DEVICE`, `ATT_PERSON`, `DIC_ND`, `DIC_ND_INFO`, ID ФГИС. Если отличие от оригинального `options.ini/[DB_res]`, выяснить реальный путь; **без догадок и без изменения рабочих MDB**.
 3. На исходных XML и подтверждённых справочниках проверить `UniqueMethod`/`UniqueMethodik` по фактической ветви VBA. Довести соответствие эталонному Word XML и другим режимам; проверка XSD сама по себе приём ФГИС не доказывает.
 4. Отдельно проверить сохранность старых `fsa_prot*.xml` при неудачной повторной выгрузке (не оставлять старые данные как новые), если будут реальные повторные успешные выгрузки.
+
+
+## After v0.1.11 installer lock fix — generation 26
+1. User should cancel prior failed v0.1.10 Setup, close Att51_export and confirm process ended, then use v0.1.11 **Update** installer (Setup only if recovery necessary). Do not use Skip this file.
+2. If still DeleteFile code 5 after closing, inspect exact ACL/ownership, running processes, file security protection and per-user vs elevated install context **before** modifying permissions; keep ProgramData source paths/reports intact.
+3. Once installed, get new local `Проверка_и_формирование_XML_ФГИС.txt` with resource database metrics, then continue #2/#8; avoid publishing user's private data.
