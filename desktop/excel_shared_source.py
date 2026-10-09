@@ -34,6 +34,12 @@ def _cell(value: object) -> str:
     return _raw(value) or MISSING
 
 
+def _label(value: object) -> str:
+    # Categorical labels must not silently turn into numeric source/FGIS IDs.
+    text = _raw(value)
+    return text if text and not text.isdecimal() else MISSING
+
+
 def _all(values) -> str:
     seen = []
     for value in values:
@@ -136,11 +142,11 @@ def _indicator(doc: ET.Element, trace: FieldTrace) -> list[str]:
     method = _textual_oa(trace.original_oa_method)
     # The FGIS code field is NEVER used as a textual fallback.
     return [
-        _cell(name),
+        _label(name),
         _cell(trace.prepared.fact_value),
-        _cell(unit),
-        _cell(trace.original_method_name or trace.prepared.unique_method),
-        _cell(method),
+        _label(unit),
+        _label(trace.original_method_name or trace.prepared.unique_method),
+        _label(method),
     ]
 
 
@@ -168,19 +174,24 @@ def prepared_protocol_rows(root: ET.Element, result: PreparedProtocol,
         _cell(protocol.validity_date),
         _cell(protocol.creation_date),
         _cell(customer.full_name or customer.fio),
-        _cell(_first((org, object_node, additional, doc),
-                     "address_type", "addr_type")),
+        _label(_first((org, object_node, additional, doc),
+                      "address_type", "addr_type")),
         _cell(_first((object_node, additional, doc),
                      "address", "measurement_address", "addr", "address_text")),
         _cell(customer.inn),
-        _cell(_first((object_node, doc), "object_type", "object_type_name")),
+        _label(_first((object_node, doc), "object_type_name", "object_type")),
         _cell(_first((object_node, doc, factor),
                      "object_name", "full_name_object", "factor_name")
               or protocol.object_name),
     ]
+    source_contacts = [
+        _first((org, additional, doc), "contacts", "phone", "telephone", "email")
+    ]
+    for contact in doc.findall(".//contact"):
+        source_contacts.append(_attr(contact, "value", "phone", "email", "address")
+                               or _raw(contact.text))
     trailing = [
-        _cell(_first((org, additional, doc),
-                     "contacts", "phone", "telephone", "email")),
+        _cell(_all(source_contacts)),
         _cell(customer.application_date),
         _cell(nd_names),
         _cell(_first((additional, doc),
