@@ -49,9 +49,6 @@ VersionInfoDescription=Att51_export update installer
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
-[Icons]
-Name: "{autoprograms}\Att51_export"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"
-
 [Dirs]
 Name: "{app}\data"
 
@@ -99,5 +96,14 @@ begin
   Result := True;
 end;
 
+// The embedded update uses /SILENT /RUNAFTERUPDATE=1: show only progress
+// and launch the new program automatically. Unattended /VERYSILENT CI
+// installs remain fully silent and must not leave a running GUI.
+function LaunchAfterUpdate(): Boolean;
+begin
+  Result := (not WizardSilent) or
+    (ExpandConstant('{param:RUNAFTERUPDATE|0}') = '1');
+end;
+
 [Run]
-Filename: "{app}\{#AppExe}"; Description: "Открыть Att51_export после завершения"; Flags: postinstall nowait skipifsilent
+Filename: "{app}\{#AppExe}"; Description: "Открыть Att51_export после завершения"; Flags: postinstall nowait; Check: LaunchAfterUpdate
