@@ -119,6 +119,22 @@ class ResourceLookupTests(unittest.TestCase):
         self.assertIn("fatal_nd_short_name_missing", d.nd_diagnostics(res, "0"))
         self.assertNotIn("fatal_nd_short_name_missing", d.nd_diagnostics(res, "1"))
 
+    def test_oa_method_by_nd_guid_and_indicator_param(self):
+        c = ResourceCatalog.from_rows(
+            devices=[], people=[], normative=[], links=[],
+            oa_methods=[
+                {"nd_guid": "ND1", "method": "OA method {111}", "params": "temp;shum_izm"},
+                {"nd_guid": "ND1", "method": "Later OA method {222}", "params": "shum_izm"},
+                {"nd_guid": "ND2", "method": "Other ND {333}", "params": "shum_izm"},
+            ],
+            present_tables={"ATT_DEVICE", "ATT_PERSON", "DIC_ND",
+                            "DIC_ND_OA_METHODS"},
+        )
+        self.assertEqual(c.oa_method_for("ND1", "shum_izm"), "OA method {111}")
+        self.assertEqual(c.oa_method_for("ND2", "shum_izm"), "Other ND {333}")
+        self.assertEqual(c.oa_method_for("ND1", "svet_Kp"), "")
+        self.assertEqual(c.diagnostics.oa_method_count, 3)
+
     def test_nd_priority_comes_from_original_dop4(self):
         self.assertEqual(build().nd_preference("ГОСТ 12.1.003-83"), "shum_izm")
         self.assertIsNone(build().nd_preference("Unrelated"))
