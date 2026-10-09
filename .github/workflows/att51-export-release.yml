@@ -1,0 +1,148 @@
+name: Att51_export Windows Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version X.Y.Z
+        required: true
+        default: '0.1.0'
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: att51-export-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.event.issue.user.login == 'lvlaksim1' &&
+       github.event.issue.title == '[ATT51_BUILD_RELEASE]')
+    runs-on: windows-2022
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+            $v = [string]$env:INPUT_VERSION
+          } else {
+            $request = $env:ISSUE_BODY | ConvertFrom-Json
+            $v = [string]$request.version
+          }
+          if ($v -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') {
+            throw 'Invalid version'
+          }
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: x86
+
+      - name: Install build dependencies
+        shell: pwsh
+        run: |
+          python -m pip install -r desktop/requirements-build.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Python dependencies installation failed' }
+          choco install innosetup -y --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed' }
+
+      - name: Run FSA and updater regression tests
+        shell: pwsh
+        env:
+          PYTHONPATH: fsa_xml_module
+        run: |
+          python -m unittest discover -s fsa_xml_module/tests -p 'test_*.py' -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest discover -s desktop/tests -p 'test_*.py' -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Compile executable and two installers
+        shell: pwsh
+        run: ./desktop/build.ps1 -Version '${{ steps.version.outputs.version }}'
+
+      - name: Test full installation, update and uninstall in ProgramData
+        shell: pwsh
+        run: |
+          $v = '${{ steps.version.outputs.version }}'
+          $app = Join-Path $env:ProgramData 'Att51_export'
+          $wrong = Join-Path $env:ProgramFiles 'Att51_export'
+          $setup = Join-Path $pwd "desktop\dist\Att51_export_Setup_v$v.exe"
+          $update = Join-Path $pwd "desktop\dist\Att51_export_Update_v$v.exe"
+          if (Test-Path $app) { throw 'ProgramData folder already exists' }
+          $p = Start-Process -FilePath $setup -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /TASKS="!desktopicon"' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Setup error $($p.ExitCode)" }
+          $exe = Join-Path $app 'Att51_export.exe'
+          if (-not (Test-Path $exe)) { throw 'Executable not installed in ProgramData' }
+          if (Test-Path $wrong) { throw 'Incorrect Program Files location' }
+          & $exe --self-test
+          if ($LASTEXITCODE -ne 0) { throw 'Installed app self-test failed' }
+          $p = Start-Process -FilePath $update -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Update error $($p.ExitCode)" }
+          & $exe --self-test
+          if ($LASTEXITCODE -ne 0) { throw 'Updated app self-test failed' }
+          New-Item -ItemType Directory -Force -Path (Join-Path $app 'updates') | Out-Null
+          Set-Content -Path (Join-Path $app 'updates\obsolete.download') -Value 'test'
+          $uninstaller = Join-Path $app 'unins000.exe'
+          if (-not (Test-Path $uninstaller)) { throw 'Uninstaller missing' }
+          $p = Start-Process -FilePath $uninstaller -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Uninstall error $($p.ExitCode)" }
+          Start-Sleep -Seconds 3
+          if (Test-Path $exe) { throw 'Uninstaller left executable behind' }
+          if (Test-Path (Join-Path $app 'updates\obsolete.download')) { throw 'Update cache remained' }
+          if (Test-Path $wrong) { throw 'Program Files folder unexpectedly created' }
+          Write-Host 'PROGRAMDATA_SETUP_UPDATE_UNINSTALL_PASS'
+
+      - name: Publish exactly two GitHub release assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = '${{ steps.version.outputs.version }}'
+          $tag = "v$v"
+          $setup = "desktop\dist\Att51_export_Setup_v$v.exe"
+          $update = "desktop\dist\Att51_export_Update_v$v.exe"
+          if (-not (Test-Path $setup) -or -not (Test-Path $update)) { throw 'Missing release files' }
+          gh release view $tag --json tagName 2>$null
+          if ($LASTEXITCODE -eq 0) { throw 'Release tag already exists' }
+          gh release create $tag $setup $update --target '${{ github.sha }}' --title "Att51_export $tag" --notes 'Diagnostic preview, not yet approved for FSA submission. First install: Setup. Existing program: Update. Location: ProgramData\Att51_export.'
+          if ($LASTEXITCODE -ne 0) { throw 'Release creation failed' }
+          $payload = gh release view $tag --json assets | ConvertFrom-Json
+          if ($payload.assets.Count -ne 2) { throw 'Release must contain two installer files' }
+
+      - name: Retain only latest binary release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "v${{ steps.version.outputs.version }}"
+          $releases = gh release list --limit 100 --json tagName | ConvertFrom-Json
+          foreach ($old in $releases) {
+            if ($old.tagName -ne $tag) {
+              gh release delete $old.tagName --yes
+              if ($LASTEXITCODE -ne 0) { throw 'Release cleanup failed' }
+            }
+          }
+
+      - name: Report release
+        if: success() && github.event_name == 'issues'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = '${{ steps.version.outputs.version }}'
+          gh issue comment ${{ github.event.issue.number }} --body "RELEASED v$v https://github.com/${{ github.repository }}/releases/tag/v$v"
+          gh issue close ${{ github.event.issue.number }} --reason completed
