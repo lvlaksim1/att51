@@ -1,0 +1,25 @@
+name: ATT51 original exporter source audit
+
+on:
+  push:
+    paths:
+      - 'tools/audit_vba_fsa.py'
+      - '.github/workflows/att51-original-fsa-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-vba:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install offline VBA inspection dependency
+        run: python -m pip install oletools
+      - name: Inspect original ATT51 VBA without executing it
+        run: python tools/audit_vba_fsa.py
