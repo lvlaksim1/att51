@@ -143,7 +143,13 @@ def inspect_protocol_resources(root: ET.Element, catalog: ResourceCatalog, *,
 
     # Original get_ND_data: individual ND at Document/nd_data, summary at Document/info/nd_data.
     for item in _assessment_nds(ctx if summary else document):
-        original = item.get("name", "")
+        raw_name = item.get("name", "")
+        # Original v52_exp_fgis_ra.del_bad_chars removes leading hyphens
+        # before Trim; do not broadly normalize names or punctuation.
+        original = raw_name
+        while original.startswith("-"):
+            original = original[1:]
+        original = original.strip()
         # get_nd_hash occurs in v52_exp_fgis_ra.AddDistinctNdData.
         # del_bad_chars can alter text before hashing in original VBA; the
         # exact transformation still needs a separate verified port.
