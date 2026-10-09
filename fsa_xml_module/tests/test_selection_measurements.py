@@ -10,7 +10,7 @@ from unittest.mock import patch
 from xml.etree import ElementTree as ET
 import unittest
 
-from att51_fsa.measurements import NoiseOptions, map_noise_equivalent, original_get_num
+from att51_fsa.measurements import (NoiseOptions, LightingOptions, map_noise_equivalent, map_infrasound_equivalent, map_lighting_2025, original_get_num)
 from att51_fsa.selection import select_individual, select_consolidated
 from att51_fsa.sources import FsaSourceError
 
@@ -71,6 +71,64 @@ class NoiseMappingTests(unittest.TestCase):
         doc.find("factor").set("facid", "5")
         with self.assertRaises(FsaSourceError):
             map_noise_equivalent(doc, NoiseOptions(False, False, False, False))
+
+
+class MoreFactorMappingTests(unittest.TestCase):
+    def test_infrasound_equivalent(self):
+        doc = ET.fromstring(
+            '<Document U8h="2,0"><factor facid="5"/>'
+            '<izm_data><Level bm="Lekv" fact="94,1"/></izm_data>'
+            '</Document>'
+        )
+        result = map_infrasound_equivalent(doc, NoiseOptions(False, False, False, True))
+        self.assertEqual(len(result), 1)
+        self.assertEqual((result[0].indicator_id, result[0].directory,
+                          result[0].fact_value, result[0].measurement_id),
+                         ("131616", "2", "94,1±2,0", "429"))
+
+    def test_infrasound_detailed_measurements(self):
+        doc = ET.fromstring(
+            '<Document><factor facid="5"/>'
+            '<izm_res_data><izm level="88" levels="82" unc="1"/></izm_res_data>'
+            '<izm_data><Level bm="Lekv" fact="95"/></izm_data>'
+            '</Document>'
+        )
+        result = map_infrasound_equivalent(doc, NoiseOptions(True, True, True, True))
+        self.assertEqual(len(result), 1)
+        self.assertEqual((result[0].indicator_id, result[0].directory,
+                          result[0].measurement_id, result[0].fact_value),
+                         ("10", "1", "429", "88±1"))
+
+    def test_lighting_and_pulsation(self):
+        doc = ET.fromstring(
+            '<Document><factor facid="12"/>'
+            '<izm_data><zone>'
+            '<param bm="osv_room" fact="312" U095="5" nd_izm1="M1"/>'
+            '<param bm="puls_room" fact="18,4" U095="1,1" nd_izm1="M2"/>'
+            '<param bm="ignore" fact="0"/>'
+            '<param bm="puls_none" fact="-"/>'
+            '</zone></izm_data></Document>'
+        )
+        result = map_lighting_2025(doc, LightingOptions(include_uncertainty=True))
+        self.assertEqual([x.indicator_id for x in result], ["16", "3520"])
+        self.assertEqual([x.measurement_id for x in result], ["64", "292"])
+        self.assertEqual([x.fact_value for x in result], ["312±5", "18,4±1,1"])
+
+    def test_lighting_dual_matching_matches_original_two_if_statements(self):
+        doc = ET.fromstring(
+            '<Document><factor facid="12"/>'
+            '<izm_data><zone><param bm="osv_puls" fact="3" U095="1"/>'
+            '</zone></izm_data></Document>'
+        )
+        result = map_lighting_2025(doc, LightingOptions(True))
+        self.assertEqual([x.fact_value for x in result], ["3±1", "3±1±1"])
+
+    def test_wrong_factor_fails_closed(self):
+        doc = ET.fromstring('<Document><factor facid="4"/></Document>')
+        with self.assertRaises(FsaSourceError):
+            map_infrasound_equivalent(doc, NoiseOptions(False, False, False, False))
+        with self.assertRaises(FsaSourceError):
+            map_lighting_2025(doc, LightingOptions(False))
 
 
 class SourceSelectionTests(unittest.TestCase):
