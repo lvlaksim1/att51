@@ -110,6 +110,25 @@ def main() -> None:
                     if any(key in line.casefold() for key in keys):
                         print(f"PERSON_SRC {i+1:5d} " +
                               " | ".join(lines[max(0,i-2):min(len(lines),i+3)])[:700])
+            # One-time follow-up: exact legacy factor3 chemical/aerosol path,
+            # original factor labels, and methodology selection. Source code
+            # only, no user MDB / personal information.
+            if name == "v52_exp_fgis_ra2025":
+                for proc in ("read_him_params", "get_DocNameId", "get_DocNameId_Helper"):
+                    start = next((i for i, line in enumerate(lines)
+                        if re.match(r"(?i)^\\s*(?:(?:public|private)\\s+)?Function\\s+"
+                                    + proc + r"\\b", line)), None)
+                    if start is not None:
+                        print(f"FACTOR_METHOD_BEGIN {proc} {start+1}")
+                        for i in range(start, min(start+700, len(lines))):
+                            print(f"FACTOR_METHOD {proc} {i+1:5d} {lines[i][:310]}")
+                            if i>start and re.match(r"(?i)^\\s*End Function\\s*$",lines[i]):
+                                break
+                        print(f"FACTOR_METHOD_END {proc}")
+            if name == "v52_exp_fgis_ra":
+                for start,stop in ((4451,4499),(3830,3863)):
+                    for i in range(start-1,min(stop,len(lines))):
+                        print(f"FACTOR_NAME {i+1:5d} {lines[i][:310]}")
             # Avoid uncontrolled log size, and restrict to known module/terms.
             for i in sorted(selected)[:1300]:
                 line = lines[i].rstrip()

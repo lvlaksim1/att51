@@ -69,54 +69,6 @@ Type: filesandordirs; Name: "{app}\reports"
 // A previous release (<=0.1.10) did not create AppMutex. Detect that
 // legacy running executable before Inno tries to remove/replace it.
 // This is intentionally a check, not a forced process termination.
-
-// Files created by an elevated legacy installation may not be writable by
-// the currently logged-in user. Do not weaken app EXE directory ACLs.
-function InstallDirectoryWritable: Boolean;
-var Folder, Probe: String;
-begin
-  Folder := ExpandConstant('{commonappdata}\Att51_export');
-  if not DirExists(Folder) then
-  begin
-    Result := True;
-    Exit;
-  end;
-  Probe := Folder + '\.att51-rights-check-' + IntToStr(GetTickCount) + '.tmp';
-  Result := SaveStringToFile(Probe, 'check', False);
-  if Result then
-    DeleteFile(Probe);
-end;
-
-function PermitInstallRights: Boolean;
-var ErrorCode: Integer;
-begin
-  Result := InstallDirectoryWritable;
-  if Result then Exit;
-  if IsAdmin then
-  begin
-    MsgBox('Нет доступа на запись в каталог Att51_export даже при повышенных правах. ' +
-      'Проверьте разрешения Windows и защиту файлов.', mbError, MB_OK);
-    Result := False;
-    Exit;
-  end;
-  if WizardSilent then
-  begin
-    Log('ATT51_INSTALL_PERMISSION_DENIED: administrator-owned installation; ' +
-      'explicit elevation is required');
-    Result := False;
-    Exit;
-  end;
-  if ShellExec('runas', ExpandConstant('{srcexe}'), GetCmdTail, '',
-               SW_SHOWNORMAL, ewNoWait, ErrorCode) then
-  begin
-    // The elevated setup takes over. Stop this unelevated copy.
-    Result := False;
-    Exit;
-  end;
-  MsgBox('Windows не разрешила повышение прав для обновления Att51_export.', mbError, MB_OK);
-  Result := False;
-end;
-
 function LegacyAtt51ProcessRunning: Boolean;
 var ExitCode: Integer;
 begin
@@ -128,25 +80,13 @@ begin
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
-var Attempt: Integer;
 begin
   Result := '';
-  for Attempt := 1 to 8 do
-  begin
-    if not LegacyAtt51ProcessRunning then
-      Exit;
-    Sleep(500);
-  end;
   if LegacyAtt51ProcessRunning then
     Result := 'Программа Att51_export всё ещё запущена.' + #13#10 +
       'Закройте её и завершите процесс Att51_export.exe в диспетчере задач, ' +
       'затем повторите установку.' + #13#10 +
       'Файлы приложения ещё не заменялись.';
-end;
-
-function InitializeSetup: Boolean;
-begin
-  Result := PermitInstallRights;
 end;
 
 [Run]
