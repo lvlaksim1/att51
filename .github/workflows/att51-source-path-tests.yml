@@ -1,0 +1,35 @@
+name: Att51_export source path discovery checks
+
+on:
+  push:
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/att51-source-path-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  paths:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x64
+          - os: windows-2022
+            arch: x86
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: ${{ matrix.arch }}
+      - name: Compile discovery and application sources
+        run: python -m compileall -q desktop fsa_xml_module/att51_fsa
+      - name: Run read-only discovery and package tests
+        env:
+          PYTHONPATH: fsa_xml_module
+        run: python -m unittest discover -s desktop/tests -p 'test_*.py' -v
