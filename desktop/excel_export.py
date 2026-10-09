@@ -307,6 +307,10 @@ def _save_excel97(path: Path, rows: list[list[str]]) -> None:
         workbook = application.Workbooks.Add()
         sheet = workbook.Worksheets(1)
         sheet.Name = "TDSheet"
+        # Workbook.Add respects an Excel user's default sheet-count setting.
+        # The import format has exactly one sheet.
+        while workbook.Worksheets.Count > 1:
+            workbook.Worksheets(workbook.Worksheets.Count).Delete()
         data = [list(HEADERS)] + rows
         area = sheet.Range(sheet.Cells(1, 1), sheet.Cells(len(data), len(HEADERS)))
         area.NumberFormat = "@"  # No date serials, no scientific notation, no formula evaluation.
@@ -335,9 +339,15 @@ def _save_excel97(path: Path, rows: list[list[str]]) -> None:
         raise FsaSourceError("Не удалось записать Excel XLS: " + str(exc)) from exc
     finally:
         if workbook is not None:
-            workbook.Close(SaveChanges=False)
+            try:
+                workbook.Close(SaveChanges=False)
+            except Exception:
+                pass
         if application is not None:
-            application.Quit()
+            try:
+                application.Quit()
+            except Exception:
+                pass
         Path(temporary).unlink(missing_ok=True)
 
 
