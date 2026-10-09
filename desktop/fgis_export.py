@@ -75,8 +75,10 @@ def create_fgis_export(
         "ATT51_EXPORT — ПРОВЕРКА ИТОГОВОЙ ВЫГРУЗКИ ФГИС ФСА",
         "Проверка по оригинальной fileProtocolLoad_v4.xsd; это не подтверждение приёма порталом.",
         "Оригинальные MDB/XML/INI не изменяются. Несопоставленные ID не подменяются.",
+        "Выбранная база ресурсов: " + str(resources),
     ]
-    issues: list[str] = list(customer.validate())
+    common_issues: tuple[str, ...] = customer.validate()
+    issues: list[str] = list(common_issues)
     prepared = []
     try:
         places, items, _ = read_inventory(Path(database))
@@ -85,6 +87,22 @@ def create_fgis_export(
         issues.append("База рабочих мест: " + str(exc))
     try:
         catalog = ResourceCatalog.from_mdb(Path(resources))
+        info = catalog.diagnostics
+        lines += [
+            ("Ресурсы: приборов " + str(info.device_count) +
+             ", сотрудников " + str(info.person_count) +
+             ", нормативных документов " + str(info.normative_count) +
+             ", связей ID ФГИС " + str(info.fgis_link_count) +
+             ", методов ОА " + str(info.oa_method_count)),
+            "Отсутствующие таблицы в выбранной базе: " +
+            (", ".join(info.tables_absent) if info.tables_absent else "нет"),
+        ]
+        if "FGIS_RA" in info.tables_absent:
+            issues.append("В выбранной базе нет таблицы FGIS_RA: сопоставление ID "
+                          "ФГИС невозможно. Возможно, выбран не тот ресурсный файл.")
+        elif info.fgis_link_count == 0:
+            issues.append("В выбранной базе таблица FGIS_RA не содержит связей "
+                          "с ID ФГИС; проверьте выбор рабочей базы ресурсов.")
     except (FsaSourceError, OSError, ValueError) as exc:
         catalog = None
         issues.append("База ресурсов: " + str(exc))
@@ -110,7 +128,10 @@ def create_fgis_export(
             proposed = prepare_protocol(original,catalog,customer,options=opts,
                                         working_ini=Path(ini) if ini else None)
             if proposed.blockers:
-                issues.extend(number + ": " + s for s in proposed.blockers)
+                issues.extend(number + ": " + s for s in proposed.blockers
+                              if s not in common_issues and not
+                              (any("Неверная дата заявки" in x for x in common_issues)
+                               and "v5_org_options.query_date" in s))
             if proposed.protocol:
                 key = (proposed.protocol.doc_id, proposed.protocol.creation_date)
                 if key in seen:

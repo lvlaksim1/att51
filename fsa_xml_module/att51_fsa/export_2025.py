@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
-from .original_header import build_header, original_protocol_date
+from .original_header import build_header, original_protocol_date, fgis_date
 from .pipeline_2025 import Original2025Options, analyze_2025
 from .resource_xml import inspect_protocol_resources
 from .resources import ResourceCatalog
@@ -38,6 +38,12 @@ class CustomerSettings:
             issues.append("Для физического лица не указано ФИО")
         if not self.application_date.strip():
             issues.append("Отсутствует дата заявки (v5_org_options.query_date)")
+        else:
+            try:
+                fgis_date(self.application_date, source="v5_org_options.query_date")
+            except FsaSourceError:
+                issues.append("Неверная дата заявки: " + repr(self.application_date)
+                              + ". Укажите дату в формате ДД.ММ.ГГГГ.")
         return tuple(issues)
 
 
@@ -100,17 +106,35 @@ def prepare_protocol(
     if resource_info is not None:
         blockers.extend("НД: "+code for code in resource_info.errors)
         warnings.extend(resource_info.warnings)
-        for item in resource_info.equipment:
+        equipment_nodes = factor.findall("./si_guids/si_guid")
+        for index, item in enumerate(resource_info.equipment):
             if not item.fgis_id.isdecimal() or int(item.fgis_id) <= 0:
-                blockers.append("Для указанного в XML прибора отсутствует числовой ID ФГИС")
+                node = equipment_nodes[index] if index < len(equipment_nodes) else None
+                ref = (f"GUID={node.get('guid', '')}; номер={node.get('num', '')}"
+                       if node is not None else item.local_guid)
+                context = ("найден в справочнике: " + item.display_name
+                           if item.found else "не найден в выбранном справочнике")
+                blockers.append("Прибор (" + ref + "): " + context +
+                                "; отсутствует числовой ID ФГИС")
             else:
                 equipment_ids.append(item.fgis_id)
         if not resource_info.equipment and doc.get("fgis_state") != "2":
             blockers.append("Не подтверждено отсутствие оборудования; NoEquipmentInfo не подставляется")
         role_map = {"izm":1, "boss":2, "exp":3}
-        for role, item in resource_info.people:
+        people_nodes = (
+            factor.findall("./persons/pers") +
+            factor.findall("./exp_persons/pers") +
+            (factor.findall("./boss/pers") if doc.get("type") == "protocol2019"
+             else [node for node in (factor.find("./boss"),) if node is not None])
+        )
+        for index, (role, item) in enumerate(resource_info.people):
             if not item.fgis_id.isdecimal() or int(item.fgis_id) <= 0:
-                blockers.append("Для указанного в XML сотрудника отсутствует числовой ID ФГИС")
+                node = people_nodes[index] if index < len(people_nodes) else None
+                ref = (node.get("guid", "") if node is not None else item.local_guid)
+                context = (item.display_name if item.found
+                           else "нет соответствия в выбранной базе ресурсов")
+                blockers.append("Сотрудник (роль " + role + "; GUID=" + ref + "; " +
+                                context + "): отсутствует числовой ID ФГИС")
                 continue
             profile = next((p for p in resources.people if p.guid == item.local_guid), None)
             # Original uses pers.fgis_state, NOT generic ATT_PERSON.dolg.
@@ -122,6 +146,10 @@ def prepare_protocol(
         if not approved:
             blockers.append("Нет ни одного сопоставленного подписанта/измерителя ФГИС")
         for nd in resource_info.normative:
+            if "fatal_nd_absent" in nd.warnings:
+                blockers.append("НД из протокола не найден в выбранной базе ресурсов: "
+                                + repr(nd.source_name) + " (исходный id="
+                                + repr(nd.source_id) + ")")
             if nd.method_doc_id.isdecimal() and int(nd.method_doc_id)>0:
                 nd_ids.append(nd.method_doc_id)
             elif not nd.method_doc_id and not nd.warnings:
@@ -131,13 +159,19 @@ def prepare_protocol(
         try:
             analysis=analyze_2025(doc,resources,options or Original2025Options(),
                                   working_fgis_ini=working_ini)
-            blockers.extend("Показатели: "+s for s in analysis.errors)
-            blockers.extend("Ресурсы: "+s for s in analysis.resource_errors)
+            blockers.extend("Показатели/методики: "+s for s in analysis.errors
+                            if s not in analysis.resource_errors)
+            missing_traces = []
             for trace in analysis.measurement_traces:
-                blockers.extend("Методика: "+s for s in trace.errors)
                 if trace.prepared is None and trace.result_status != "excluded_by_original_rule":
-                    blockers.append("Показатель не удалось подготовить: "+trace.source_xpath)
+                    missing_traces.append(trace)
                 warnings.extend(trace.warnings)
+            if missing_traces:
+                places = ", ".join(trace.source_xpath.rsplit("/", 1)[-1]
+                                   for trace in missing_traces)
+                blockers.append(f"Не подготовлено показателей: {len(missing_traces)} "
+                                f"из {len(analysis.measurement_traces)} "
+                                f"(позиции исходного XML: {places})")
         except (FsaSourceError, ValueError) as exc:
             blockers.append("Ошибка преобразования показателей: "+str(exc))
     if not analysis or not analysis.measurement_traces or not any(t.prepared for t in analysis.measurement_traces):

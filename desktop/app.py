@@ -369,6 +369,11 @@ class DesktopApp:
             except ValueError as exc:
                 messagebox.showerror(APP_NAME,"Тип заказчика должен быть числом: "+str(exc))
                 return
+            validation = customer.validate()
+            if validation:
+                messagebox.showerror(APP_NAME, "Исправьте исходные данные:\n"
+                                     + "\n".join(validation), parent=popup)
+                return
             labour=LabourOptions(heavy_direct=direct.get(),include_heavy_totals=totals.get())
             popup.destroy()
             self._work(lambda:create_fgis_export(

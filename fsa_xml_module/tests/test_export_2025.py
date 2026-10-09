@@ -52,6 +52,12 @@ class ExportPreparationTests(unittest.TestCase):
         valid, reason=validate_xml(blob, schema)
         self.assertTrue(valid, reason)
 
+    def test_reject_incorrect_date_in_customer_form(self):
+        msg = CustomerSettings("09.10.20226", 1, inn="1234567890").validate()
+        self.assertTrue(any("Неверная дата заявки" in x for x in msg))
+        self.assertEqual(CustomerSettings("09.10.2026", 1,
+                                           inn="1234567890").validate(), ())
+
     def test_customer_kind_and_identity(self):
         self.assertTrue(CustomerSettings("",1).validate())
         self.assertEqual(CustomerSettings("01.03.2026",1,inn="111").validate(), ())

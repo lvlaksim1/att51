@@ -22,6 +22,25 @@ class SafetyExportTests(unittest.TestCase):
             self.assertTrue(result.report.is_file())
             self.assertEqual(list(directory.glob("fsa_prot*.xml")),[])
 
+    def test_resource_table_diagnostics_and_no_fabricated_xml(self):
+        from att51_fsa.resources import ResourceCatalog
+        with tempfile.TemporaryDirectory() as d:
+            directory = Path(d)
+            cat = ResourceCatalog.from_rows(
+                devices=[], people=[], normative=[], links=[],
+                present_tables=ResourceCatalog.REQUIRED
+            )
+            with patch("fgis_export.read_inventory", return_value=([], [], directory)), \
+                 patch("fgis_export.ResourceCatalog.from_mdb", return_value=cat):
+                result = create_fgis_export(
+                    directory/"org.mdb", directory/"res_orgs.mdb", None,
+                    CustomerSettings("01.02.2026", 1, inn="1234567890"),
+                    directory/"absent.xsd", directory=directory)
+            content = result.report.read_text(encoding="utf-8-sig")
+            self.assertIn("FGIS_RA", content)
+            self.assertIn("связей ID ФГИС 0", content)
+            self.assertFalse(result.files)
+
     def test_block_nonmatching_factor_without_loading_resources(self):
         with tempfile.TemporaryDirectory() as d:
             directory=Path(d)
