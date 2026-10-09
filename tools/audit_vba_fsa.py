@@ -11,7 +11,7 @@ from pathlib import Path
 from oletools.olevba import VBA_Parser
 
 ORIGINAL = Path("extracted/app/Attestation51.dot")
-TARGETS = {"v52_exp_fgis_ra", "v52_exp_fgis_ra2025", "v5_org_options", "v5_res_main", "v5_options_dic"}
+TARGETS = {"v52_exp_fgis_ra", "v52_exp_fgis_ra2025", "v5_org_options", "v5_res_main", "v5_options_dic", "v52_exp_fgis_ra_syn3"}
 TERMS = (
     "DataStatusId", "ProtocolStatusId", "DocCreationDate",
     "DocStartDate", "DocValidityDate", "ApplicationDate", "CustomerKindId",
@@ -129,6 +129,15 @@ def main() -> None:
                 for start,stop in ((4451,4499),(3830,3863)):
                     for i in range(start-1,min(stop,len(lines))):
                         print(f"FACTOR_NAME {i+1:5d} {lines[i][:310]}")
+            if name == "v52_exp_fgis_ra_syn3":
+                for i, line in enumerate(lines):
+                    if re.match(r"(?i)^\s*(?:(?:public|private)\s+)?(?:Function|Sub)\s+(?:get_matter|read|fill|init|check_matter)\b", line):
+                        print(f"CHEM_SYN_BEGIN {i+1}")
+                        for k in range(i,min(i+220,len(lines))):
+                            print(f"CHEM_SYN {k+1:5d} {lines[k][:290]}")
+                            if k>i and re.match(r"(?i)^\s*End (?:Function|Sub)\s*$",lines[k]):
+                                break
+                        print("CHEM_SYN_END")
             # Avoid uncontrolled log size, and restrict to known module/terms.
             for i in sorted(selected)[:1300]:
                 line = lines[i].rstrip()
