@@ -1,0 +1,163 @@
+"""Conservative verified-field FGIS XML preparation.
+
+Reads original ATT51 sidecar and the already loaded resource catalogue. Missing
+FGIS numerical identifiers / organizational facts are explicit blocking errors.
+Never substitutes local GUID, SNILS or a fabricated numeric ID into FGIS XSD.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from xml.etree import ElementTree as ET
+
+from .original_header import build_header, original_protocol_date
+from .pipeline_2025 import Original2025Options, analyze_2025
+from .resource_xml import inspect_protocol_resources
+from .resources import ResourceCatalog
+from .sources import FsaSourceError
+from .writer import ApprovedPerson, Protocol
+
+
+@dataclass(frozen=True)
+class CustomerSettings:
+    application_date: str
+    customer_kind: int
+    inn: str = ""
+    ogrn: str = ""
+    full_name: str = ""
+    fio: str = ""
+    data_status: str = "20"
+
+    def validate(self) -> tuple[str, ...]:
+        issues = []
+        if self.customer_kind not in (1, 2, 4):
+            issues.append("Нужно выбрать подтверждённый тип заказчика: 1, 2 или 4")
+        if self.customer_kind in (1, 2) and not self.inn.strip():
+            issues.append("Для ЮЛ/ИП не указан ИНН заказчика")
+        if self.customer_kind == 4 and not self.fio.strip():
+            issues.append("Для физического лица не указано ФИО")
+        if not self.application_date.strip():
+            issues.append("Отсутствует дата заявки (v5_org_options.query_date)")
+        return tuple(issues)
+
+
+@dataclass(frozen=True)
+class PreparedProtocol:
+    protocol: Protocol | None
+    blockers: tuple[str, ...]
+    warnings: tuple[str, ...] = ()
+
+
+def _doc(xml: ET.Element) -> ET.Element:
+    node = xml if xml.tag == "Document" else xml.find(".//Document")
+    if node is None:
+        raise FsaSourceError("Внутренний XML без Document")
+    return node
+
+
+def prepare_protocol(
+    xml: ET.Element, resources: ResourceCatalog, customer: CustomerSettings,
+    *, options: Original2025Options | None = None,
+    working_ini: Path | None = None,
+) -> PreparedProtocol:
+    """Build one protocol only when all mapped essential facts are verified.
+
+    Original 2025 is the selected measurement regime. Consolidated protocols
+    and different original UI switches need their own explicit adapter.
+    """
+    doc = _doc(xml)
+    factor = doc.find("./factor")
+    if factor is None:
+        return PreparedProtocol(None, ("Нет Document/factor",))
+    number, facid = doc.get("num_doc", "").strip(), factor.get("facid", "")
+    blockers = list(customer.validate())
+    if facid not in ("4", "5", "6", "11", "12", "13", "14", "10099"):
+        blockers.append("Фактор не имеет проверенного алгоритма 2025: " + facid)
+    if doc.get("fgis_state") == "1":
+        blockers.append("Оригинальная программа исключает протокол по fgis_state=1")
+    if not number:
+        blockers.append("Нет Document/@num_doc")
+    try:
+        src_date = original_protocol_date(doc.get("fill_date",""), doc.get("sign_date",""))
+        h = build_header(
+            number=number, protocol_date=src_date,
+            measurement_dates=(factor.get("izm_date",""),),
+            application_date=customer.application_date,
+            factor_id=facid, data_status=customer.data_status,
+        )
+    except (FsaSourceError, ValueError) as exc:
+        blockers.append(str(exc))
+        h = None
+    try:
+        resource_info = inspect_protocol_resources(doc, resources)
+    except (FsaSourceError, ValueError) as exc:
+        blockers.append("Не удалось сопоставить исходные ресурсы: "+str(exc))
+        resource_info = None
+    equipment_ids: list[str] = []
+    approved: list[ApprovedPerson] = []
+    nd_ids: list[str] = []
+    warnings: list[str] = []
+    if resource_info is not None:
+        blockers.extend("НД: "+code for code in resource_info.errors)
+        warnings.extend(resource_info.warnings)
+        for item in resource_info.equipment:
+            if not item.fgis_id.isdecimal() or int(item.fgis_id) <= 0:
+                blockers.append("Для указанного в XML прибора отсутствует числовой ID ФГИС")
+            else:
+                equipment_ids.append(item.fgis_id)
+        if not resource_info.equipment and doc.get("fgis_state") != "2":
+            blockers.append("Не подтверждено отсутствие оборудования; NoEquipmentInfo не подставляется")
+        role_map = {"izm":1, "boss":2, "exp":3}
+        for role, item in resource_info.people:
+            if not item.fgis_id.isdecimal() or int(item.fgis_id) <= 0:
+                blockers.append("Для указанного в XML сотрудника отсутствует числовой ID ФГИС")
+                continue
+            profile = next((p for p in resources.people if p.guid == item.local_guid), None)
+            # Original uses pers.fgis_state, NOT generic ATT_PERSON.dolg.
+            position = profile.fgis_position.strip() if profile else ""
+            if not position:
+                blockers.append("У сотрудника отсутствует подтверждённая должность ФГИС (fgis_state)")
+                continue
+            approved.append(ApprovedPerson(item.fgis_id, position, (role_map.get(role,1),)))
+        if not approved:
+            blockers.append("Нет ни одного сопоставленного подписанта/измерителя ФГИС")
+        for nd in resource_info.normative:
+            if nd.method_doc_id.isdecimal() and int(nd.method_doc_id)>0:
+                nd_ids.append(nd.method_doc_id)
+            elif not nd.method_doc_id and not nd.warnings:
+                blockers.append("Нормативный документ без подтверждённого идентификатора/правила иной НД")
+    analysis = None
+    if facid in ("4", "5", "6", "11", "12", "13", "14", "10099"):
+        try:
+            analysis=analyze_2025(doc,resources,options or Original2025Options(),
+                                  working_fgis_ini=working_ini)
+            blockers.extend("Показатели: "+s for s in analysis.errors)
+            blockers.extend("Ресурсы: "+s for s in analysis.resource_errors)
+            for trace in analysis.measurement_traces:
+                blockers.extend("Методика: "+s for s in trace.errors)
+                if trace.prepared is None and trace.result_status != "excluded_by_original_rule":
+                    blockers.append("Показатель не удалось подготовить: "+trace.source_xpath)
+                warnings.extend(trace.warnings)
+        except (FsaSourceError, ValueError) as exc:
+            blockers.append("Ошибка преобразования показателей: "+str(exc))
+    if not analysis or not analysis.measurement_traces or not any(t.prepared for t in analysis.measurement_traces):
+        blockers.append("Нет подтверждённых ResearchObjectInfo")
+    unique_blockers=tuple(dict.fromkeys(blockers))
+    if unique_blockers or h is None:
+        return PreparedProtocol(None, unique_blockers,
+                                tuple(dict.fromkeys(warnings)))
+    return PreparedProtocol(Protocol(
+        doc_id=h.doc_id, creation_date=h.creation_date,
+        start_date=h.start_date, validity_date=h.validity_date,
+        application_date=h.application_date, customer_kind=customer.customer_kind,
+        object_type=h.object_type_id, object_name=h.object_name,
+        data_status=h.data_status_id, protocol_status=h.protocol_status_id,
+        inn=customer.inn, ogrn=customer.ogrn,
+        customer_full_name=customer.full_name, customer_fio=customer.fio,
+        equipment_ids=tuple(dict.fromkeys(equipment_ids)),
+        approved_users=tuple(approved), method_doc_ids=tuple(dict.fromkeys(nd_ids)),
+        research_objects=tuple(t.prepared for t in analysis.measurement_traces
+                               if t.prepared is not None),
+        no_equipment=False, territory_feature=True, is_lab=False,
+        is_another_doc=False,
+    ), (), tuple(dict.fromkeys(warnings)))

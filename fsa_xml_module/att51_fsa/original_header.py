@@ -59,7 +59,7 @@ def original_protocol_date(fill_date: str, sign_date: str,
     """Original FillPrototcolData 3520-3526: explicit override, then
     valid fill_date, then fallback sign_date. Never use current date.
     """
-    sources = (explicit_date,) if explicit_date else (fill_date, sign_date)
+    sources = (explicit_date, sign_date) if explicit_date else (fill_date, sign_date)
     for raw in sources:
         try:
             return fgis_date(raw, source="fill_date/sign_date")

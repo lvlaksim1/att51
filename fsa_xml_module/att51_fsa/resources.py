@@ -82,6 +82,7 @@ class Person:
     given_name: str
     patronymic: str
     job: str
+    fgis_position: str = ""
 
 
 @dataclass(frozen=True)
