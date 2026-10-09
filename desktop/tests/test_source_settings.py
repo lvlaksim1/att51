@@ -68,7 +68,7 @@ class SettingsTests(unittest.TestCase):
     def test_frozen_settings_are_within_program_dir(self):
         with patch.object(sys, "frozen", True, create=True):
             with patch.object(sys, "executable", str(self.install / "Att51_export.exe")):
-                self.assertEqual(application_data_dir(), self.directory)
+                self.assertEqual(application_data_dir().resolve(), self.directory.resolve())
 
 
 if __name__ == "__main__":
