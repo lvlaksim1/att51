@@ -192,7 +192,7 @@ def prepare_research_object(
                             (draft.chemical_name if draft.indicator_id_2 == "66" else ""))
         directory = ""
         if not unique_indicator:
-            errors.append("unique_indicator_name_missing")
+            errors.append("unique_indicator_name_unavailable")
     else:
         indicator = draft.indicator_id
         orig_directory = draft.directory
