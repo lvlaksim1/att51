@@ -188,10 +188,11 @@ def prepare_research_object(
         warnings.append("method_requires_review")
     if overrides.force_unique_indicator:
         indicator = ""
-        unique_indicator = overrides.unique_indicator_name or "Неизвестный показатель"
+        unique_indicator = (overrides.unique_indicator_name or
+                            (draft.chemical_name if draft.indicator_id_2 == "66" else ""))
         directory = ""
-        if not overrides.unique_indicator_name:
-            warnings.append("unique_indicator_name_missing")
+        if not unique_indicator:
+            errors.append("unique_indicator_name_missing")
     else:
         indicator = draft.indicator_id
         orig_directory = draft.directory
@@ -210,9 +211,10 @@ def prepare_research_object(
             except FsaSourceError:
                 errors.append("invalid_method_indicator_mapping")
         directory = original_directory_name(orig_directory)
-        unique_indicator = draft.chemical_name if draft.indicator_id_2 == "66" else ""
-        if draft.indicator_id_2 == "66" and not draft.chemical_name.strip():
-            errors.append("chemical_substance_name_missing")
+        # In original save_XML lines 1909-1938 the chemical substance name
+        # is used ONLY if chk_UniqueIndicator=True. With a numeric code,
+        # the original explicitly serializes UniqueIndicator as empty.
+        unique_indicator = ""
         if directory == "Unknown":
             errors.append("unknown_original_directory")
     if method.doc_name_id and method.doc_name_id not in ("0", "-1"):
