@@ -75,7 +75,10 @@ class InstallationContractTests(unittest.TestCase):
             self.assertIn("[Run]", code)
             post = code.split("[Run]", 1)[1]
             self.assertIn('Description: "Открыть Att51_export после завершения"', post)
-            self.assertIn("postinstall nowait skipifsilent", post)
+            if name == "update.iss":
+                self.assertIn("postinstall nowait; Check: LaunchAfterUpdate", post)
+            else:
+                self.assertIn("postinstall nowait skipifsilent", post)
             self.assertNotIn("unchecked", post)
 
     def test_unprivileged_setup_uses_current_user_shortcuts(self):
@@ -91,6 +94,20 @@ class InstallationContractTests(unittest.TestCase):
         self.assertIn('None, "open"', update)
         self.assertNotIn('None, "runa' + 's"', update)
         self.assertIn("self._save_sources()", update)
+        self.assertNotIn("messagebox.askyesno(", update)
+        self.assertIn("os.getpid()", update)
+        self.assertIn('text="Обновить"', source)
+
+    def test_update_preserves_existing_shortcuts(self):
+        update = self.script("update.iss")
+        full = self.script("full.iss")
+        self.assertNotIn("[Icons]", update)
+        self.assertNotIn("{autodesktop}", update)
+        self.assertNotIn("desktopicon", update)
+        self.assertIn('Name: "{autodesktop}\\Att51_export"', full)
+        self.assertIn("LaunchAfterUpdate", update)
+        self.assertIn("{param:RUNAFTERUPDATE|0}", update)
+        self.assertIn("Flags: postinstall nowait; Check: LaunchAfterUpdate", update)
 
     def test_settings_are_restored_before_automatic_path_discovery(self):
         source = (DESKTOP / "app.py").read_text(encoding="utf-8")
