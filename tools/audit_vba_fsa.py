@@ -138,6 +138,9 @@ def main() -> None:
                             if k>i and re.match(r"(?i)^\s*End (?:Function|Sub)\s*$",lines[k]):
                                 break
                         print("CHEM_SYN_END")
+            if name == "v52_exp_fgis_ra":
+                for i in range(1847-1, min(1954,len(lines))):
+                    print(f"CHEM_WRITE {i+1:5d} {lines[i][:310]}")
             # Avoid uncontrolled log size, and restrict to known module/terms.
             for i in sorted(selected)[:1300]:
                 line = lines[i].rstrip()
