@@ -149,3 +149,9 @@
 1. User should cancel prior failed v0.1.10 Setup, close Att51_export and confirm process ended, then use v0.1.11 **Update** installer (Setup only if recovery necessary). Do not use Skip this file.
 2. If still DeleteFile code 5 after closing, inspect exact ACL/ownership, running processes, file security protection and per-user vs elevated install context **before** modifying permissions; keep ProgramData source paths/reports intact.
 3. Once installed, get new local `Проверка_и_формирование_XML_ФГИС.txt` with resource database metrics, then continue #2/#8; avoid publishing user's private data.
+
+
+## Next after v0.1.12 — generation 27
+1. Ask user to cancel the old interrupted installer, close Att51_export completely (Task Manager `Att51_export.exe` must not run) and use v0.1.12 **Update** on existing installation; Setup if executable no longer exists.
+2. If error repeats after shutdown, diagnose ACL/ownership and external file locks with user evidence, do not use Skip this file or wholesale uninstallation as blind fixes.
+3. Continue FGIS data task: obtain new v0.1.10+ XML readiness TXT with selected res_orgs.mdb and tables; keep issues #2/#8 open.

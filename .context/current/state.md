@@ -162,3 +162,10 @@
 - **[reproduced/verified]** Running EXE mutex guard: both silent installers exited 1 (refused install) while app-running test process held named mutex; executable hash unchanged; `RUNNING_APPLICATION_REPLACEMENT_PREVENTED_PASS`. Following normal full install, update, uninstall under ProgramData PASS, and standard-user cycle + persisted source settings PASS.
 - **[user evidence]** v0.1.10 full Setup screenshot `DeleteFile failed code 5` for `ProgramData/Att51_export/Att51_export.exe`. Running executable is probable but not proven unique cause; permissions or file-protection software may also cause access denied. New code prevents partial installer from *its own known running GUI*.
 - **[unfinished]** Independent FGIS XML user database still blocked pending resources/ND methods; #2/#8 unresolved. No field XML acceptance verified.
+
+
+## Att51_export v0.1.12 — latest verified release; generation 27
+- **[released]** [v0.1.12](https://github.com/lvlaksim1/att51/releases/tag/v0.1.12); Setup 14 518 486 bytes, Update 14 518 558 bytes. [Windows Actions #37957346804](https://github.com/lvlaksim1/att51/actions/runs/37957346804) completed/success.
+- **[verified scenario matching user's screenshot]** Old EXE without named mutex running: both installers exit 7 in preflight, hash of existing EXE unchanged; new mutex instance running: both installers exit 1, hash unchanged. Normal install/update/uninstall, standard user, settings-preservation all pass.
+- **[implementation]** Inno full.iss/update.iss retain new AppMutex from v0.1.11 and now check legacy live `Att51_export.exe` by process-name via `PrepareToInstall` before replacement. No process killed, no app folder cleanup. v0.1.11 replaced by v0.1.12.
+- **[limits]** Existing Windows ACL issues and external antivirus holds can separately cause code 5; no field proof such was the case. FGIS XML project remains open #2/#8.
