@@ -14,6 +14,7 @@ from att51_fsa.pipeline_2025 import (
 from att51_fsa.resources import ResourceCatalog
 from att51_fsa.sources import FsaSourceError, parse_xml
 from source_discovery import discover_protocols
+from internal_xml import FACTOR_NAMES
 
 
 def inspect_all_2025(
@@ -36,10 +37,16 @@ def inspect_all_2025(
     catalog = ResourceCatalog.from_mdb(resources_mdb)
     records: list[dict] = []
     counts: Counter[str] = Counter()
+    info = catalog.diagnostics
+    resource_may_be_template = (
+        info.device_count == 0 and info.person_count == 0 and
+        "FGIS_RA" in info.tables_absent
+    )
     for protocol in protocols:
         record = {
             "rm_id": protocol.rm_id,
             "factor_id_mdb": protocol.factor_id,
+            "factor_name": FACTOR_NAMES.get(str(protocol.factor_id), ""),
             "xml": str(protocol.xml),
         }
         try:
@@ -57,6 +64,11 @@ def inspect_all_2025(
                 "resource_errors": list(result.resource_errors),
                 "resource_warnings": list(result.resource_warnings),
             })
+            if result.status == "unsupported_factor":
+                record["explanation"] = (
+                    "Обнаруженный внутренний XML не повреждён. "
+                    "Преобразование данного фактора в ФГИС ещё не реализовано."
+                )
             if result.factor_id != str(protocol.factor_id):
                 record["factor_mismatch"] = True
                 record["errors"].append("XML factor ID differs from MDB")
@@ -75,6 +87,11 @@ def inspect_all_2025(
         "found_linked_xml": len(protocols),
         "statuses": dict(sorted(counts.items())),
         "fgis_ini": str(working_fgis_ini) if working_fgis_ini else None,
+        "resource_source_warning": (
+            "В справочнике нет приборов, сотрудников и таблицы FGIS_RA; "
+            "возможно, вместо рабочей базы выбран шаблон res_orgs.mdb."
+            if resource_may_be_template else None
+        ),
         "warnings": (
             ["Пользовательский fgis_ra.ini отсутствует: идентификаторы "
              "из локальных переопределений не могут быть учтены."]

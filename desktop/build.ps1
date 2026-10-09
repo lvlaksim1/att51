@@ -34,6 +34,7 @@ try {
     '--add-data', ($icon + ';assets'), '--add-data', ($xsd + ';assets'),
     '--hidden-import', 'win32com.client',
     '--hidden-import', 'pythoncom', '--hidden-import', 'pywintypes',
+    '--hidden-import', 'win32timezone',
     '--distpath', $publish, '--workpath', (Join-Path $build 'pyinstaller'),
     '--specpath', $build, (Join-Path $stagedSource 'app.py')
   )

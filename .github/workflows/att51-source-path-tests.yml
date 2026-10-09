@@ -66,6 +66,10 @@ jobs:
           if (!(Test-Path $exe)) { throw 'Executable missing from ProgramData' }
           $p = Start-Process $exe -ArgumentList '--self-test' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "First install self-test failed $($p.ExitCode)" }
+          $sampleMdb = Join-Path $pwd 'extracted\app\model\ARMv51.MDB'
+          $adoTest = Start-Process -FilePath $exe -ArgumentList ('--self-test-mdb "' + $sampleMdb + '"') -Wait -PassThru
+          if ($adoTest.ExitCode -ne 0) { throw "Installed MDB read test failed, code $($adoTest.ExitCode)" }
+          Write-Host 'INSTALLED_REAL_MDB_READ_PASS'
           $p = Start-Process $update -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Update failed $($p.ExitCode)" }
           $p = Start-Process $exe -ArgumentList '--self-test' -Wait -PassThru

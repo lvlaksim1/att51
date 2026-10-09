@@ -95,6 +95,10 @@ jobs:
           Write-Host "EXPECTED_ASSETS=$assets"
           if (Test-Path $assets) { Get-ChildItem -LiteralPath $assets | ForEach-Object { Write-Host "INSTALLED_ASSET=$($_.Name)" } }
           if ($installedTestCode -ne 0) { throw "Installed app self-test failed, code $installedTestCode" }
+          $sampleMdb = Join-Path $pwd 'extracted\app\model\ARMv51.MDB'
+          $adoTest = Start-Process -FilePath $exe -ArgumentList ('--self-test-mdb "' + $sampleMdb + '"') -Wait -PassThru
+          if ($adoTest.ExitCode -ne 0) { throw "Installed MDB read test failed, code $($adoTest.ExitCode)" }
+          Write-Host 'INSTALLED_REAL_MDB_READ_PASS'
           $p = Start-Process -FilePath $update -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Update error $($p.ExitCode)" }
           $smoke = Start-Process -FilePath $exe -ArgumentList '--self-test' -Wait -PassThru

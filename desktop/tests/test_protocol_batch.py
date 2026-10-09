@@ -41,7 +41,11 @@ class BatchProtocolTests(unittest.TestCase):
                 resource_warnings=())
         parser = parse_side_effect or (lambda _: object())
         with (patch("protocol_batch.discover_protocols", return_value=self.protocols) as found,
-              patch("protocol_batch.ResourceCatalog.from_mdb", return_value=object()) as resource,
+              patch("protocol_batch.ResourceCatalog.from_mdb", return_value=SimpleNamespace(
+                  diagnostics=SimpleNamespace(
+                      device_count=1, person_count=1, tables_absent=()
+                  )
+              )) as resource,
               patch("protocol_batch.parse_xml", side_effect=parser),
               patch("protocol_batch.analyze_2025", side_effect=mapped)):
             report = inspect_all_2025(

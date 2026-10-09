@@ -26,6 +26,7 @@ from att51_fsa.writer import validate_xml
 from updater import Release, UpdateError, apply_update, fetch_latest, newer, LATEST_WEB
 from source_discovery import discover_installations, discover_protocols
 from protocol_batch import inspect_all_2025
+from internal_xml import inspect_internal_xml
 from version import VERSION
 
 APP_NAME = "Att51_export"
@@ -174,7 +175,7 @@ class DesktopApp:
             ("Сопоставить все XML (6 факторов)", self._inspect_all_2025),
             ("Проверить справочники", self._inspect_resources),
             ("Сопоставить один XML", self._inspect_2025),
-            ("Проверить один XML по XSD", self._validate_xml),
+            ("Проверить структуру XML", self._validate_xml),
         )):
             b = ttk.Button(tools, text=label, command=command)
             b.grid(row=index // 3, column=index % 3, sticky="ew",
@@ -373,6 +374,16 @@ class DesktopApp:
         def task():
             catalog = ResourceCatalog.from_mdb(source["resources"])
             result = {"not_exportable": True, "catalog": asdict(catalog.diagnostics)}
+            info = catalog.diagnostics
+            if (info.device_count == 0 and info.person_count == 0 and
+                    "FGIS_RA" in info.tables_absent):
+                result["source_warning"] = (
+                    "Справочник не содержит приборов и сотрудников, а таблица "
+                    "FGIS_RA отсутствует. Возможно, выбран исходный шаблон "
+                    "res_orgs.mdb вместо рабочей базы организации. Проверьте "
+                    "настройку [DB_res] в options.ini оригинальной программы. "
+                    "Рабочие данные не изменялись."
+                )
             if xml:
                 result["protocol"] = inspection_dict(
                     inspect_protocol_resources_file(xml, catalog))
@@ -426,22 +437,16 @@ class DesktopApp:
             working_fgis_ini=ini_path)), title="Сопоставление одного протокола")
 
     def _validate_xml(self):
+        """Only internal ATT51 XML is selected here; FGIS XSD does not apply."""
         try:
             path = self._required("xml")["xml"]
-            schema = included_file("assets/fileProtocolLoad_v4.xsd")
-            if not schema.is_file():
-                raise FileNotFoundError("Не найдена штатная XSD в составе приложения.")
         except Exception as error:
             messagebox.showerror(APP_NAME, human_error(error))
             return
-        def task():
-            ok, details = validate_xml(path.read_bytes(), schema)
-            return {
-                "xml": str(path), "conforms_to_xsd": ok, "details": details,
-                "not_exportable": True,
-                "warning": "Соответствие XSD не доказывает правильность данных для ФСА.",
-            }
-        self._work(task, title="Проверка исходной XML-схемы")
+        self._work(
+            lambda: inspect_internal_xml(path),
+            title="Проверка структуры внутреннего XML",
+        )
 
     def _copy(self):
         content = self.report.get("1.0", "end-1c")
@@ -561,7 +566,29 @@ def main() -> int:
             return 11
         if len(VERSION.split(".")) != 3:
             return 12
+        # Exercise COM imports inside the frozen executable; the previous
+        # self-test never loaded the missing win32timezone dependency.
+        if sys.platform == "win32":
+            try:
+                import win32timezone  # noqa: F401
+                import pythoncom  # noqa: F401
+                import win32com.client
+                connection = win32com.client.Dispatch("ADODB.Connection")
+                if connection is None:
+                    return 13
+            except Exception:
+                return 13
         return 0
+    if len(sys.argv) == 3 and sys.argv[1] == "--self-test-mdb":
+        # ADO integration test runs on the original reference MDB with only
+        # read-only SELECT; no mutable Access, schema, or Word calls.
+        try:
+            from att51_fsa.sources import AccessReader
+            with AccessReader(Path(sys.argv[2])) as source:
+                source.select("SELECT TOP 1 id FROM struct_rm")
+            return 0
+        except Exception:
+            return 14
     if len(sys.argv) == 5 and sys.argv[1] == "--apply-update":
         try:
             apply_update(sys.argv[2], sys.argv[3], sys.argv[4])
