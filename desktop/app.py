@@ -147,7 +147,7 @@ class DesktopApp:
         self.report.grid(row=1, column=0, sticky="nsew", pady=(8, 0))
         self.report.insert("1.0",
             "XML: подготовка данных с проверкой соответствий ФГИС и исходной XSD.\n"
-            "Excel: сведения из исходных протоколов без ID ФГИС; отсутствующее поле — НЕТ ДАННЫХ.\n"
+            "Excel: те же показатели, что и в XML, но с исходными названиями без ID ФГИС.\n"
             "Каждый показатель занимает отдельную строку, а общие сведения — только первую.\n"
             "Результаты: %ProgramData%\\Att51_export\\reports\\.\n"
             "Кнопки работают независимо, предварительные отчёты не нужны.")
@@ -318,14 +318,9 @@ class DesktopApp:
                    kind="report_file")
 
     def _create_excel(self):
-        try:
-            source = self._required("mdb")
-        except (ValueError, OSError) as error:
-            messagebox.showerror(APP_NAME, human_error(error))
-            return
-        self._work(lambda: create_excel_export(source["mdb"]),
-                   title="Формирование исходных сведений Excel",
-                   kind="excel_result")
+        # Same input selection, customer information and factor options as XML.
+        # The format changes only AFTER the common XML measurement selector.
+        self._create_fgis_xml(target="excel")
 
     def _open_excel_result(self, result):
         self.status.set(
@@ -346,7 +341,7 @@ class DesktopApp:
             messagebox.showwarning(APP_NAME, "Excel создан, но не удалось открыть:\n"
                                    + str(error))
 
-    def _create_fgis_xml(self):
+    def _create_fgis_xml(self, *, target="xml"):
         try:
             files, ini = self._report_inputs()
         except (ValueError, OSError) as error:
@@ -451,12 +446,19 @@ class DesktopApp:
                 omit_point_measurements=chem_omit_points.get(),
             )
             popup.destroy()
-            self._work(lambda:create_fgis_export(
-                files["mdb"],files["resources"],ini,customer,
-                included_file("assets/fileProtocolLoad_v4.xsd"),
-                labour=labour, chemical=chemical),
-                title="Проверка и формирование итогового XML",
-                kind="fgis_result")
+            if target == "excel":
+                self._work(lambda: create_excel_export(
+                    files["mdb"], files["resources"], ini, customer,
+                    labour=labour, chemical=chemical),
+                    title="Подготовка исходных сведений Excel",
+                    kind="excel_result")
+            else:
+                self._work(lambda: create_fgis_export(
+                    files["mdb"], files["resources"], ini, customer,
+                    included_file("assets/fileProtocolLoad_v4.xsd"),
+                    labour=labour, chemical=chemical),
+                    title="Проверка и формирование итогового XML",
+                    kind="fgis_result")
         ttk.Button(footer,text="Проверить и сформировать",command=begin).pack(side="right")
         popup.focus_set()
 
