@@ -80,7 +80,7 @@ class AccessLockRecoveryTests(unittest.TestCase):
             attempts.append(path)
             return original_open(reader, path, dispatcher)
 
-        with patch.dict(sys.modules, self._com_modules(client)), (
+        with (patch.dict(sys.modules, self._com_modules(client)),
             patch.object(AccessReader, "_is_network_path", return_value=True),
             patch.object(AccessReader, "_open", trace_open)
         ):
@@ -109,7 +109,7 @@ class AccessLockRecoveryTests(unittest.TestCase):
             Path(src).write_bytes(b"CHANGED WHILE COPYING")
             return result
 
-        with patch.dict(sys.modules, self._com_modules(client)), (
+        with (patch.dict(sys.modules, self._com_modules(client)),
             patch("att51_fsa.sources.shutil.copyfile", changed_during_copy)
         ):
             with self.assertRaisesRegex(FsaSourceError, "изменялась"):
