@@ -27,6 +27,32 @@ def original_directory_name(directory: str) -> str:
     return _DIRECTORY.get(directory, "Unknown")
 
 
+# Verified subset of v52_exp_fgis_ra.get_param_from_indicator.
+# The original contains many additional factor-specific IDs; unknown IDs
+# do not receive fabricated method tags.
+_OA_PARAMETER_TAGS = {
+    "3": "temp", "4": "vlag", "5": "skor", "122114": "tns",
+    "122794": "tepl", "131478": "doza",
+    "9": "shum_izm", "281": "shum_ekv",
+    "10": "infr_izm", "131616": "infr_ekv",
+    "16": "svet_osv", "3520": "svet_Kp",
+    "13": "vibr_gen_izm", "2367": "vibr_gen_izm",
+    "144614": "vibr_gen_ekv", "14": "vibr_loc_izm",
+    "156886": "vibr_loc_ekv",
+}
+
+
+def original_oa_parameter_tag(draft: ResearchObjectDraft, *,
+                              indicator_id_4: str = "",
+                              him_id: str = "") -> str:
+    """OA per-indicator tag as in get_param_from_indicator."""
+    indicator = indicator_id_4 or draft.indicator_id
+    result = _OA_PARAMETER_TAGS.get(indicator, "")
+    if not result and draft.indicator_id_2 == "66" and him_id:
+        return "him_id" + him_id
+    return result
+
+
 def original_oa_method_id(value: str) -> str:
     """get_method_oa_id reads first pair of braces and tests VB Val > 0."""
     left, right = value.find("{"), value.find("}")
