@@ -16,7 +16,30 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from .sources import AccessReader, FsaSourceError
+from .sources import AccessReader, FsaSourceError, read_ini
+
+
+def resource_mdb_path(application_folder: Path, *, options_ini: Path | None = None) -> Path:
+    """Select the same local/shared resource MDB as v5_res_main.read.
+
+    [DB_res] res_flag=1 -> use res_path, otherwise app/res_orgs.mdb.
+    This function reads configuration but never creates or changes files.
+    """
+    root = Path(application_folder)
+    ini = Path(options_ini) if options_ini is not None else root / "options.ini"
+    if not ini.is_file():
+        raise FsaSourceError(f"Original settings file missing: {ini}")
+    flag = read_ini(ini, "DB_res", "res_flag")
+    if flag == "1":
+        linked_path = read_ini(ini, "DB_res", "res_path")
+        if not linked_path:
+            raise FsaSourceError("DB_res.res_flag=1 but shared res_path is empty")
+        path = Path(linked_path)
+    else:
+        path = root / "res_orgs.mdb"
+    if not path.is_file():
+        raise FsaSourceError(f"Original resource MDB not found: {path}")
+    return path
 
 
 def _str(value: Any) -> str:
@@ -293,7 +316,7 @@ class ResourceCatalog:
                 chosen = matches[0]
                 warnings = ("duplicate_normative_matches",) if len(matches) > 1 else ()
                 return NdResolution(True, rule, chosen, len(matches),
-                                    bool(warnings) or not bool(chosen.method_doc_id),
+                                    bool(warnings) or chosen.method_doc_id in ("", "0", "-1"),
                                     warnings)
         # Original VBA SpecFormat removes [ and ]; other Like wildcards may
         # carry different semantics and require explicit validation.
@@ -307,7 +330,7 @@ class ResourceCatalog:
             for item in self.normative:
                 if item.name == full_name:
                     return NdResolution(True, "exact_name_when_hash_empty", item, 1,
-                                        not bool(item.method_doc_id))
+                                        item.method_doc_id in ("", "0", "-1"))
         return NdResolution(False, "not_found", None, 0, True,
                             ("normative_not_found",))
 
