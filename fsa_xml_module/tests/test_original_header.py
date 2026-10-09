@@ -1,7 +1,7 @@
 """Original VBA -> strict FGIS XSD header mapping, no private user data."""
 import unittest
 
-from att51_fsa.original_header import build_header, fgis_date, fgis_status
+from att51_fsa.original_header import build_header, fgis_date, fgis_status, original_protocol_date
 from att51_fsa.sources import FsaSourceError
 
 
@@ -22,6 +22,16 @@ class OriginalHeaderTests(unittest.TestCase):
         for x in ("", "-", "31.02.2026", "unknown", "Отсутствует"):
             with self.subTest(x=x), self.assertRaises(FsaSourceError):
                 fgis_date(x, source="test")
+
+    def test_original_protocol_date_fallback_from_vba(self):
+        self.assertEqual(original_protocol_date("", "24.03.2026"), "2026-03-24")
+        self.assertEqual(original_protocol_date("25.03.2026", "24.03.2026"),
+                         "2026-03-25")
+        self.assertEqual(original_protocol_date("", "24.03.2026",
+                                                 explicit_date="26.03.2026"),
+                         "2026-03-26")
+        with self.assertRaises(FsaSourceError):
+            original_protocol_date("", "")
 
     def test_original_13_dates_and_object(self):
         h = build_header(number="X-01", protocol_date="24.03.2026",
