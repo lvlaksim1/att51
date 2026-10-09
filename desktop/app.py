@@ -361,6 +361,16 @@ class DesktopApp:
 
 
 def main() -> int:
+    if len(sys.argv) == 2 and sys.argv[1] == "--self-test":
+        # Executed from CI after full installation and update. No UI, writes
+        # or network required; failure is signaled only by an exit code.
+        if not included_file("assets/app.ico").is_file():
+            return 10
+        if not included_file("assets/fileProtocolLoad_v4.xsd").is_file():
+            return 11
+        if len(VERSION.split(".")) != 3:
+            return 12
+        return 0
     if len(sys.argv) == 5 and sys.argv[1] == "--apply-update":
         try:
             apply_update(sys.argv[2], sys.argv[3], sys.argv[4])
