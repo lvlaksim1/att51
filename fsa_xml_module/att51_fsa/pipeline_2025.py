@@ -19,7 +19,7 @@ from .methods import (
 )
 from .research_objects import (
     PreparedResearchObject, ResearchOverrides,
-    load_working_overrides, prepare_research_object,
+    load_working_overrides, prepare_research_object, original_oa_parameter_tag,
 )
 from .resource_xml import inspect_protocol_resources
 from .resources import ResourceCatalog
@@ -159,14 +159,19 @@ def analyze_2025(
         )
         selected = bind_methods_from_catalog(value, methods, catalog, factor_id=factor)
         warnings = list(selected.source_errors)
+        oa_parameter = original_oa_parameter_tag(draft)
+        oa_specific = catalog.oa_method_for(selected.selected.nd_guid, oa_parameter)
+        if oa_parameter and oa_specific:
+            warnings.append("oa_method_selected_from_indicator_specific_resource")
         if working_fgis_ini is None:
             # Caller explicitly has not supplied possible original indicator
             # overrides. A successful-looking mapping must not conceal it.
             warnings.append("working_fgis_ra_ini_not_supplied")
-            overrides = ResearchOverrides()
+            overrides = ResearchOverrides(preferred_oa_method=oa_specific)
         else:
             overrides = load_working_overrides(
-                draft, selected.selected, Path(working_fgis_ini)
+                draft, selected.selected, Path(working_fgis_ini),
+                preferred_oa_method=oa_specific,
             )
         prepared = prepare_research_object(draft, selected.selected, overrides)
         errors = list(prepared.errors)
