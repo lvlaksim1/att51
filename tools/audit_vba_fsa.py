@@ -96,6 +96,14 @@ def main() -> None:
                     if re.search(r"(?i)(password|passwd|token|secret|authorization|Bearer)\\s*=", line):
                         line = "[redacted]"
                     print(f"PROVENANCE {name} {i+1:5d} {line[:290]}")
+            if name == "v5_res_main":
+                for start, stop in ((1857, 1895), (2336, 2390)):
+                    for i in range(start-1, min(stop,len(lines))):
+                        print(f"PROBE {name} {i+1:5d} {lines[i][:300]}")
+            if name == "v5_org_options":
+                for start, stop in ((1995, 2075), (2500, 2570)):
+                    for i in range(start-1, min(stop,len(lines))):
+                        print(f"PROBE {name} {i+1:5d} {lines[i][:300]}")
             # Avoid uncontrolled log size, and restrict to known module/terms.
             for i in sorted(selected)[:1300]:
                 line = lines[i].rstrip()
