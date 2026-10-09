@@ -3,10 +3,12 @@
 No working personal data or actual FSA IDs are used; values are synthetic.
 """
 from dataclasses import asdict
+from tempfile import TemporaryDirectory
+from pathlib import Path
 from pathlib import Path
 import unittest
 
-from att51_fsa.resources import ResourceCatalog, nd_hash, ResourceResolution
+from att51_fsa.resources import ResourceCatalog, nd_hash, ResourceResolution, resource_mdb_path
 from att51_fsa.sources import FsaSourceError
 
 
@@ -120,6 +122,33 @@ class ResourceLookupTests(unittest.TestCase):
     def test_nd_priority_comes_from_original_dop4(self):
         self.assertEqual(build().nd_preference("ГОСТ 12.1.003-83"), "shum_izm")
         self.assertIsNone(build().nd_preference("Unrelated"))
+
+    def test_original_ini_defaults_to_application_resources(self):
+        with TemporaryDirectory() as d:
+            base = Path(d)
+            (base / "options.ini").write_text("[update]\nversion=5.1\n", encoding="utf-8")
+            default = base / "res_orgs.mdb"
+            default.touch()
+            self.assertEqual(resource_mdb_path(base), default)
+
+    def test_original_ini_shared_database_mode(self):
+        with TemporaryDirectory() as d:
+            base = Path(d)
+            other = base / "shared_resources.mdb"
+            other.touch()
+            (base / "options.ini").write_text(
+                "[DB_res]\nres_flag=1\nres_path=" + str(other) + "\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(resource_mdb_path(base), other)
+
+    def test_missing_original_shared_resource_blocks(self):
+        with TemporaryDirectory() as d:
+            base = Path(d)
+            (base / "options.ini").write_text(
+                "[DB_res]\nres_flag=1\nres_path=\n", encoding="utf-8")
+            with self.assertRaisesRegex(FsaSourceError, "res_path"):
+                resource_mdb_path(base)
 
     def test_reader_only_selects_present_tables(self):
         class FakeReader:
