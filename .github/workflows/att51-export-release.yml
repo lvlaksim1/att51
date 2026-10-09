@@ -95,6 +95,30 @@ jobs:
           Write-Host "EXPECTED_ASSETS=$assets"
           if (Test-Path $assets) { Get-ChildItem -LiteralPath $assets | ForEach-Object { Write-Host "INSTALLED_ASSET=$($_.Name)" } }
           if ($installedTestCode -ne 0) { throw "Installed app self-test failed, code $installedTestCode" }
+          # Real regression for Windows DeleteFile code 5: a running EXE
+          # must be detected BEFORE any attempted replacement.
+          $hashBefore = (Get-FileHash $exe -Algorithm SHA256).Hash
+          $holder = Start-Process -FilePath $exe -ArgumentList '--self-test-hold-mutex 45' -PassThru
+          Start-Sleep -Seconds 3
+          try {
+            if ($holder.HasExited) { throw 'Mutex test process exited too early' }
+            foreach ($installer in @($setup, $update)) {
+              $attempt = Start-Process -FilePath $installer -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -PassThru
+              Write-Host "RUNNING_APP_INSTALLER_EXIT_CODE=$($attempt.ExitCode)"
+              if ($attempt.ExitCode -eq 0) {
+                throw "Installer incorrectly replaced a running executable: $installer"
+              }
+              if (-not (Test-Path $exe)) { throw 'Running application executable was deleted' }
+              if ((Get-FileHash $exe -Algorithm SHA256).Hash -ne $hashBefore) {
+                throw 'Installer partially replaced the running application'
+              }
+            }
+            Write-Host 'RUNNING_APPLICATION_REPLACEMENT_PREVENTED_PASS'
+          } finally {
+            Stop-Process -Id $holder.Id -Force -ErrorAction SilentlyContinue
+            try { $holder.WaitForExit(10000) | Out-Null } catch {}
+          }
+
           $sampleMdb = Join-Path $pwd 'extracted\app\model\ARMv51.MDB'
           $adoTest = Start-Process -FilePath $exe -ArgumentList ('--self-test-mdb "' + $sampleMdb + '"') -Wait -PassThru
           if ($adoTest.ExitCode -ne 0) { throw "Installed MDB read test failed, code $($adoTest.ExitCode)" }

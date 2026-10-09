@@ -46,6 +46,20 @@ class InstallationContractTests(unittest.TestCase):
                 self.assertIn('Name: "{app}\\data"', code)
                 self.assertNotIn('Permissions: users-modify', code)
 
+    def test_inno_installer_detects_running_application_via_mutex(self):
+        from install_guard import MUTEX_NAME
+        for name in ("full.iss", "update.iss"):
+            with self.subTest(name=name):
+                setup = self.script(name)
+                self.assertIn("AppMutex=" + MUTEX_NAME, setup)
+                self.assertIn("CloseApplications=yes", setup)
+                self.assertIn("RestartApplications=no", setup)
+
+    def test_gui_holds_mutex_until_exiting(self):
+        source = (DESKTOP / "app.py").read_text(encoding="utf-8")
+        self.assertIn("with InstallationMutex():\\n        root = tk.Tk()", source)
+        self.assertIn("with InstallationMutex():\\n            time.sleep(", source)
+
     def test_finish_page_has_checked_launch_in_both_installers(self):
         for name in ("full.iss", "update.iss"):
             code = self.script(name)

@@ -18,6 +18,7 @@ if not getattr(sys, "frozen", False):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "fsa_xml_module"))
 
 from updater import Release, UpdateError, apply_update, fetch_latest, newer, LATEST_WEB
+from install_guard import InstallationMutex
 from source_discovery import discover_installations
 from source_settings import SourceSettings, SOURCE_KEYS
 from whole_base_reports import create_index, create_details
@@ -585,11 +586,19 @@ def main() -> int:
             messagebox.showerror(APP_NAME, human_error(error))
             root.destroy()
             return 2
+    if len(sys.argv) == 3 and sys.argv[1] == "--self-test-hold-mutex":
+        # Dedicated Windows release test: test that both installers refuse
+        # to overwrite the currently running EXE. Never open user data.
+        import time
+        with InstallationMutex():
+            time.sleep(min(max(int(sys.argv[2]), 1), 60))
+        return 0
     if len(sys.argv) > 1:
         return 2
-    root = tk.Tk()
-    DesktopApp(root)
-    root.mainloop()
+    with InstallationMutex():
+        root = tk.Tk()
+        DesktopApp(root)
+        root.mainloop()
     return 0
 
 

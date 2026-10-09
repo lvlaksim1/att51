@@ -39,6 +39,7 @@ WizardStyle=modern
 SetupIconFile={#IconFile}
 UninstallDisplayIcon={app}\{#AppExe}
 CloseApplications=yes
+AppMutex=Att51_export_4C39F0DF_C81F_48A7_AC82_6B29E916E7C1
 RestartApplications=no
 SetupLogging=no
 VersionInfoVersion={#AppVersion}
