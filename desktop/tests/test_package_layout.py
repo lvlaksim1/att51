@@ -118,7 +118,9 @@ class InstallationContractTests(unittest.TestCase):
         self.assertNotIn("LocalApplicationData", source)
         self.assertNotIn("AppData", source)
         self.assertNotIn("tempfile", source)
-        self.assertIn("not_exportable", source)
+        self.assertIn("Выгрузить XML", source)
+        self.assertIn("Выгрузить Excel", source)
+        self.assertIn("run_with_com(task)", source)
 
     def test_build_uses_onedir_not_volatile_singlefile_extract(self):
         build = (DESKTOP / "build.ps1").read_text(encoding="utf-8")

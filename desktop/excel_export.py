@@ -228,7 +228,7 @@ def extract_protocol_rows(root: ET.Element) -> list[list[str]]:
         _from(client, "inn", "customer_inn"),
         _from((obj, factor, doc), "object_type_name", "object_type",
               "type_object_name"),
-        _from((obj, factor, doc), "object_name", "object_full_name",
+        _from((obj, doc, factor), "object_name", "object_full_name",
               "research_object_name", "full_name_object", "factor_name"),
     ]
     trailing = [

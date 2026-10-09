@@ -160,10 +160,13 @@ class WholeBaseReportTests(unittest.TestCase):
 
 
 class GUIContractTests(unittest.TestCase):
-    def test_only_two_diagnostic_buttons_and_three_file_inputs(self):
+    def test_only_two_export_buttons_and_three_file_inputs(self):
         c = (DESKTOP / "app.py").read_text(encoding="utf-8")
-        self.assertIn("1. Перечень рабочих мест и протоколов", c)
-        self.assertIn("2. Подробные сведения всех протоколов", c)
+        self.assertIn('("Выгрузить XML", self._create_fgis_xml)', c)
+        self.assertIn('("Выгрузить Excel", self._create_excel)', c)
+        self.assertNotIn("1. Перечень рабочих мест и протоколов", c)
+        self.assertNotIn("2. Подробные сведения всех протоколов", c)
+        # Low-level diagnostic functions still support internal CLI checks.
         self.assertIn("create_index(", c)
         self.assertIn("create_details(", c)
         self.assertIn('("mdb", "resources", "ini")', c)
