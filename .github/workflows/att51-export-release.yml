@@ -60,16 +60,16 @@ jobs:
           choco install innosetup -y --no-progress
           if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed' }
 
-      - name: Verify Windows update helper syntax
+      - name: Verify standalone Windows updater source
         shell: pwsh
         run: |
-          $tokens = $null
-          $errors = $null
-          $ast = [System.Management.Automation.Language.Parser]::ParseFile(
-            (Join-Path $pwd 'desktop/update_overlay.ps1'),
-            [ref]$tokens, [ref]$errors)
-          if ($errors.Count -gt 0) { $errors | Format-List | Out-String | Write-Error; exit 1 }
-          Write-Host 'UPDATE_OVERLAY_POWERSHELL_PARSE_PASS'
+          if (-not (Test-Path 'desktop/update_worker.cs')) {
+            throw 'Standalone C# updater source is missing'
+          }
+          if (Select-String -Path 'desktop/updater.py' -Pattern 'powershell.exe') {
+            throw 'A runtime PowerShell updater call is prohibited'
+          }
+          Write-Host 'STANDALONE_UPDATER_SOURCE_PASS'
 
       - name: Run FSA and updater regression tests
         shell: pwsh
@@ -106,10 +106,13 @@ jobs:
           Write-Host "EXPECTED_ASSETS=$assets"
           if (Test-Path $assets) { Get-ChildItem -LiteralPath $assets | ForEach-Object { Write-Host "INSTALLED_ASSET=$($_.Name)" } }
           if ($installedTestCode -ne 0) { throw "Installed app self-test failed, code $installedTestCode" }
-          if (-not (Test-Path (Join-Path $app '_internal\assets\update_overlay.ps1'))) {
-            throw 'Persistent updater progress helper was not included in installed app'
+          $worker = Join-Path $app '_internal\assets\Att51_UpdateWorker.exe'
+          if (-not (Test-Path $worker)) {
+            throw 'Standalone Windows update worker is not installed'
           }
-          Write-Host 'INSTALLED_ONE_WINDOW_UPDATE_HELPER_PASS'
+          $workerCheck = Start-Process -FilePath $worker -ArgumentList '--self-test' -Wait -PassThru
+          if ($workerCheck.ExitCode -ne 0) { throw 'Updater EXE self-test failed' }
+          Write-Host 'STANDALONE_NO_POWERSHELL_UPDATER_PASS'
           # Real regression for Windows DeleteFile code 5: a running EXE
           # must be detected BEFORE any attempted replacement.
           $hashBefore = (Get-FileHash $exe -Algorithm SHA256).Hash
