@@ -196,3 +196,9 @@
 - Persistent Windows update_overlay.ps1 runs independent of installed Att51_export.exe and owns one progress window: main GUI remains while visible handshake; SHA verified download, hidden Inno /VERYSILENT sends progress through CurInstallProgressChanged, new GUI writes newapp.ready and overlay closes. Shortcut no [Icons]. App packages PS script and tests parse and installer acceptance. First upgrade from earlier v0.1.17 uses old built-in updater (may show older windows), subsequent upgrade uses new overlay.
 - RELEASE v0.1.18 https://github.com/lvlaksim1/att51/releases/tag/v0.1.18, CI success https://github.com/lvlaksim1/att51/actions/runs/38007042272 . Full install+updater assets.
 - UNRESOLVED: original text for some units, type address, and source TypeObjectId=10 label not confirmed; no invented mapping. Private 11 protocols and end-to-end client desktop one-window UX untested. Detailed caveats in research/ATT51_V0_1_18_ACCEPTANCE.md.
+
+## Поколение 32 — выпуск Att51_export v0.1.19 (10.10.2026)
+- Owner directive: absolutely no guessing of any field. Unknown textual units, object labels, methods, dates, etc. must remain «НЕТ ДАННЫХ»; required missing XML values block output.
+- Main code e270e127b52ad9022bb28a358a966e5074a4394d removes Releases button; Excel all text, dates DD.MM.YYYY strings, AutoFit after full write and WrapText disabled; unit text from explicit original attribute only.
+- Release https://github.com/lvlaksim1/att51/releases/tag/v0.1.19 contains both Setup and Update; Windows CI https://github.com/lvlaksim1/att51/actions/runs/38010077882 success.
+- Open: TypeObjectId=10 numerically known but no verified original textual name; Excel type remains «НЕТ ДАННЫХ» rather than guess. Real 11-protocol field validation and GUI update experience remain to check.
