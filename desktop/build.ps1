@@ -25,8 +25,21 @@ try {
   & python desktop/build_icon.py $icon
   if ($LASTEXITCODE -ne 0 -or -not (Test-Path $icon)) { throw 'Icon generation failed' }
   $xsd = Join-Path $root 'extracted\app\fileProtocolLoad_v4.xsd'
-  $updaterScript = Join-Path $root 'desktop\update_overlay.ps1'
-  if (-not (Test-Path -LiteralPath $updaterScript)) { throw 'Missing updater overlay' }
+  $updaterSource = Join-Path $root 'desktop\update_worker.cs'
+  if (-not (Test-Path -LiteralPath $updaterSource)) { throw 'Missing updater C# source' }
+  $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe'
+  if (-not (Test-Path -LiteralPath $compiler)) {
+    $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+  }
+  if (-not (Test-Path -LiteralPath $compiler)) { throw 'Windows .NET C# compiler not found' }
+  $workerExe = Join-Path $build 'Att51_UpdateWorker.exe'
+  $compilerArgs = @('/nologo', '/target:winexe', '/platform:anycpu', '/codepage:65001', '/reference:System.dll', '/reference:System.Windows.Forms.dll', '/reference:System.Drawing.dll', ('/out:' + $workerExe), $updaterSource)
+  & $compiler @compilerArgs
+  if ($LASTEXITCODE -ne 0 -or -not (Test-Path $workerExe)) {
+    throw 'Standalone update worker compilation failed'
+  }
+  $probe = Start-Process -FilePath $workerExe -ArgumentList '--self-test' -Wait -PassThru
+  if ($probe.ExitCode -ne 0) { throw 'Standalone update worker self-test failed' }
   if (-not (Test-Path $xsd)) { throw 'Missing original XSD' }
 
   $pyArgs = @(
@@ -34,7 +47,7 @@ try {
     '--name', 'Att51_export', '--icon', $icon,
     '--paths', (Join-Path $root 'fsa_xml_module'),
     '--add-data', ($icon + ';assets'), '--add-data', ($xsd + ';assets'),
-    '--add-data', ($updaterScript + ';assets'),
+    '--add-binary', ($workerExe + ';assets'),
     '--hidden-import', 'win32com.client',
     '--hidden-import', 'pythoncom', '--hidden-import', 'pywintypes',
     '--hidden-import', 'win32timezone',
