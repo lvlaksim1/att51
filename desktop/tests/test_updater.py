@@ -44,11 +44,11 @@ class UpdaterTests(unittest.TestCase):
                     popen=lambda *args, **kwargs: (
                         calls.append((args, kwargs)) or Process()))
             self.assertIsInstance(process, Process)
-            self.assertEqual(marker, app / "updates" / "overlay.ready")
+            self.assertEqual(marker.resolve(), (app / "updates" / "overlay.ready").resolve())
             command = calls[0][0][0]
             self.assertEqual(Path(command[0]).name, "Att51_updater_runner.exe")
-            self.assertEqual(command[1:], [
-                "v0.2.0", "f"*64, "200000", "1234", str(app)])
+            self.assertEqual(command[1:5], ["v0.2.0", "f"*64, "200000", "1234"])
+            self.assertEqual(Path(command[5]).resolve(), app.resolve())
             self.assertTrue(calls[0][1]["close_fds"])
             self.assertEqual((app / "updates" / "Att51_updater_runner.exe").read_bytes(),
                              b"MZ-TEST-WORKER")
