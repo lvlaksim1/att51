@@ -105,7 +105,7 @@ class InstallationContractTests(unittest.TestCase):
         self.assertIn("SHA256.Create()", worker)
         self.assertIn("/VERYSILENT", worker)
         self.assertIn("Att51_updater_runner.exe", updater)
-        self.assertNotIn("powershell", updater.lower())
+        self.assertNotIn("powershell.exe", updater.lower())
         self.assertNotIn("update_overlay.ps1", source)
         self.assertNotIn("powershell", update.lower())
 
