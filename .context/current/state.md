@@ -199,3 +199,10 @@
 - Код e270e127b52ad9022bb28a358a966e5074a4394d: удалена кнопка «Открыть релизы»; весь Excel текстовый, даты B/C/D/Q/S/U представлены строками ДД.ММ.ГГГГ; AutoFit после заполнения без WrapText; единицы только по буквальному достоверному первичному полю.
 - Release https://github.com/lvlaksim1/att51/releases/tag/v0.1.19 , Setup 14555453, Update 14555767 байт; https://github.com/lvlaksim1/att51/actions/runs/38010077882 success.
 - TypeObjectId=10 подтверждён как числовой код, но точная текстовая метка не установлена, её нельзя придумывать. Пользовательская база и Microsoft Excel в CI не проверены. Issues #2/#8 открыты.
+
+## Att51_export v0.1.20 released — 10.10.2026, generation 33
+- Реализован полностью независимый от PowerShell механизм обновления. desktop/update_worker.cs — отдельный Windows Forms EXE, собран .NET Framework компилятором; в desktop/updater.py при нажатии «Обновить» копируется в ProgramData/Att51_export/updates, затем запускается, сообщает готовность через overlay.ready.
+- desktop/app.py больше не рисует второе окно подготовки, а ждёт видимость одного центрированного окна WinForms и закрывает старую GUI. Помощник загружает установщик из точного GitHub Release, сверяет размер и SHA-256, ждёт закрытия старого Att51_export.exe, запускает Inno /VERYSILENT с ходом установки, ждёт newapp.ready после запуска новой GUI.
+- Бывший desktop/update_overlay.ps1 удалён; runtime вызовов powershell.exe и --apply-update больше нет. Встроенный помощник имеет самопроверку через --self-test. Windows CI #38011819680 completed/success.
+- Публичный последний релиз https://github.com/lvlaksim1/att51/releases/tag/v0.1.20 с парой Setup (14551858 байт) и Update (14552176 байт); прежний релиз 0.1.19 удаляется политикой оставления только последнего. Для первоначального перехода с 0.1.19 и более ранних нужен ручной запуск Update, так как кнопка прежних версий всё ещё использует PowerShell.
+- Полевой запуск нового механизма на ПК пользователя не подтверждён. Незавершённые XML/Excel вопросы TypeObjectId и подписей единиц сохраняются; #2/#8 открыты.
