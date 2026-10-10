@@ -138,114 +138,36 @@ def download_update(info: Release, install_dir: Path, *,
 
 
 
-# The update process must exit before Inno Setup replaces Att51_export.exe.
-# The detached Windows helper owns no installed application files.
-SILENT_INSTALL_ARGS = (
-    "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART",
-    "/NOCANCEL", "/CLOSEAPPLICATIONS", "/RUNAFTERUPDATE=1",
-)
-
-
-def _ps_quote(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def build_install_launcher(installer: Path, updater_pid: int, app_pid: int = 0) -> str:
-    """Wait for old app/updater to exit; show installer progress, no wizard."""
-    if updater_pid <= 0 or app_pid < 0:
-        raise UpdateError("Некорректный идентификатор процесса обновления.")
-    if Path(installer).suffix.lower() != ".exe":
-        raise UpdateError("Некорректный путь к установщику.")
-    args = ", ".join(_ps_quote(x) for x in SILENT_INSTALL_ARGS)
-    waiting = (app_pid, updater_pid) if app_pid else (updater_pid,)
-    waits = "\n".join(
-        f"Wait-Process -Id {pid} -ErrorAction SilentlyContinue" for pid in waiting
-    )
-    return (
-        "$ErrorActionPreference = 'Stop'\n" + waits + "\n"
-        + "try {\n"
-        + f"  $installer = Start-Process -FilePath {_ps_quote(str(installer))} "
-          f"-ArgumentList @({args}) -PassThru\n"
-        + "  $installer.WaitForExit()\n"
-        + "  if ($installer.ExitCode -ne 0) { "
-          "throw ('Установка не завершена. Код: ' + $installer.ExitCode) }\n"
-        + "} catch {\n"
-        + "  Add-Type -AssemblyName System.Windows.Forms\n"
-        + "  [void][System.Windows.Forms.MessageBox]::Show("
-          "('Не удалось обновить Att51_export: ' + $_.Exception.Message), "
-          "'Att51_export', 'OK', 'Error')\n"
-        + "  exit 1\n"
-        + "}\n"
-    )
-
-
-def launch_install_after_exit(installer: Path, app_pid: int = 0, *,
-                              popen=subprocess.Popen) -> None:
-    """System PowerShell waits outside the installed EXE; no extra application."""
-    import base64
-    import sys
-    if sys.platform != "win32":
-        raise UpdateError("Автоматическая установка доступна только в Windows.")
-    script = build_install_launcher(installer, os.getpid(), app_pid)
-    encoded = base64.b64encode(script.encode("utf-16-le")).decode("ascii")
-    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-    popen(["powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive",
-           "-WindowStyle", "Hidden", "-EncodedCommand", encoded],
-          cwd=str(Path(installer).parent), close_fds=True, creationflags=flags)
-
-
-def apply_update(tag: str, checksum: str, length: str,
-                 app_pid: str = "0", *, progress=None) -> None:
-    import sys
-    if not getattr(sys, "frozen", False):
-        raise UpdateError("Обновление запускается только в установленной программе.")
-    install_dir = Path(sys.executable).resolve().parent
-    parse_version(tag)
-    if not _HASH.fullmatch(checksum):
-        raise UpdateError("Некорректная контрольная сумма.")
-    try:
-        size = int(length)
-        original_pid = int(app_pid)
-    except ValueError as exc:
-        raise UpdateError("Некорректные параметры обновления.") from exc
-    if original_pid < 0:
-        raise UpdateError("Некорректный идентификатор приложения.")
-    current = fetch_latest()
-    if (not current.verified or current.tag != tag
-            or current.sha256 != checksum.lower() or current.size != size):
-        raise UpdateError("Выпуск GitHub изменился; проверьте обновления заново.")
-    path = download_update(current, install_dir, progress=progress)
-    launch_install_after_exit(path, original_pid)
-
-
-def start_update_overlay(info: Release, install_dir: Path, script: Path,
+def start_update_overlay(info: Release, install_dir: Path, worker_exe: Path,
                          main_pid: int, *, popen=subprocess.Popen):
-    """Show the external single progress window before shutting down the GUI.
+    """Launch a separate Windows EXE; no PowerShell or installed runtime locks.
 
-    The child verifies the download and performs installation while this
-    app's executable is not running. No files are placed outside {app}.
+    The worker runs from {app}/updates, so Inno may replace installed files
+    while its window remains alive. Parent GUI closes only after ready marker.
     """
+    import shutil
     import sys
     if sys.platform != "win32" or not getattr(sys, "frozen", False):
         raise UpdateError("Обновление доступно только в установленной Windows-версии.")
     if (not info.verified or not _HASH.fullmatch(info.sha256)
-            or info.download_url != asset_url(info.tag) or
-            info.size < 100000 or main_pid <= 0):
+            or info.download_url != asset_url(info.tag)
+            or info.size < 100000 or main_pid <= 0):
         raise UpdateError("Не удалось подтвердить выпуск GitHub.")
     folder = Path(install_dir).resolve(strict=True)
     if folder.name.casefold() != "att51_export":
         raise UpdateError("Недопустимая папка приложения.")
-    script = Path(script).resolve(strict=True)
-    marker = folder / "updates" / "overlay.ready"
-    marker.parent.mkdir(parents=True, exist_ok=True)
+    worker = Path(worker_exe).resolve(strict=True)
+    if worker.suffix.lower() != ".exe" or worker.name != "Att51_UpdateWorker.exe":
+        raise UpdateError("Не найден исполняемый модуль обновления.")
+    if folder not in worker.parents:
+        raise UpdateError("Модуль обновления находится вне папки программы.")
+    updates = folder / "updates"
+    updates.mkdir(parents=True, exist_ok=True)
+    marker = updates / "overlay.ready"
     marker.unlink(missing_ok=True)
-    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-    command = [
-        "powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive", "-STA",
-        "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden",
-        "-File", str(script), "-Tag", info.tag, "-Checksum", info.sha256,
-        "-Size", str(info.size), "-ApplicationPid", str(main_pid),
-        "-InstallDir", str(folder),
-    ]
-    return (popen(command, cwd=str(folder), close_fds=True,
-                  creationflags=flags), marker)
+    (updates / "newapp.ready").unlink(missing_ok=True)
+    runner = updates / "Att51_updater_runner.exe"
+    shutil.copyfile(worker, runner)
+    command = [str(runner), info.tag, info.sha256, str(info.size),
+               str(main_pid), str(folder)]
+    return popen(command, cwd=str(updates), close_fds=True), marker
