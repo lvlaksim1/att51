@@ -16,7 +16,7 @@ from tkinter import filedialog, messagebox, scrolledtext, ttk
 if not getattr(sys, "frozen", False):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "fsa_xml_module"))
 
-from updater import Release, UpdateError, apply_update, fetch_latest, newer
+from updater import Release, UpdateError, fetch_latest, newer
 from install_guard import InstallationMutex
 from source_discovery import discover_installations
 from source_settings import SourceSettings, SOURCE_KEYS
@@ -536,37 +536,29 @@ class DesktopApp:
             messagebox.showerror(APP_NAME, "Не удалось сохранить пути перед обновлением.")
             return
         from updater import start_update_overlay
-        # Show progress IMMEDIATELY; wait until the persistent helper appears
-        # before shutting down the original Att51_export.exe.
-        starting = tk.Toplevel(self.root)
-        starting.title("Обновление Att51_export")
-        starting.geometry("490x156")
-        starting.resizable(False, False)
-        starting.transient(self.root)
-        ttk.Label(starting, text="Подготовка обновления…",
-                  padding=(15, 14)).pack(anchor="w")
-        progress = ttk.Progressbar(starting, mode="indeterminate", length=445)
-        progress.pack(padx=15, pady=(10, 0), fill="x")
-        progress.start(12)
-        starting.update_idletasks()
+        # A single progress window is created by the standalone Windows EXE.
+        # Keep the old app open until the new window is visible.
+        self.status.set("Запуск окна обновления…")
         try:
             process, ready = start_update_overlay(
                 release, Path(sys.executable).resolve().parent,
-                included_file("assets/update_overlay.ps1"), os.getpid())
+                included_file("assets/Att51_UpdateWorker.exe"), os.getpid())
         except Exception as exc:
-            starting.destroy()
             messagebox.showerror(APP_NAME, human_error(exc))
             return
+        from time import monotonic
+        deadline = monotonic() + 20
         def wait_visible():
             if ready.is_file():
-                progress.stop()
                 self.root.destroy()
             elif process.poll() is not None:
-                progress.stop()
-                starting.destroy()
                 messagebox.showerror(
-                    APP_NAME, "Окно обновления не запустилось. "
-                    "Проверьте доступность Windows PowerShell.")
+                    APP_NAME, "Отдельный модуль обновления завершился "
+                    "до появления окна. Проверьте Att51_UpdateWorker.exe.")
+            elif monotonic() > deadline:
+                process.terminate()
+                messagebox.showerror(APP_NAME,
+                                     "Окно обновления не открылось за 20 секунд.")
             else:
                 self.root.after(100, wait_visible)
         wait_visible()
@@ -637,7 +629,7 @@ def main() -> int:
             return 10
         if not included_file("assets/fileProtocolLoad_v4.xsd").is_file():
             return 11
-        if not included_file("assets/update_overlay.ps1").is_file():
+        if not included_file("assets/Att51_UpdateWorker.exe").is_file():
             return 19
         if len(VERSION.split(".")) != 3:
             return 12
@@ -678,35 +670,6 @@ def main() -> int:
             return 0
         except Exception:
             return 14
-    if len(sys.argv) in (5, 6) and sys.argv[1] == "--apply-update":
-        # The main application has already closed. Display download progress
-        # in a small noninteractive updater window, then switch to the
-        # progress-only Inno Setup window. Never ask additional questions.
-        root = tk.Tk()
-        root.title("Обновление Att51_export")
-        root.geometry("440x120")
-        root.resizable(False, False)
-        title = ttk.Label(root, text="Подготовка обновления…", padding=(16, 14))
-        title.pack(fill="x")
-        bar = ttk.Progressbar(root, maximum=100, mode="indeterminate",
-                              length=400)
-        bar.pack(padx=16, fill="x")
-        try:
-            root.update()
-            def show_progress(received, total):
-                bar.configure(mode="determinate", value=100 * received / total)
-                title.configure(text=f"Загрузка проверенного обновления: "
-                                     f"{round(100 * received / total)} %")
-                root.update()
-            apply_update(sys.argv[2], sys.argv[3], sys.argv[4],
-                         sys.argv[5] if len(sys.argv) == 6 else "0",
-                         progress=show_progress)
-            return 0
-        except Exception as error:
-            messagebox.showerror(APP_NAME, human_error(error), parent=root)
-            return 2
-        finally:
-            root.destroy()
     if len(sys.argv) == 3 and sys.argv[1] == "--self-test-hold-legacy-process":
         # Emulate releases <=0.1.10, which never created an AppMutex.
         import time
