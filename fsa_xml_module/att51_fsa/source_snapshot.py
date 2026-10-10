@@ -113,31 +113,13 @@ def _devices(audit: ProtocolResourceAudit, catalog: ResourceCatalog) -> str:
 
 
 def _unit(node: ET.Element | None, trace: FieldTrace, facid: str) -> str:
+    """Use only original explicit textual units; never infer from FGIS IDs.
+
+    No guesses from factor, measurement code or indicator captions.
+    """
     original = attr(node, "unit", "unit_name", "ed_izm", "edizm",
                     "units", "measurement_unit", "unit_text")
-    if original and not original.isdecimal():
-        return original
-    # The source document may contain the unit INSIDE the original indicator
-    # caption, rather than in a dedicated attribute.
-    name = attr(node, "name", "caption", "title", "indicator_name")
-    patterns = (
-        r"мг\s*/\s*м[³3]", r"дБА\b", r"дБ\b", r"\bлк\b",
-        r"°\s*[CcСс]\b", r"\bм\s*/\s*с\b", r"\b%\b",
-    )
-    for pattern in patterns:
-        match = re.search(pattern, name, re.IGNORECASE)
-        if match:
-            return match.group()
-    # These two equivalences are explicit in the verified original factor
-    # mappings, not inferred from arbitrary FGIS codes:
-    # original read_him_params facid 3 -> 533 (mg/m3), read_ekv_shum facid 4
-    # -> 650 (dBA). Do NOT build an unverified global ID->unit dictionary.
-    draft = trace.source_draft
-    if draft is not None and facid == "3" and draft.measurement_id == "533":
-        return "мг/м³"
-    if draft is not None and facid == "4" and draft.measurement_id == "650":
-        return "дБА"
-    return ""
+    return original if original and not original.isdecimal() else ""
 
 
 def snapshot_for_protocol(

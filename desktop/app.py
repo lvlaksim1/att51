@@ -12,12 +12,11 @@ import sys
 import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, ttk
-import webbrowser
 
 if not getattr(sys, "frozen", False):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "fsa_xml_module"))
 
-from updater import Release, UpdateError, apply_update, fetch_latest, newer, LATEST_WEB
+from updater import Release, UpdateError, apply_update, fetch_latest, newer
 from install_guard import InstallationMutex
 from source_discovery import discover_installations
 from source_settings import SourceSettings, SOURCE_KEYS
@@ -164,8 +163,6 @@ class DesktopApp:
                                       command=self._install_update)
         self.install_btn.pack(side="right", padx=(6, 0))
         self.install_btn.state(["disabled"])
-        ttk.Button(bar, text="Открыть релизы", command=lambda: webbrowser.open(LATEST_WEB)
-                   ).pack(side="right", padx=(6, 0))
         self.check_btn = ttk.Button(bar, text="Проверить обновления",
                                     command=lambda: self._check_updates(manual=True))
         self.check_btn.pack(side="right")

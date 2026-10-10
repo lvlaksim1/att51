@@ -59,17 +59,16 @@ class ExcelResult:
 DATE_COLUMNS = (2, 3, 4, 17, 19, 21)  # B,C,D,Q,S,U
 
 
-def excel_date_serial(value: object) -> float | str:
-    """Real Excel 1900-system date, displayed as DD.MM.YYYY.
-
-    Empty source fields remain explicit and are never silently guessed.
-    """
+def excel_date_text(value: object) -> str:
+    """Render only confirmed dates as text DD.MM.YYYY, never Excel serials."""
     if isinstance(value, datetime):
         result = value.date()
     elif isinstance(value, date):
         result = value
     else:
-        source = str(value).strip()
+        source = "" if value is None else str(value).strip()
+        if not source or source == MISSING:
+            return source
         for fmt in ("%Y-%m-%d", "%d.%m.%Y"):
             try:
                 result = datetime.strptime(source, fmt).date()
@@ -77,8 +76,22 @@ def excel_date_serial(value: object) -> float | str:
             except ValueError:
                 continue
         else:
-            return str(value)
-    return float((result - date(1899, 12, 30)).days)
+            return MISSING
+    return result.strftime("%d.%m.%Y")
+
+
+def excel_text_rows(rows: list[list[str]]) -> list[list[str]]:
+    """Presentation only: text in all 26 columns, dates included."""
+    result: list[list[str]] = []
+    for row in rows:
+        if len(row) != len(HEADERS):
+            raise FsaSourceError("Неверное количество столбцов Excel")
+        result.append([
+            excel_date_text(value) if col in DATE_COLUMNS else
+            ("" if value is None else str(value))
+            for col, value in enumerate(row, 1)
+        ])
+    return result
 
 
 def _save_excel97(path: Path, rows: list[list[str]]) -> None:
@@ -106,26 +119,20 @@ def _save_excel97(path: Path, rows: list[list[str]]) -> None:
         # The import format has exactly one sheet.
         while workbook.Worksheets.Count > 1:
             workbook.Worksheets(workbook.Worksheets.Count).Delete()
-        data = [list(HEADERS)] + rows
+        data = [list(HEADERS)] + excel_text_rows(rows)
         area = sheet.Range(sheet.Cells(1, 1), sheet.Cells(len(data), len(HEADERS)))
-        area.NumberFormat = "@"  # No date serials, no scientific notation, no formula evaluation.
+        # Set text format before writing, including unused cells on the sheet.
+        sheet.Cells.NumberFormat = "@"
+        area.NumberFormat = "@"
         area.Value2 = tuple(tuple(cell for cell in row) for row in data)
-        # Write source dates as actual numeric Excel dates, not displayed text.
-        # Preserve every other column, including leading-zero INNs, as text.
-        for col in DATE_COLUMNS:
-            cells = sheet.Range(sheet.Cells(2, col), sheet.Cells(len(data), col))
-            cells.NumberFormat = "dd.mm.yyyy"
-            dates = tuple((excel_date_serial(row[col - 1]),) for row in rows)
-            if dates:
-                cells.Value2 = dates
         header = sheet.Range("A1:Z1")
         header.Font.Bold = True
         header.Interior.Color = 0xDDEBDD
-        header.WrapText = True
-        header.RowHeight = 44
-        sheet.Range("A2:Z" + str(len(data))).WrapText = True
+        # AutoFit after writing, with wrapping disabled (including headers).
+        sheet.Range("A:Z").WrapText = False
         sheet.Range("A1:Z1").AutoFilter()
         sheet.Range("A:Z").EntireColumn.AutoFit()
+        sheet.Rows(1).AutoFit()
         sheet.Activate()
         application.ActiveWindow.SplitRow = 1
         application.ActiveWindow.FreezePanes = True

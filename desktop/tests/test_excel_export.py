@@ -15,7 +15,7 @@ DESKTOP = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(DESKTOP))
 sys.path.insert(0, str(DESKTOP.parent / "fsa_xml_module"))
 
-from excel_export import HEADERS, excel_date_serial, create_excel_export
+from excel_export import HEADERS, excel_date_text, excel_text_rows, create_excel_export
 from excel_shared_source import prepared_protocol_rows, prepared_batch_rows
 from export_batch import ProtocolBatch, prepare_batch
 from com_workers import run_with_com
@@ -127,12 +127,12 @@ class SharedExportTests(unittest.TestCase):
         self.assertNotIn("1138", repr(rows))
         self.assertNotIn("533", repr(rows))
 
-    def test_known_original_aerosol_unit_even_without_attribute(self):
+    def test_missing_original_unit_never_inferred_from_measurement_id(self):
         doc = original()
         for node in doc.findall("./izm_data/zone/param"):
             node.attrib.pop("unit")
         proposal = assembled(doc, self.client)
-        self.assertEqual(prepared_protocol_rows(proposal)[0][12], "мг/м³")
+        self.assertEqual(prepared_protocol_rows(proposal)[0][12], EMPTY)
 
     def test_missing_text_not_guessed_from_unrelated_numeric_id(self):
         doc = original()
@@ -208,15 +208,30 @@ class SharedExportTests(unittest.TestCase):
             self.assertNotIn("AccessReader", source)
             self.assertNotIn("ResourceCatalog", source)
 
-    def test_excel_dates_are_real_serials(self):
-        self.assertEqual(excel_date_serial("2026-10-10"),
-                         float((date(2026, 10, 10) - date(1899, 12, 30)).days))
-        self.assertEqual(excel_date_serial("10.10.2026"),
-                         excel_date_serial("2026-10-10"))
-        self.assertEqual(excel_date_serial("НЕТ ДАННЫХ"), "НЕТ ДАННЫХ")
+    def test_excel_dates_are_text_not_serials(self):
+        self.assertEqual(excel_date_text("2026-10-10"), "10.10.2026")
+        self.assertEqual(excel_date_text("10.10.2026"), "10.10.2026")
+        self.assertEqual(excel_date_text(date(2026, 10, 10)), "10.10.2026")
+        self.assertEqual(excel_date_text("31.02.2026"), EMPTY)
+        self.assertEqual(excel_date_text(EMPTY), EMPTY)
+        self.assertEqual(excel_date_text(""), "")
         source = (DESKTOP / "excel_export.py").read_text(encoding="utf-8")
-        self.assertIn('NumberFormat = "dd.mm.yyyy"', source)
+        self.assertIn('sheet.Cells.NumberFormat = "@"', source)
+        self.assertNotIn('NumberFormat = "dd.mm.yyyy"', source)
+        self.assertIn('Range("A:Z").WrapText = False', source)
         self.assertIn('Range("A:Z").EntireColumn.AutoFit()', source)
+
+    def test_all_populated_cells_are_text_and_dates_human_readable(self):
+        rows = prepared_protocol_rows(assembled())
+        result = excel_text_rows(rows)
+        self.assertEqual(result[0][1:4],
+                         ["21.09.2026", "21.09.2026", "02.10.2026"])
+        self.assertEqual(result[0][16], "11.09.2026")
+        self.assertEqual(result[0][7], "123456789012")
+        self.assertEqual(result[1][1:4], ["", "", ""])
+        self.assertTrue(all(isinstance(cell, str) for row in result for cell in row))
+        with self.assertRaises(FsaSourceError):
+            excel_text_rows([["too short"]])
 
 
 class ComTests(unittest.TestCase):
