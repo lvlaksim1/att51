@@ -12,8 +12,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from updater import (Release, UpdateError, asset_name, asset_url,
                      download_update, fetch_latest, newer, parse_release,
-                     parse_version, build_install_launcher,
-                     launch_install_after_exit, SILENT_INSTALL_ARGS)
+                     parse_version, start_update_overlay)
 
 
 class FakeReply(BytesIO):
@@ -27,87 +26,46 @@ class FakeReply(BytesIO):
 
 class UpdaterTests(unittest.TestCase):
 
-    def test_updater_shows_progress_without_install_wizard(self):
-        self.assertIn("/SILENT", SILENT_INSTALL_ARGS)
-        self.assertNotIn("/VERYSILENT", SILENT_INSTALL_ARGS)
-        self.assertIn("/SUPPRESSMSGBOXES", SILENT_INSTALL_ARGS)
-        self.assertIn("/RUNAFTERUPDATE=1", SILENT_INSTALL_ARGS)
-        script = build_install_launcher(
-            Path("C:/ProgramData/Att51_export/updates/New O'Hara.exe"),
-            updater_pid=4104, app_pid=4103)
-        self.assertLess(script.index("Wait-Process -Id 4103"),
-                        script.index("Wait-Process -Id 4104"))
-        self.assertLess(script.index("Wait-Process -Id 4104"),
-                        script.index("Start-Process"))
-        self.assertIn("New O''Hara.exe", script)
-        self.assertIn("$installer.WaitForExit()", script)
-        self.assertNotIn("-Wait -PassThru", script)
-        self.assertIn("ExitCode -ne 0", script)
-        for invalid in (-1, 0):
-            with self.assertRaises(UpdateError):
-                build_install_launcher(Path("good.exe"), invalid)
-
-    def test_power_shell_helper_waits_outside_running_att51(self):
-        import base64
-        seen = []
-        def pretend(*args, **kwargs):
-            seen.append((args, kwargs))
-        with patch.object(sys, "platform", "win32"):
-            launch_install_after_exit(Path("C:/Att51_export/updates/update.exe"),
-                                      4103, popen=pretend)
-        self.assertEqual(len(seen), 1)
-        command = seen[0][0][0]
-        self.assertEqual(command[0], "powershell.exe")
-        self.assertIn("-EncodedCommand", command)
-        self.assertIn("-WindowStyle", command)
-        self.assertTrue(seen[0][1]["close_fds"])
-        script = base64.b64decode(command[-1]).decode("utf-16-le")
-        self.assertIn("Wait-Process -Id 4103", script)
-        self.assertIn("RUNAFTERUPDATE=1", script)
-
-    def test_independent_updater_is_visible_before_old_app_exits(self):
-        from updater import start_update_overlay
-        from unittest.mock import patch
-        import types
+    def test_separate_updater_does_not_invoke_powershell(self):
         class Process:
             def poll(self): return None
         calls = []
         with TemporaryDirectory() as tmp:
             app = Path(tmp) / "Att51_export"
-            app.mkdir()
-            ps = app / "update_overlay.ps1"
-            ps.write_text("# Test", encoding="utf-8")
+            asset = app / "_internal" / "assets" / "Att51_UpdateWorker.exe"
+            asset.parent.mkdir(parents=True)
+            asset.write_bytes(b"MZ-TEST-WORKER")
             info = Release("v0.2.0", (0, 2, 0), asset_url("v0.2.0"),
                            "f"*64, 200000, True)
             with patch.object(sys, "platform", "win32"), \
                  patch.object(sys, "frozen", True, create=True):
-                process, marker_path = start_update_overlay(
-                    info, app, ps, 1234,
+                process, marker = start_update_overlay(
+                    info, app, asset, 1234,
                     popen=lambda *args, **kwargs: (
                         calls.append((args, kwargs)) or Process()))
             self.assertIsInstance(process, Process)
-            self.assertEqual(marker_path.resolve(), (app / "updates" / "overlay.ready").resolve())
-            self.assertEqual(calls[0][0][0][0], "powershell.exe")
-            args = calls[0][0][0]
-            self.assertIn("-STA", args)
-            self.assertIn("-File", args)
-            self.assertIn(str(ps.resolve()), args)
-            self.assertIn("-ApplicationPid", args)
-            self.assertNotIn("Att51_export.exe", args)
+            self.assertEqual(marker, app / "updates" / "overlay.ready")
+            command = calls[0][0][0]
+            self.assertEqual(Path(command[0]).name, "Att51_updater_runner.exe")
+            self.assertEqual(command[1:], [
+                "v0.2.0", "f"*64, "200000", "1234", str(app)])
+            self.assertTrue(calls[0][1]["close_fds"])
+            self.assertEqual((app / "updates" / "Att51_updater_runner.exe").read_bytes(),
+                             b"MZ-TEST-WORKER")
+            self.assertNotIn("powershell", " ".join(command).lower())
 
-    def test_untrusted_metadata_cannot_start_overlay(self):
-        from updater import start_update_overlay
+    def test_unverified_release_cannot_start_worker(self):
         with TemporaryDirectory() as tmp:
             app = Path(tmp) / "Att51_export"
             app.mkdir()
-            file = app / "test.ps1"
-            file.write_text("test", encoding="utf-8")
-            unverified = Release("v0.2.0", (0, 2, 0), asset_url("v0.2.0"),
-                                 "", 200000, False)
+            asset = app / "Att51_UpdateWorker.exe"
+            asset.write_bytes(b"MZ-TEST-WORKER")
+            bad = Release("v0.2.0", (0, 2, 0), asset_url("v0.2.0"),
+                          "", 200000, False)
             with patch.object(sys, "platform", "win32"), \
                  patch.object(sys, "frozen", True, create=True):
                 with self.assertRaises(UpdateError):
-                    start_update_overlay(unverified, app, file, 123)
+                    start_update_overlay(bad, app, asset, 123)
 
     def test_tag_numbers_and_comparison(self):
         self.assertTrue(newer(Release("v0.2.1", (0, 2, 1), "", "", 0),
