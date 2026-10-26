@@ -97,6 +97,26 @@ def main() -> None:
                         line = "[redacted]"
                     print(f"PROVENANCE {name} {i+1:5d} {line[:290]}")
             if name == "v5_res_main":
+                # Read-only original-device provenance: exact fields read from
+                # ATT_DEVICE and extra-info joins; bounded code excerpts.
+                triggers = ("factory_num", "ATT_DEVICE", "ATT_DOP_INFO",
+                            "dop_fld2", "dop_fld3", "inventory", "инвентар")
+                selected_device = set()
+                for i, line in enumerate(lines):
+                    if any(token.casefold() in line.casefold() for token in triggers):
+                        selected_device.update(range(max(0, i-4), min(len(lines), i+7)))
+                for i in sorted(selected_device)[:380]:
+                    print(f"DEVICE_SOURCE {i+1:5d} {lines[i][:280]}")
+            if name == "v52_exp_fgis_ra":
+                triggers = ("get_si_by_num", "get_SI_data", "si_guids",
+                            "EquipmentDetails", "get_fgis_dev_id")
+                selected_devices = set()
+                for i, line in enumerate(lines):
+                    if any(token.casefold() in line.casefold() for token in triggers):
+                        selected_devices.update(range(max(0,i-3), min(len(lines),i+6)))
+                for i in sorted(selected_devices)[:260]:
+                    print(f"FGIS_DEVICE_SRC {i+1:5d} {lines[i][:280]}")
+            if name == "v5_res_main":
                 for start, stop in ((1857, 1895), (2336, 2390)):
                     for i in range(start-1, min(stop,len(lines))):
                         print(f"PROBE {name} {i+1:5d} {lines[i][:300]}")
