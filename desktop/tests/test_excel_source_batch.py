@@ -218,6 +218,22 @@ class RawExcelTests(unittest.TestCase):
         self.assertNotIn("РЕГ-", result)
         self.assertEqual(result.count("Шумомер"), 1)
 
+
+    def test_equipment_inventory_follows_original_dev_id_join(self):
+        import xml.etree.ElementTree as ET
+        from excel_source_batch import _equipment
+        from att51_fsa.resources import ResourceCatalog
+        resources = ResourceCatalog.from_rows(
+            devices=[{"id": "19", "mguid": "SI19", "name": "Шумомер",
+                      "factory_num": "ЗН-123"}],
+            people=[], normative=[], links=[],
+            device_info=[{"dev_id": 19, "info2": "2026", "info3": "ИНВ-407"}])
+        factor = ET.fromstring('<factor><si_guids>'
+                               '<si_guid guid="SI19" num="ЗН-123"/>'
+                               '</si_guids></factor>')
+        self.assertEqual(_equipment(factor, resources),
+                         "Шумомер (зав. № ЗН-123; инв. № ИНВ-407)")
+
     def test_equipment_keeps_xml_factory_without_resource_mapping(self):
         import xml.etree.ElementTree as ET
         from excel_source_batch import _equipment

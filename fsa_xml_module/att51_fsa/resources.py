@@ -183,6 +183,7 @@ class ResourceCatalog:
         nd_info: Iterable[Mapping[str, Any]] = (),
         synonyms: Iterable[Mapping[str, Any]] = (),
         oa_methods: Iterable[Mapping[str, Any]] = (),
+        device_info: Iterable[Mapping[str, Any]] = (),
         *,
         present_tables: Iterable[str] | None = None,
     ) -> "ResourceCatalog":
@@ -191,6 +192,13 @@ class ResourceCatalog:
         Schema uses original Jet field names and never invents FGIS identifiers.
         """
         info_index = {_str(row.get("nd_id")): row for row in nd_info}
+        # Original v5_res_main.fill_si_errs:
+        # ATT_DEVICE LEFT JOIN ATT_DOP_INFO ON ATT_DEVICE.id=ATT_DOP_INFO.dev_id;
+        # inventory number is ATT_DOP_INFO.info3 (v5_res_devices.inv_nomer).
+        device_info_index = {
+            _str(row.get("dev_id")): row for row in device_info
+            if _str(row.get("dev_id"))
+        }
         synonym_index: dict[str, list[str]] = {}
         for row in synonyms:
             key = _str(row.get("mguid"))
@@ -200,9 +208,11 @@ class ResourceCatalog:
             Device(
                 _str(row.get("id")), _str(row.get("mguid")),
                 _str(row.get("factory_num")), _str(row.get("name")),
-                next((
+                _str(device_info_index.get(_str(row.get("id")), {}).get("info3"))
+                or next((
                     _str(row.get(field))
-                    for field in ("inventory_num", "inventory_number", "inv_num", "inv_number", "inventory_no")
+                    for field in ("inventory_num", "inventory_number", "inv_num",
+                                  "inv_number", "inventory_no")
                     if _str(row.get(field))
                 ), ""),
             )
@@ -262,7 +272,8 @@ class ResourceCatalog:
         return cls.from_rows(
             read("ATT_DEVICE"), read("ATT_PERSON"), read("DIC_ND"),
             read("FGIS_RA"), read("DIC_ND_INFO"), read("DIC_ND_SYN"),
-            oa_methods=read("DIC_ND_OA_METHODS"), present_tables=names,
+            oa_methods=read("DIC_ND_OA_METHODS"),
+            device_info=read("ATT_DOP_INFO"), present_tables=names,
         )
 
     @classmethod

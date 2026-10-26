@@ -188,6 +188,43 @@ class ResourceLookupTests(unittest.TestCase):
         self.assertEqual(len(reader.calls), 3)
         self.assertEqual(d.diagnostics.fgis_link_count, 0)
 
+
+    def test_inventory_original_separate_table_info3(self):
+        catalogue = ResourceCatalog.from_rows(
+            devices=[{"id": 7, "mguid": "DEVICE_X", "name": "Шумомер",
+                      "factory_num": "SER-109", "reg_num": "REG-92",
+                      "dop_fld2": "OTHER", "inventory_num": "OLD-OPTION"}],
+            people=[], normative=[], links=[],
+            device_info=[{"dev_id": 7, "info": "other info",
+                          "info2": "year", "info3": "INV-456"}])
+        self.assertEqual(catalogue.devices[0].factory_number, "SER-109")
+        self.assertEqual(catalogue.devices[0].inventory_number, "INV-456")
+
+    def test_inventory_not_inferred_from_extra_fields(self):
+        catalogue = ResourceCatalog.from_rows(
+            devices=[{"id": 8, "mguid": "DEVICE_Y", "name": "Прибор",
+                      "factory_num": "550", "reg_num": "12-33",
+                      "dop_fld2": "12345", "dop_fld3": "9988"}],
+            people=[], normative=[], links=[],
+            device_info=[{"dev_id": 8, "info": "notes", "info2": "2026"}])
+        self.assertEqual(catalogue.devices[0].inventory_number, "")
+
+    def test_reader_resolves_original_left_join_for_inventory(self):
+        class FakeReader:
+            def table_names(self):
+                return frozenset({"ATT_DEVICE", "ATT_PERSON",
+                                  "DIC_ND", "ATT_DOP_INFO"})
+            def select(self, sql):
+                key = sql.split("[")[1].split("]")[0]
+                return {
+                    "ATT_DEVICE": [{"id": 1, "mguid": "G1",
+                                    "name": "Люксметр", "factory_num": "8-19"}],
+                    "ATT_DOP_INFO": [{"dev_id": 1, "info3": "INV-1"}],
+                }.get(key, [])
+        catalogue = ResourceCatalog.from_reader(FakeReader())
+        self.assertEqual(catalogue.devices[0].inventory_number, "INV-1")
+        self.assertNotIn("ATT_DOP_INFO", catalogue.diagnostics.tables_absent)
+
     def test_reader_rejects_missing_mandatory_table(self):
         class FakeReader:
             def table_names(self):
