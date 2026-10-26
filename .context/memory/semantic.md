@@ -71,3 +71,11 @@
 - Excel читает оборудование из si_guids, si_guids_os, si_guids_dop в актуальном внутреннем XML, сопоставляет оригинальный GUID/заводской номер с ResourceCatalog, выводит «Название (зав. № X; инв. № Y)», исключает дубликаты, сигнализирует об отсутствующих номерах и различиях XML/MDB. ФГИС XML продолжает независимо использовать числовые EquipmentId.
 - Для столбца метода Excel использует DIC_ND_INFO.dop5 только при единственном точном соответствии нормативного документа и фактора; удаляет цифровой FGIS-код в фигурных скобках. При нескольких/неподтверждённых соответствиях метод не угадывается.
 - Код: commits 857030756362d62970a7f2bc9b5c307e4e1ad18a, e1d27831439ea9181322bd711128c0def8dd3bcc, 5273b9b2cae4d9b8350e747e4cc705cb20ff91ab. Опубликован Att51_export v0.1.23 с обоими установщиками; Windows release Actions #40367337402 completed/success. На пользовательском ПК новая выгрузка ещё не подтверждена.
+
+## Обновление Project Manager — 27.10.2026
+- Тот же менеджер att51 (manager_id=project-manager) обновлён с исходной ревизии 2912687b38e23dcd0b017f336c321a3ae7f39674 на 5deb1c6920ff1d4030dc529cc76c9344bdee817d. Номер Project Manager остаётся 2.0.0-dev.
+- Состояние приложения Att51_export v0.1.23, текущие обязательства, ограничения, authority.manager_state_branch=main и authority.product_branch=main не изменены. Исходная версия Context Capsule Core 1.3.1 (commit 2ef41a5ed57ae514cc5980065560d7e55d5e4b9a) сохранена.
+- Подтверждённые возможности новой ревизии: атомарное сохранение проверенных событий, реестр обязательств и компактный индекс рабочего контекста; эти механизмы используются только при явном вызове. Автоматический выпуск событий не включался и не был санкционирован владельцем.
+- Проверка исходной ревизии: https://github.com/lvlaksim1/context-capsule-project-manager/actions/runs/40384759594 (completed/success). Новая привязка производится вручную по прямому поручению владельца.
+- source: https://github.com/lvlaksim1/context-capsule-project-manager/commit/5deb1c6920ff1d4030dc529cc76c9344bdee817d; .context/capsule.json; GitHub Actions #40384759594.
+- authority: verified source repository and CI; explicit Owner directive to upgrade Att51_export Project Manager.
