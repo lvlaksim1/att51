@@ -30,6 +30,22 @@ def main() -> None:
         inventory_tokens = ("инвентар", "инв. №", "инв.№", "inventory",
                             "inventory_num", "inv_num", "заводской")
         for _source, _stream, fname, contents in parser.extract_macros():
+            if "v5_res_main" in fname.lower() or any(t in fname.lower() for t in
+                    ("si_err", "si_izm", "res_devices")):
+                extra_lines = contents.splitlines()
+                triggers = ("get_inv_num", "inv_nomer", "si_err", "fill_si_errs",
+                            "get_si_by_num")
+                spans = set()
+                for ix, line in enumerate(extra_lines):
+                    if any(t.casefold() in line.casefold() for t in triggers):
+                        spans.update(range(max(0, ix-3), min(ix+8, len(extra_lines))))
+                for ix in sorted(spans)[:360]:
+                    print(f"SERIALIZED_INVENTORY {Path(fname).stem} {ix+1:5d} {extra_lines[ix][:280]}")
+            else:
+                matches_inv = [(ix, line) for ix, line in enumerate(contents.splitlines(), 1)
+                               if "inv_nomer" in line.casefold()]
+                for ix, line in matches_inv[:14]:
+                    print(f"INV_NUM_REFERENCE {Path(fname).stem} {ix:5d} {line[:280]}")
             macro_name = Path(fname).stem
             matches = [(index, line) for index, line in enumerate(contents.splitlines(), 1)
                        if any(term.casefold() in line.casefold() for term in inventory_tokens)]
