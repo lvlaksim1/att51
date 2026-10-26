@@ -8,6 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from xml.etree import ElementTree as ET
+import re
+from zipfile import ZipFile, BadZipFile
 
 from att51_fsa.export_2025 import CustomerSettings
 from att51_fsa.resources import ResourceCatalog
@@ -55,44 +57,111 @@ def _equipment(factor: ET.Element | None, catalog: ResourceCatalog | None) -> st
     return value_or_missing(joined(names))
 
 
-def _measurement_nodes(doc: ET.Element):
-    seen = set()
-    for section_name in ("izm_data", "count_params2", "measurements",
-                         "measure_data", "measurement_data"):
-        section = doc.find("./" + section_name)
-        if section is None:
-            continue
-        for node in section.iter():
-            if node.tag.casefold() in ("param", "measurement", "value") and id(node) not in seen:
-                seen.add(id(node))
-                yield node
+
+# Extract only literal textual units from the original measurement caption,
+# never an assumed mapping from FGIS IDs, factor numbers or measurement codes.
+_UNIT_SUFFIX = re.compile(
+    r"(?:,\s*|\(\s*)(дБА|дБ|лк|мг/м[³3]|Вт/м[²2]|мкг/м[³3]|"
+    r"м/с[²2]|кг|мм|см|м\.?|г|с|мин|ч|раз|ед\.?|%)(?:\s*\)|\s*)$",
+    re.IGNORECASE,
+)
 
 
-def _measurements(doc: ET.Element) -> list[tuple[str, str, str, str, str]]:
-    methods = {}
-    for node in doc.findall("./nd_data/nd"):
-        ident, name = attr(node, "id"), attr(node, "name")
-        if ident and name:
-            methods.setdefault(ident, set()).add(name)
+def _unit_from_caption(name: str) -> str:
+    found = _UNIT_SUFFIX.search(name)
+    return found.group(1) if found else ""
+
+
+def _word_contains_vibration_unit(word: Path | None) -> bool:
+    """Verify the paired Word protocol's original table heading, not a guess."""
+    if word is None or not word.is_file() or word.suffix.casefold() != ".docx":
+        return False
+    try:
+        with ZipFile(word) as archive:
+            xml = archive.read("word/document.xml")
+        root = ET.fromstring(xml)
+        ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+        for paragraph in root.findall(".//w:p", ns):
+            text = "".join(node.text or "" for node in paragraph.findall(".//w:t", ns))
+            if re.search(r"Уровень\s+виброускорения\s*,\s*дБ\b", text, re.IGNORECASE):
+                return True
+    except (BadZipFile, KeyError, OSError, ET.ParseError, ValueError):
+        pass
+    return False
+
+
+def _protocol_methods(doc: ET.Element) -> tuple[str, ...]:
+    return tuple(dict.fromkeys(
+        attr(node, "name")
+        for node in doc.findall("./nd_data/nd")
+        if attr(node, "action") == "1" and attr(node, "name")
+    ))
+
+
+def _measurements(
+    doc: ET.Element, *, word: Path | None = None,
+) -> tuple[list[tuple[str, str, str, str, str]], list[str]]:
+    """Selected original results only: no calculator inputs or empty headings."""
+    factor = doc.find("./factor")
+    facid = attr(factor, "facid")
+    original_methods = _protocol_methods(doc)
+    notes = []
+    word_unit = facid == "8" and _word_contains_vibration_unit(word)
+    if facid == "4":
+        nodes = doc.findall("./izm_data/Level")
+    elif facid == "8":
+        # Both actual corrected levels and equivalent axis results are
+        # present in the original protocol. Zone and param headings are skipped.
+        nodes = doc.findall("./izm_data/zone") + doc.findall("./izm_data/zone/param")
+    else:
+        nodes = doc.findall("./izm_data/zone/param")
+        if not nodes:
+            nodes = doc.findall("./izm_data/Level")
+        if not nodes:
+            nodes = doc.findall("./measurements/measurement")
+    if len(original_methods) > 1:
+        notes.append("несколько методик: привязка каждой к показателю не подтверждена")
     rows = []
-    for node in _measurement_nodes(doc):
-        name = word_or_missing(attr(node, "name", "indicator_name", "param_name",
-                                    "caption", "title", "label", "izm_name"))
-        unit = word_or_missing(attr(node, "unit", "unit_name", "ed_izm", "edizm",
-                                    "units", "measurement_unit", "unit_text"))
+    group = ""
+    position_unit = ""
+    for node in nodes:
+        fact = attr(node, "fact", "value", "result")
+        if not fact and not list(node):
+            fact = literal(node.text)
+        name = attr(node, "name", "indicator_name", "param_name",
+                    "caption", "title", "label", "izm_name")
+        if not fact:
+            if facid == "8" and node.tag == "param" and name:
+                group = name.rstrip(":").strip()
+            if facid == "13" and attr(node, "bm") == "bm_5" and re.search(
+                    r",\s*%\s*смены\s*$", name, re.IGNORECASE):
+                position_unit = "% смены"
+            continue
+        if not name:
+            notes.append("есть значение без оригинального наименования")
+        if facid == "8" and node.tag == "param" and group and name.upper().startswith("ОСЬ "):
+            # Both pieces are explicitly present in this same XML section.
+            name = group + " — " + name
+        unit = attr(node, "unit", "unit_name", "ed_izm",
+                    "edizm", "units", "measurement_unit", "unit_text")
+        if not unit:
+            unit = _unit_from_caption(name)
+        if not unit and word_unit and facid == "8":
+            unit = "дБ"  # Directly verified in this record's paired Word DOCX.
+        if not unit and facid == "13" and position_unit and attr(node, "bm").startswith("bm_5_"):
+            unit = position_unit  # Literally written in this XML group's heading.
         method = attr(node, "method_name", "method")
-        matched = methods.get(attr(node, "nd_izm1"), set())
-        if not method and len(matched) == 1:
-            method = next(iter(matched))
-        technique = word_or_missing(attr(node, "oa_method", "method_oa"))
-        values = [attr(node, key) for key in ("fact", "value", "result", "param1", "param2")]
-        values = [value for value in values if value]
-        if not values and node.text and node.text.strip() and not list(node):
-            values = [literal(node.text)]
-        for value in values or [EMPTY]:
-            rows.append((name, value_or_missing(value), unit,
-                         word_or_missing(method), technique))
-    return rows
+        if not method and len(original_methods) == 1:
+            method = original_methods[0]
+        technique = attr(node, "oa_method", "method_oa")
+        rows.append((
+            word_or_missing(name),
+            value_or_missing(fact),
+            word_or_missing(unit),
+            word_or_missing(method),
+            word_or_missing(technique),
+        ))
+    return rows, notes
 
 
 def _shared(doc: ET.Element | None, item: dict,
@@ -103,7 +172,7 @@ def _shared(doc: ET.Element | None, item: dict,
     return (
         value_or_missing(attr(doc, "num_doc")),
         value_or_missing(attr(factor, "start_date", "date_begin", "izm_date")),
-        value_or_missing(attr(factor, "end_date", "date_end")),
+        value_or_missing(attr(factor, "end_date", "date_end", "izm_date")),
         value_or_missing(attr(doc, "fill_date", "sign_date")),
         value_or_missing(customer.full_name or customer.fio),
         word_or_missing(customer.address_type),
@@ -175,14 +244,22 @@ def prepare_excel_sources(database: Path, resources: Path, ini: Path | None,
                     factor = doc.find("./factor")
                     if factor is None or attr(factor, "facid") != str(item["factor_id"]):
                         warnings.append(context + ": фактор в XML не совпадает с MDB")
+                        doc = None
+                    elif attr(doc, "rm_id") and attr(doc, "rm_id") != str(item["rm_id"]):
+                        warnings.append(context + ": идентификатор рабочего места не совпадает")
+                        doc = None
             except (FsaSourceError, OSError, ValueError) as exc:
                 warnings.append(context + ": XML не прочитан: " + str(exc))
-        measurements = _measurements(doc) if doc is not None else []
+        measurements, notes = (
+            _measurements(doc, word=Path(item["word"]) if item.get("word") else None)
+            if doc is not None else ([], [])
+        )
+        warnings.extend(context + ": " + note for note in notes)
         if not measurements:
-            warnings.append(context + ": показатели из исходного XML не установлены")
+            warnings.append(context + ": измеренные значения в исходном XML не установлены")
             measurements = [(EMPTY,) * 5]
         else:
-            indicators += sum(value != EMPTY for _, value, _, _, _ in measurements)
+            indicators += len(measurements)
         shared = _shared(doc, item, customer)
         extra = _additional(doc, customer, catalog)
         if len(shared) != 10 or len(extra) != 11:
