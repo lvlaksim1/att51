@@ -23,6 +23,7 @@ from source_settings import SourceSettings, SOURCE_KEYS
 from whole_base_reports import create_index, create_details
 from fgis_export import create_fgis_export
 from excel_export import create_excel_export
+from excel_source_batch import prepare_excel_sources
 from export_batch import prepare_batch
 from com_workers import run_with_com
 from organization_sources import unique_organization
@@ -147,7 +148,7 @@ class DesktopApp:
         self.report.grid(row=1, column=0, sticky="nsew", pady=(8, 0))
         self.report.insert("1.0",
             "XML: подготовка данных с проверкой соответствий ФГИС и исходной XSD.\n"
-            "Excel: те же показатели, что и в XML, но с исходными названиями без ID ФГИС.\n"
+            "Excel: все исходные протоколы, без требований к готовности XML ФГИС.\n"
             "Каждый показатель занимает отдельную строку, а общие сведения — только первую.\n"
             "Результаты: %ProgramData%\\Att51_export\\reports\\.\n"
             "Кнопки работают независимо, предварительные отчёты не нужны.")
@@ -323,14 +324,18 @@ class DesktopApp:
     def _open_excel_result(self, result):
         self.status.set(
             "Excel создан: " + str(result.protocol_count) +
-            " протоколов, " + str(result.indicator_count) + " показателей")
+            " протоколов, " + str(result.indicator_count) + " исходных значений; " +
+            str(len(result.issues)) + " замечаний")
         self.report.config(state="normal")
         self.report.delete("1.0", "end")
         self.report.insert(
             "1.0", "Excel XLS создан:\n" + str(result.file) +
             "\nПротоколов: " + str(result.protocol_count) +
             "\nСтрок с показателями: " + str(result.indicator_count) +
-            "\nТолько исходные сведения, без ID ФГИС.")
+            "\nТолько исходные сведения, без ID ФГИС." +
+            ("\nНеполные сведения: " + str(len(result.issues)) +
+             "\nОтчёт: " + str(result.warning_file)
+             if result.issues else ""))
         self.report.config(state="disabled")
         try:
             if sys.platform == "win32":
@@ -361,7 +366,8 @@ class DesktopApp:
             "full_name": source_org.name if source_org else "",
         }
         popup=tk.Toplevel(self.root)
-        popup.title("Данные заказчика и параметры выгрузки ФГИС")
+        popup.title("Данные заказчика и параметры выгрузки " +
+                    ("Excel" if target == "excel" else "ФГИС"))
         popup.transient(self.root)
         popup.grab_set()
         popup.resizable(False,False)
@@ -447,7 +453,7 @@ class DesktopApp:
                 messagebox.showerror(APP_NAME,"Тип заказчика должен быть числом: "+str(exc))
                 return
             validation = customer.validate()
-            if validation:
+            if validation and target != "excel":
                 messagebox.showerror(APP_NAME, "Исправьте исходные данные:\n"
                                      + "\n".join(validation), parent=popup)
                 return
@@ -462,8 +468,7 @@ class DesktopApp:
             popup.destroy()
             if target == "excel":
                 self._work(lambda: create_excel_export(
-                    prepare_batch(files["mdb"], files["resources"], ini, customer,
-                                  labour=labour, chemical=chemical)),
+                    prepare_excel_sources(files["mdb"], files["resources"], ini, customer)),
                     title="Подготовка исходных сведений Excel",
                     kind="excel_result")
             else:

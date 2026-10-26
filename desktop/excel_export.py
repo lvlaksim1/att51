@@ -14,6 +14,7 @@ import tempfile
 from att51_fsa.sources import FsaSourceError
 
 from excel_shared_source import prepared_batch_rows
+from excel_source_batch import ExcelSourceBatch
 from source_settings import application_data_dir
 
 
@@ -54,6 +55,8 @@ class ExcelResult:
     file: Path
     protocol_count: int
     indicator_count: int
+    issues: tuple[str, ...] = ()
+    warning_file: Path | None = None
 
 
 DATE_COLUMNS = (2, 3, 4, 17, 19, 21)  # B,C,D,Q,S,U
@@ -158,8 +161,31 @@ def _save_excel97(path: Path, rows: list[list[str]]) -> None:
 
 def create_excel_export(batch, *, directory: Path | None = None, writer=None) -> ExcelResult:
     """Format an already-prepared common batch, no original-file reads."""
-    rows, count, indicators = prepared_batch_rows(batch)
+    if isinstance(batch, ExcelSourceBatch):
+        rows, count, indicators = (
+            [list(row) for row in batch.excel_rows], batch.total, batch.indicator_count)
+        issues = batch.issues
+    else:
+        rows, count, indicators = prepared_batch_rows(batch)
+        issues = ()
     target = (Path(directory) if directory is not None else
               application_data_dir().parent / "reports") / FILENAME
     (writer or _save_excel97)(target, rows)
-    return ExcelResult(target, count, indicators)
+    warning_file = None
+    report = target.parent / "Проблемы_источников_Excel.txt"
+    if issues:
+        report.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8-sig",
+                newline="\n", prefix=".att51-excel-warnings-", suffix=".tmp",
+                dir=report.parent, delete=False) as stream:
+            temporary_report = Path(stream.name)
+            stream.write("ПРОТОКОЛЫ С НЕПОЛНЫМИ ДАННЫМИ\n" +
+                         "\n".join("- " + issue for issue in issues) + "\n")
+        try:
+            os.replace(temporary_report, report)
+        finally:
+            temporary_report.unlink(missing_ok=True)
+        warning_file = report
+    else:
+        report.unlink(missing_ok=True)
+    return ExcelResult(target, count, indicators, issues, warning_file)
