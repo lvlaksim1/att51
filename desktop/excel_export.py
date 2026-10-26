@@ -27,6 +27,7 @@ HEADERS = (
     "Тип адреса",
     "Адрес проведния испытаний (измерений)",
     "ИНН заказчика",
+    "ОГРН заказчика",
     "Тип объекта испытания (измерения)",
     "Полное наименование объекта",
     "Наименование показателя",
@@ -59,7 +60,7 @@ class ExcelResult:
     warning_file: Path | None = None
 
 
-DATE_COLUMNS = (2, 3, 4, 17, 19, 21)  # B,C,D,Q,S,U
+DATE_COLUMNS = (2, 3, 4, 18, 20, 22)  # B,C,D,R,T,V
 
 
 def excel_date_text(value: object) -> str:
@@ -79,7 +80,8 @@ def excel_date_text(value: object) -> str:
             except ValueError:
                 continue
         else:
-            return MISSING
+            # An existing but unrecognized date is not absent data.
+            return source
     return result.strftime("%d.%m.%Y")
 
 
@@ -128,13 +130,14 @@ def _save_excel97(path: Path, rows: list[list[str]]) -> None:
         sheet.Cells.NumberFormat = "@"
         area.NumberFormat = "@"
         area.Value2 = tuple(tuple(cell for cell in row) for row in data)
-        header = sheet.Range("A1:Z1")
+        header = sheet.Range("A1:AA1")
         header.Font.Bold = True
         header.Interior.Color = 0xDDEBDD
         # AutoFit after writing, with wrapping disabled (including headers).
-        sheet.Range("A:Z").WrapText = False
-        sheet.Range("A1:Z1").AutoFilter()
-        sheet.Range("A:Z").EntireColumn.AutoFit()
+        sheet.Range("A:AA").WrapText = False
+        sheet.Range("A1:AA1").AutoFilter()
+        sheet.Range("A:AA").ColumnWidth = 13
+        sheet.Range("A:AA").ShrinkToFit = True
         sheet.Rows(1).AutoFit()
         sheet.Activate()
         application.ActiveWindow.SplitRow = 1

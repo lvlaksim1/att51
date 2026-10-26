@@ -28,8 +28,8 @@ _BRACKET_ID = re.compile(r"\{\s*\d+\s*\}")
 class SourceSnapshot:
     """Original text, ordered independently of either serialization format.
 
-    shared: general values A-J; measurements: one five-value tuple per
-    accepted FGIS ResearchObjectInfo; additional: common values P-Z.
+    shared: general values A-K; measurements: one five-value tuple per
+    accepted FGIS ResearchObjectInfo; additional: common values Q-AA.
     """
     shared: tuple[str, ...]
     measurements: tuple[tuple[str, str, str, str, str], ...]
@@ -156,6 +156,7 @@ def snapshot_for_protocol(
         word_or_missing(customer.address_type),
         value_or_missing(customer.address),
         value_or_missing(customer.inn),
+        value_or_missing(customer.ogrn),
         word_or_missing(first((object_node, doc),
                               "object_type_name", "object_type")),
         value_or_missing(first((object_node, doc, factor),
@@ -199,6 +200,6 @@ def snapshot_for_protocol(
         value_or_missing(role.get("exp")),
         value_or_missing(role.get("boss")),
     )
-    if len(shared) != 10 or len(extra) != 11:
+    if len(shared) != 11 or len(extra) != 11:
         raise AssertionError("Нарушено количество подготовленных общих полей")
     return SourceSnapshot(shared, tuple(fields), extra)

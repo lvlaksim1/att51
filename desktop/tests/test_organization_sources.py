@@ -28,16 +28,26 @@ class OrganizationSourcesTests(unittest.TestCase):
             org = base / "Work_files" / "000_org_data" / "ABC-GUID"
             org.mkdir(parents=True)
             (org / "adv_data.xml").write_text(
-                '<Document><dop_info query_date="08.10.2026"/></Document>',
+                '<Document><dop_info query_date="08.10.2026"/>'
+                '<org_reserve ogrn="1234567890123"/></Document>',
                 encoding="utf-8")
             row = {"id": 9, "mguid": "ABC-GUID", "org": "Example",
-                   "inn": "1234567890", "short_caption": "1234567890123",
+                   "inn": "1234567890", "short_caption": "Краткое наименование",
                    "fio": "Person"}
             with patch("organization_sources.AccessReader", return_value=FakeReader([row])):
                 result = unique_organization(base/"Work.mdb")
             self.assertEqual(result.query_date, "08.10.2026")
             self.assertEqual(result.inn, "1234567890")
             self.assertEqual(result.ogrn, "1234567890123")
+
+
+    def test_ogrn_does_not_use_short_caption_as_registry_number(self):
+        with TemporaryDirectory() as folder:
+            root = Path(folder)
+            row = {"id": 1, "mguid": "G", "short_caption": "ООО", "inn": "123"}
+            with patch("organization_sources.AccessReader", return_value=FakeReader([row])):
+                obj = unique_organization(root / "sample.mdb")
+            self.assertEqual(obj.ogrn, "")
 
     def test_multiple_organizations_are_not_guessed(self):
         with TemporaryDirectory() as folder:

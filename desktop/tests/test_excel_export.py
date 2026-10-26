@@ -96,9 +96,10 @@ class SharedExportTests(unittest.TestCase):
             full_name="ИП Исходный заказчик",
             address_variant=2, address="Адрес 2", contacts="8 800 123 45 67")
 
-    def test_excel_template_has_26_original_fields(self):
-        self.assertEqual(len(HEADERS), 26)
-        self.assertEqual(HEADERS[10:15], (
+    def test_excel_template_has_27_fields(self):
+        self.assertEqual(len(HEADERS), 27)
+        self.assertEqual(HEADERS[8], "ОГРН заказчика")
+        self.assertEqual(HEADERS[11:16], (
             "Наименование показателя", "Измеренное значение",
             "Единица измерения", "Наименование методики",
             "Наименование метода"))
@@ -107,22 +108,22 @@ class SharedExportTests(unittest.TestCase):
         prepared = assembled(client=self.client)
         rows = prepared_protocol_rows(prepared)
         self.assertEqual(len(rows), len(prepared.protocol.research_objects))
-        self.assertEqual([row[11] for row in rows], ["2.4", "0.5"])
-        self.assertEqual([row[10] for row in rows],
+        self.assertEqual([row[12] for row in rows], ["2.4", "0.5"])
+        self.assertEqual([row[11] for row in rows],
                          ["Пыль: разовая концентрация", "Пыль: среднесменная"])
-        self.assertEqual(rows[0][12:15], ["мг/м³", "Методика 1", "Инструментальный"])
-        self.assertEqual(rows[1][12:15], ["мг/м³", "Методика 2", "Инструментальный"])
+        self.assertEqual(rows[0][13:16], ["мг/м³", "Методика 1", "Инструментальный"])
+        self.assertEqual(rows[1][13:16], ["мг/м³", "Методика 2", "Инструментальный"])
         self.assertEqual(rows[0][0], "ABC-001")
         self.assertEqual(rows[0][4], "ИП Исходный заказчик")
         self.assertEqual(rows[0][6], "Адрес 2")
         self.assertEqual(rows[0][7], "123456789012")
-        self.assertEqual(rows[0][9], "Аэрозоли преимущественно фиброгенного действия")
-        self.assertEqual(rows[0][15], "8 800 123 45 67")
-        self.assertEqual(rows[0][16], "2026-09-11")
-        self.assertIn("Аспиратор", rows[0][22])
-        self.assertEqual(rows[0][23], "Петров П. П.")
-        self.assertEqual(rows[1][:10], [""] * 10)
-        self.assertEqual(rows[1][15:], [""] * 11)
+        self.assertEqual(rows[0][10], "Аэрозоли преимущественно фиброгенного действия")
+        self.assertEqual(rows[0][16], "8 800 123 45 67")
+        self.assertEqual(rows[0][17], "2026-09-11")
+        self.assertIn("Аспиратор", rows[0][23])
+        self.assertEqual(rows[0][24], "Петров П. П.")
+        self.assertEqual(rows[1][:11], [""] * 11)
+        self.assertEqual(rows[1][16:], [""] * 11)
         self.assertNotIn("4519842", repr(rows))
         self.assertNotIn("1138", repr(rows))
         self.assertNotIn("533", repr(rows))
@@ -132,14 +133,14 @@ class SharedExportTests(unittest.TestCase):
         for node in doc.findall("./izm_data/zone/param"):
             node.attrib.pop("unit")
         proposal = assembled(doc, self.client)
-        self.assertEqual(prepared_protocol_rows(proposal)[0][12], EMPTY)
+        self.assertEqual(prepared_protocol_rows(proposal)[0][13], EMPTY)
 
     def test_missing_text_not_guessed_from_unrelated_numeric_id(self):
         doc = original()
         for node in doc.findall("./izm_data/zone/param"):
             node.attrib.pop("name")
         proposal = assembled(doc, self.client)
-        self.assertEqual(prepared_protocol_rows(proposal)[0][10], EMPTY)
+        self.assertEqual(prepared_protocol_rows(proposal)[0][11], EMPTY)
 
     def test_prepared_mismatch_fails_instead_of_dropping_indicator(self):
         old = assembled()
@@ -212,21 +213,23 @@ class SharedExportTests(unittest.TestCase):
         self.assertEqual(excel_date_text("2026-10-10"), "10.10.2026")
         self.assertEqual(excel_date_text("10.10.2026"), "10.10.2026")
         self.assertEqual(excel_date_text(date(2026, 10, 10)), "10.10.2026")
-        self.assertEqual(excel_date_text("31.02.2026"), EMPTY)
+        self.assertEqual(excel_date_text("31.02.2026"), "31.02.2026")
         self.assertEqual(excel_date_text(EMPTY), EMPTY)
         self.assertEqual(excel_date_text(""), "")
         source = (DESKTOP / "excel_export.py").read_text(encoding="utf-8")
         self.assertIn('sheet.Cells.NumberFormat = "@"', source)
         self.assertNotIn('NumberFormat = "dd.mm.yyyy"', source)
-        self.assertIn('Range("A:Z").WrapText = False', source)
-        self.assertIn('Range("A:Z").EntireColumn.AutoFit()', source)
+        self.assertIn('Range("A:AA").WrapText = False', source)
+        self.assertIn('Range("A:AA").ColumnWidth = 13', source)
+        self.assertIn('Range("A:AA").ShrinkToFit = True', source)
+        self.assertNotIn("EntireColumn.AutoFit()", source)
 
     def test_all_populated_cells_are_text_and_dates_human_readable(self):
         rows = prepared_protocol_rows(assembled())
         result = excel_text_rows(rows)
         self.assertEqual(result[0][1:4],
                          ["21.09.2026", "21.09.2026", "02.10.2026"])
-        self.assertEqual(result[0][16], "11.09.2026")
+        self.assertEqual(result[0][17], "11.09.2026")
         self.assertEqual(result[0][7], "123456789012")
         self.assertEqual(result[1][1:4], ["", "", ""])
         self.assertTrue(all(isinstance(cell, str) for row in result for cell in row))

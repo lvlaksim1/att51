@@ -412,7 +412,7 @@ class DesktopApp:
         for index,(title,variable) in enumerate(chem_rows,9):
             ttk.Checkbutton(controls,text=title,variable=variable).grid(
                 row=index,column=0,columnspan=2,sticky="w",pady=2)
-        address_choice = tk.IntVar(value=1)
+        address_choice = tk.IntVar(value=2 if target == "excel" and source_org and source_org.address2 else 1)
         ttk.Label(controls, text="Адрес проведения измерений (из STRUCT_ORG)").grid(
             row=14, column=0, columnspan=2, sticky="w", pady=(8, 2))
         address_candidates = (
@@ -424,6 +424,7 @@ class DesktopApp:
                 controls,
                 text=f"Вариант {variant}: {original_address or 'НЕТ ДАННЫХ'}",
                 variable=address_choice, value=variant,
+                state="disabled" if target == "excel" else "normal",
             ).grid(row=14+variant, column=0, columnspan=2, sticky="w", pady=2)
         source_msg = ("Реквизиты найдены в исходных STRUCT_ORG и adv_data.xml. Проверьте их."
                       if source_org else
@@ -448,7 +449,9 @@ class DesktopApp:
                     data_status=status.get(),
                     address_variant=address_choice.get(),
                     address=address_candidates[address_choice.get()-1],
-                    contacts=source_org.contacts if source_org else "")
+                    contacts=source_org.contacts if source_org else "",
+                    source_address1=source_org.address1 if source_org else None,
+                    source_address2=source_org.address2 if source_org else None)
             except ValueError as exc:
                 messagebox.showerror(APP_NAME,"Тип заказчика должен быть числом: "+str(exc))
                 return

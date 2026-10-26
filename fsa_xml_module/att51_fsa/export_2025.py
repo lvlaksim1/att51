@@ -32,6 +32,8 @@ class CustomerSettings:
     address: str = ""
     address_type: str = ""
     contacts: str = ""
+    source_address1: str | None = None
+    source_address2: str | None = None
 
     def validate(self) -> tuple[str, ...]:
         issues = []

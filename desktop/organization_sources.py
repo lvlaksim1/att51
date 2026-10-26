@@ -60,16 +60,20 @@ def load_organizations(database: Path) -> tuple[OrganizationSource, ...]:
         guid = _field(row, "mguid")
         xml = _advanced_xml(base, guid)
         request = ""
+        ogrn = _field(row, "ogrn")
         if xml is not None and xml.is_file():
             parsed = parse_xml(xml)
             document = parsed if parsed.tag == "Document" else parsed.find(".//Document")
             details = document.find("./dop_info") if document is not None else None
             if details is not None:
                 request = details.get("query_date", "").strip()
+            reserve = document.find("./org_reserve") if document is not None else None
+            if reserve is not None and reserve.get("ogrn", "").strip():
+                ogrn = reserve.get("ogrn", "").strip()
         output.append(OrganizationSource(
             org_id=_field(row, "id"), guid=guid,
             name=_field(row, "org"), inn=_field(row, "inn"),
-            ogrn=_field(row, "short_caption"), fio=_field(row, "fio"),
+            ogrn=ogrn, fio=_field(row, "fio"),
             query_date=request, xml_file=xml if xml is not None and xml.is_file() else None,
             address1=_field(row, "adr"), address2=_field(row, "adr2"),
             contacts=_field(row, "contact"),

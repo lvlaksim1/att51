@@ -48,12 +48,12 @@ class RawExcelTests(unittest.TestCase):
             self.assertEqual((output.total, output.indicator_count), (3, 2))
             self.assertEqual(len(output.excel_rows), 3)
             self.assertEqual(output.excel_rows[0][0], "P8")
-            self.assertEqual(output.excel_rows[0][10:13], ("Поле", "2.5", "В"))
-            self.assertEqual(output.excel_rows[1][11], "1.5")
-            self.assertEqual(output.excel_rows[1][13], "Исходная методика")
-            self.assertEqual(output.excel_rows[1][12], "кг")
-            self.assertEqual(output.excel_rows[2][9], "Фактор 26")
-            self.assertEqual(output.excel_rows[2][10:15], (EMPTY,) * 5)
+            self.assertEqual(output.excel_rows[0][11:14], ("Поле", "2.5", "В"))
+            self.assertEqual(output.excel_rows[1][12], "1.5")
+            self.assertEqual(output.excel_rows[1][14], "Исходная методика")
+            self.assertEqual(output.excel_rows[1][13], "кг")
+            self.assertEqual(output.excel_rows[2][10], "Фактор 26")
+            self.assertEqual(output.excel_rows[2][11:16], ("",) * 5)
             self.assertTrue(any("отсутствует исходный XML" in s for s in output.issues))
 
     def test_missing_original_text_is_never_guessed(self):
@@ -71,14 +71,14 @@ class RawExcelTests(unittest.TestCase):
                        return_value=None):
                 data = prepare_excel_sources(root / "db.mdb", root / "r.mdb",
                                              None, self.customer)
-            self.assertEqual(data.excel_rows[0][10:15],
-                             (EMPTY, "17", EMPTY, EMPTY, EMPTY))
-            self.assertEqual(data.excel_rows[0][9], "Первый фактор")
+            self.assertEqual(data.excel_rows[0][11:16],
+                             ("", "17", "", "", ""))
+            self.assertEqual(data.excel_rows[0][10], "Первый фактор")
 
     def test_issues_are_written_after_xls(self):
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
-            rows = ((EMPTY,) * 26,)
+            rows = (("",) * 27,)
             batch = ExcelSourceBatch(1, rows, 0, ("Протокол 1: нет XML",))
             outcome = create_excel_export(
                 batch, directory=root,
@@ -102,7 +102,7 @@ class RawExcelTests(unittest.TestCase):
         )
         measures, warnings = _measurements(doc)
         self.assertEqual(measures, [("Эквивалентный уровень звука, дБА",
-                                    "75", "дБА", "Исходная методика", EMPTY)])
+                                    "75", "дБА", "Исходная методика", "")])
         self.assertEqual(_shared(doc, {"factor_name": "Шум"}, self.customer)[1:3],
                          ("2026-10-20", "2026-10-20"))
         self.assertFalse(warnings)
@@ -154,7 +154,7 @@ class RawExcelTests(unittest.TestCase):
             self.assertEqual(measures[3][0], "Эквивалентный корректированный уровень — ОСЬ X")
             self.assertFalse(warnings)
             without_word, _ = _measurements(doc)
-            self.assertTrue(all(row[2] == EMPTY for row in without_word))
+            self.assertTrue(all(row[2] == "" for row in without_word))
 
 
     def test_exact_normative_oa_method_is_used_without_fgis_id(self):
@@ -187,7 +187,7 @@ class RawExcelTests(unittest.TestCase):
                      {"nd_id": "12", "dop5": "Визуальный {999}"}],
         )
         unknown, _ = _measurements(doc, catalog=catalog_ambiguous)
-        self.assertEqual(unknown[0][4], EMPTY)
+        self.assertEqual(unknown[0][4], "")
 
     def test_multiple_methods_do_not_create_unverified_parameter_link(self):
         from excel_source_batch import _measurements
@@ -199,7 +199,7 @@ class RawExcelTests(unittest.TestCase):
             '</Document>'
         )
         measures, warnings = _measurements(doc)
-        self.assertEqual(measures[0][3], EMPTY)
+        self.assertEqual(measures[0][3], "")
         self.assertTrue(any("несколько методик" in item for item in warnings))
 
     def test_source_path_not_duplicate_number_drives_protocol_selection(self):
@@ -224,7 +224,7 @@ class RawExcelTests(unittest.TestCase):
                 output = prepare_excel_sources(root / "a.mdb", root / "r.mdb", None, self.customer)
             self.assertEqual(output.total, 1)
             self.assertEqual(len(output.excel_rows), 1)
-            self.assertEqual(output.excel_rows[0][11], "12")
+            self.assertEqual(output.excel_rows[0][12], "12")
             self.assertEqual(output.excel_rows[0][2], "2026-01-02")
 
     def test_equipment_includes_mandatory_factory_and_optional_inventory(self):
@@ -283,7 +283,7 @@ class RawExcelTests(unittest.TestCase):
             '</si_guids></factor>')
         warnings = []
         result = _equipment(factor, None, warnings, "Протокол 1")
-        self.assertEqual(result, "Измеритель (зав. № НЕТ ДАННЫХ)")
+        self.assertEqual(result, "Измеритель (зав. № )")
         self.assertTrue(any("заводской номер" in item for item in warnings))
 
     def test_factory_discrepancy_preserves_protocol_number_and_warns(self):
@@ -301,6 +301,39 @@ class RawExcelTests(unittest.TestCase):
         result = _equipment(factor, resources, warnings, "РМ 1")
         self.assertEqual(result, "Прибор (зав. № PROTOCOL-1)")
         self.assertTrue(any("не совпадает" in item for item in warnings))
+
+
+    def test_address_sources_and_ogrn(self):
+        from excel_source_batch import _address, _shared
+        from xml.etree import ElementTree as ET
+        from excel_export import HEADERS
+        customer = CustomerSettings("", 1, inn="7701234567", ogrn="1027700123456",
+                                    source_address1="Юридический", source_address2="Фактический")
+        self.assertEqual(_address(customer), ("Фактический", "Адрес места осуществления деятельности"))
+        doc = ET.fromstring('<Document num_doc="P1"><factor facid="4"/></Document>')
+        row = _shared(doc, {"factor_name": "Шум"}, customer)
+        self.assertEqual(len(row), 11)
+        self.assertEqual(row[7:9], ("7701234567", "1027700123456"))
+        self.assertEqual(HEADERS[8], "ОГРН заказчика")
+        only_first = CustomerSettings("", 1, source_address1="Юридический", source_address2="")
+        self.assertEqual(_address(only_first), ("Юридический", "Адрес места нахождения"))
+        physical = CustomerSettings("", 4, source_address1="Юридический", source_address2="Фактический")
+        self.assertEqual(_address(physical), ("Фактический", "Адрес места жительства"))
+        only_second = CustomerSettings("", 1, source_address1="", source_address2="Фактический")
+        self.assertEqual(_address(only_second), ("Фактический", ""))
+        empty = CustomerSettings("", 1, source_address1="", source_address2="")
+        self.assertEqual(_address(empty), ("", ""))
+
+    def test_empty_existing_measurement_is_blank_not_missing(self):
+        from xml.etree import ElementTree as ET
+        from excel_source_batch import _measurements
+        doc = ET.fromstring('<Document><factor facid="12"/>'
+                            '<izm_data><zone><param name="Освещённость, лк" fact=""/>'
+                            '<param name="Другой показатель" fact="120"/>'
+                            '</zone></izm_data></Document>')
+        rows, issues = _measurements(doc)
+        self.assertEqual(rows[0], ("Освещённость, лк", "", "лк", "", ""))
+        self.assertEqual(rows[1][1], "120")
 
     def test_gui_uses_raw_path_and_xml_keeps_strict_path(self):
         source = (ROOT / "app.py").read_text(encoding="utf-8")

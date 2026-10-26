@@ -15,8 +15,8 @@ def prepared_protocol_rows(proposal: PreparedProtocol) -> list[list[str]]:
     protocol = proposal.protocol
     if source is None or protocol is None:
         raise FsaSourceError("Единый подготовленный набор сведений отсутствует")
-    if len(source.shared) != 10 or len(source.additional) != 11:
-        raise FsaSourceError("Нарушена структура 26 столбцов протокола")
+    if len(source.shared) != 11 or len(source.additional) != 11:
+        raise FsaSourceError("Нарушена структура 27 столбцов протокола")
     if len(source.measurements) != len(protocol.research_objects):
         raise FsaSourceError("Количество показателей XML и Excel различается")
     rows = []
@@ -24,7 +24,7 @@ def prepared_protocol_rows(proposal: PreparedProtocol) -> list[list[str]]:
         if len(five) != 5:
             raise FsaSourceError("Измеренный показатель содержит не пять значений")
         rows.append(
-            list(source.shared if number == 0 else ("",) * 10)
+            list(source.shared if number == 0 else ("",) * 11)
             + list(five)
             + list(source.additional if number == 0 else ("",) * 11)
         )

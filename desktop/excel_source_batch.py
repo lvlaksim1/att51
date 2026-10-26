@@ -40,7 +40,7 @@ def _people(factor: ET.Element | None, catalog: ResourceCatalog | None,
                     name = resolved.display_name
             if name:
                 names.append(name)
-    return value_or_missing(joined(names))
+    return joined(names)
 
 
 def _equipment(
@@ -54,7 +54,7 @@ def _equipment(
     Registration (reg_num), batch, and ambiguous custom fields are NOT inventory.
     """
     if factor is None:
-        return EMPTY
+        return ""
     names = []
     seen: set[tuple[str, str]] = set()
     for section in ("si_guids", "si_guids_os", "si_guids_dop"):
@@ -97,11 +97,11 @@ def _equipment(
             if not name and warnings is not None:
                 warnings.append(context + ": не определено название средства "
                                 "измерений (GUID=" + (guid or EMPTY) + ")")
-            result = (name or EMPTY) + " (зав. № " + (factory or EMPTY)
+            result = (name or "") + " (зав. № " + factory
             if inventory:
                 result += "; инв. № " + inventory
             names.append(result + ")")
-    return value_or_missing(joined(names))
+    return joined(names)
 
 
 
@@ -201,7 +201,10 @@ def _measurements(
             if facid == "13" and attr(node, "bm") == "bm_5" and re.search(
                     r",\s*%\s*смены\s*$", name, re.IGNORECASE):
                 position_unit = "% смены"
-            continue
+            # Known but empty measurement slots are blank, while headings are not results.
+            if (facid in ("8", "13") or not name or
+                    not any(key in node.attrib for key in ("fact", "value", "result"))):
+                continue
         if not name:
             notes.append("есть значение без оригинального наименования")
         if facid == "8" and node.tag == "param" and group and name.upper().startswith("ОСЬ "):
@@ -232,32 +235,61 @@ def _measurements(
         if not technique:
             technique = _confirmed_oa_method(catalog, method, facid)
         rows.append((
-            word_or_missing(name),
-            value_or_missing(fact),
-            word_or_missing(unit),
-            word_or_missing(method),
-            word_or_missing(technique),
+            name,
+            fact,
+            unit,
+            method,
+            technique,
         ))
     return rows, notes
+
+
+def _address(customer: CustomerSettings) -> tuple[str, str]:
+    """Excel address selection from original STRUCT_ORG, not XML/FГИС guesses."""
+    first_address, second_address = customer.source_address1, customer.source_address2
+    if first_address is None and second_address is None:
+        address = customer.address
+        kind = customer.address_type
+    else:
+        first_address = (first_address or "").strip()
+        second_address = (second_address or "").strip()
+        if first_address and second_address:
+            address, kind = second_address, "Адрес места осуществления деятельности"
+        elif first_address:
+            address, kind = first_address, "Адрес места нахождения"
+        else:
+            address, kind = second_address, ""
+    if customer.customer_kind == 4:
+        kind = "Адрес места жительства"
+    return address, kind
+
+
+def _source_attr(node: ET.Element | None, *names: str) -> str:
+    """Known element but empty attribute is an empty cell, not 'НЕТ ДАННЫХ'."""
+    return attr(node, *names) if node is not None else ""
 
 
 def _shared(doc: ET.Element | None, item: dict,
             customer: CustomerSettings) -> tuple[str, ...]:
     factor = doc.find("./factor") if doc is not None else None
     object_node = doc.find("./object") if doc is not None else None
-    nodes = tuple(n for n in (object_node, doc, factor) if n is not None)
+    nodes = tuple(node for node in (object_node, doc, factor) if node is not None)
+    address, address_type = _address(customer)
+    object_name = first(nodes, "object_name", "full_name_object", "factor_name")
+    if not object_name:
+        object_name = str(item.get("factor_name") or "")
     return (
-        value_or_missing(attr(doc, "num_doc")),
-        value_or_missing(attr(factor, "start_date", "date_begin", "izm_date")),
-        value_or_missing(attr(factor, "end_date", "date_end", "izm_date")),
-        value_or_missing(attr(doc, "fill_date", "sign_date")),
-        value_or_missing(customer.full_name or customer.fio),
-        word_or_missing(customer.address_type),
-        value_or_missing(customer.address),
-        value_or_missing(customer.inn),
-        word_or_missing(first(nodes, "object_type_name", "object_type")),
-        value_or_missing(first(nodes, "object_name", "full_name_object", "factor_name")
-                         or item.get("factor_name", "")),
+        _source_attr(doc, "num_doc"),
+        _source_attr(factor, "start_date", "date_begin", "izm_date"),
+        _source_attr(factor, "end_date", "date_end", "izm_date"),
+        _source_attr(doc, "fill_date", "sign_date"),
+        customer.full_name or customer.fio,
+        address_type,
+        address,
+        customer.inn,
+        customer.ogrn,
+        first(nodes, "object_type_name", "object_type"),
+        object_name,
     )
 
 
@@ -275,13 +307,13 @@ def _additional(doc: ET.Element | None, customer: CustomerSettings,
         contacts.extend(attr(node, "value", "phone", "email", "address") or literal(node.text)
                         for node in doc.findall(".//contact"))
     return (
-        value_or_missing(joined(contacts)),
-        value_or_missing(customer.application_date),
-        value_or_missing(normative),
-        value_or_missing(first(nodes, "sample_receive_date", "received_date")),
-        value_or_missing(first(nodes, "sample_count", "samples_count")),
-        value_or_missing(first(nodes, "sample_date", "sampling_date")),
-        value_or_missing(first(nodes, "sample_place", "sampling_place", "sampling_address")),
+        joined(contacts),
+        customer.application_date,
+        normative,
+        first(nodes, "sample_receive_date", "received_date"),
+        first(nodes, "sample_count", "samples_count"),
+        first(nodes, "sample_date", "sampling_date"),
+        first(nodes, "sample_place", "sampling_place", "sampling_address"),
         _equipment(factor, catalog, warnings, context),
         _people(factor, catalog, "./persons/pers"),
         _people(factor, catalog, "./exp_persons/pers"),
@@ -336,15 +368,15 @@ def prepare_excel_sources(database: Path, resources: Path, ini: Path | None,
         warnings.extend(context + ": " + note for note in notes)
         if not measurements:
             warnings.append(context + ": измеренные значения в исходном XML не установлены")
-            measurements = [(EMPTY,) * 5]
+            measurements = [("",) * 5]
         else:
             indicators += len(measurements)
         shared = _shared(doc, item, customer)
         extra = _additional(doc, customer, catalog, warnings, context)
-        if len(shared) != 10 or len(extra) != 11:
-            raise FsaSourceError("Нарушена структура 26 столбцов Excel")
+        if len(shared) != 11 or len(extra) != 11:
+            raise FsaSourceError("Нарушена структура 27 столбцов Excel")
         for i, measurement in enumerate(measurements):
-            result.append((shared if i == 0 else ("",) * 10) + measurement
+            result.append((shared if i == 0 else ("",) * 11) + measurement
                           + (extra if i == 0 else ("",) * 11))
     if len(result) > 65535:
         raise FsaSourceError("В формате XLS не более 65 535 строк данных")
