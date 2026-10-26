@@ -43,17 +43,64 @@ def _people(factor: ET.Element | None, catalog: ResourceCatalog | None,
     return value_or_missing(joined(names))
 
 
-def _equipment(factor: ET.Element | None, catalog: ResourceCatalog | None) -> str:
+def _equipment(
+    factor: ET.Element | None, catalog: ResourceCatalog | None,
+    warnings: list[str] | None = None, context: str = "",
+) -> str:
+    """Original exporter: si_guid GUID, then factory number -> ATT_DEVICE.
+
+    The serial/factory number is mandatory in our Excel equipment caption.
+    An inventory number is added only from an explicitly named source field.
+    Registration (reg_num), batch, and ambiguous custom fields are NOT inventory.
+    """
+    if factor is None:
+        return EMPTY
     names = []
-    if factor is not None:
-        for node in factor.findall("./si_guids/si_guid"):
+    seen: set[tuple[str, str]] = set()
+    for section in ("si_guids", "si_guids_os", "si_guids_dop"):
+        for node in factor.findall("./" + section + "/si_guid"):
+            guid = attr(node, "guid")
+            original_factory = attr(node, "num")
+            key = (guid, original_factory)
+            if key in seen:
+                continue
+            seen.add(key)
             name = attr(node, "name", "device_name")
-            if not name and catalog is not None:
-                resolved = catalog.device(attr(node, "guid"), attr(node, "num"))
-                if resolved.found:
-                    name = resolved.display_name
-            if name:
-                names.append(name)
+            record = None
+            if catalog is not None:
+                match = catalog.device(guid, original_factory)
+                if match.found:
+                    record = next((device for device in catalog.devices
+                                   if device.guid == match.local_guid), None)
+                    if not name:
+                        name = record.name if record is not None else match.display_name
+            factory = original_factory or (record.factory_number if record is not None else "")
+            xml_inventory = attr(node, "inventory_num", "inventory_number",
+                                 "inv_num", "inv_number", "inventory_no")
+            inventory = xml_inventory or (
+                record.inventory_number if record is not None else ""
+            )
+            if record is not None and original_factory and record.factory_number and (
+                    original_factory != record.factory_number):
+                if warnings is not None:
+                    warnings.append(context + ": заводской номер из XML (" + original_factory +
+                                    ") не совпадает с карточкой прибора (" +
+                                    record.factory_number + ")")
+            if record is not None and xml_inventory and record.inventory_number and (
+                    xml_inventory != record.inventory_number):
+                if warnings is not None:
+                    warnings.append(context + ": инвентарный номер из XML не совпадает "
+                                    "с карточкой прибора")
+            if not factory and warnings is not None:
+                warnings.append(context + ": отсутствует заводской номер средства "
+                                "измерений (GUID=" + (guid or EMPTY) + ")")
+            if not name and warnings is not None:
+                warnings.append(context + ": не определено название средства "
+                                "измерений (GUID=" + (guid or EMPTY) + ")")
+            result = (name or EMPTY) + " (зав. № " + (factory or EMPTY)
+            if inventory:
+                result += "; инв. № " + inventory
+            names.append(result + ")")
     return value_or_missing(joined(names))
 
 
@@ -185,7 +232,8 @@ def _shared(doc: ET.Element | None, item: dict,
 
 
 def _additional(doc: ET.Element | None, customer: CustomerSettings,
-                catalog: ResourceCatalog | None) -> tuple[str, ...]:
+                catalog: ResourceCatalog | None,
+                warnings: list[str] | None = None, context: str = "") -> tuple[str, ...]:
     extra = doc.find("./dop_info") if doc is not None else None
     factor = doc.find("./factor") if doc is not None else None
     customer_node = doc.find("./customer") if doc is not None else None
@@ -204,7 +252,7 @@ def _additional(doc: ET.Element | None, customer: CustomerSettings,
         value_or_missing(first(nodes, "sample_count", "samples_count")),
         value_or_missing(first(nodes, "sample_date", "sampling_date")),
         value_or_missing(first(nodes, "sample_place", "sampling_place", "sampling_address")),
-        _equipment(factor, catalog),
+        _equipment(factor, catalog, warnings, context),
         _people(factor, catalog, "./persons/pers"),
         _people(factor, catalog, "./exp_persons/pers"),
         (_people(factor, catalog, "./boss/pers")
@@ -261,7 +309,7 @@ def prepare_excel_sources(database: Path, resources: Path, ini: Path | None,
         else:
             indicators += len(measurements)
         shared = _shared(doc, item, customer)
-        extra = _additional(doc, customer, catalog)
+        extra = _additional(doc, customer, catalog, warnings, context)
         if len(shared) != 10 or len(extra) != 11:
             raise FsaSourceError("Нарушена структура 26 столбцов Excel")
         for i, measurement in enumerate(measurements):

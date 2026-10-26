@@ -71,6 +71,9 @@ class Device:
     guid: str
     factory_number: str
     name: str
+    # Only a field explicitly designated as an inventory number qualifies.
+    # The tested ATT_DEVICE source may not have such a field.
+    inventory_number: str = ""
 
 
 @dataclass(frozen=True)
@@ -194,8 +197,15 @@ class ResourceCatalog:
             if key:
                 synonym_index.setdefault(key, []).append(_str(row.get("name")))
         devices_result = [
-            Device(_str(row.get("id")), _str(row.get("mguid")),
-                   _str(row.get("factory_num")), _str(row.get("name")))
+            Device(
+                _str(row.get("id")), _str(row.get("mguid")),
+                _str(row.get("factory_num")), _str(row.get("name")),
+                next((
+                    _str(row.get(field))
+                    for field in ("inventory_num", "inventory_number", "inv_num", "inv_number", "inventory_no")
+                    if _str(row.get(field))
+                ), ""),
+            )
             for row in devices
         ]
         people_result = [

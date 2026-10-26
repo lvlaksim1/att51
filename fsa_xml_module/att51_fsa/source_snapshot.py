@@ -106,8 +106,10 @@ def _devices(audit: ProtocolResourceAudit, catalog: ResourceCatalog) -> str:
         if item is None or not item.name:
             continue
         text = item.name
-        if item.factory_number:
-            text += " № " + item.factory_number
+        text += " (зав. № " + (item.factory_number or EMPTY)
+        if item.inventory_number:
+            text += "; инв. № " + item.inventory_number
+        text += ")"
         names.append(text)
     return joined(names)
 

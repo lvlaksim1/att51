@@ -194,6 +194,65 @@ class RawExcelTests(unittest.TestCase):
             self.assertEqual(output.excel_rows[0][11], "12")
             self.assertEqual(output.excel_rows[0][2], "2026-01-02")
 
+    def test_equipment_includes_mandatory_factory_and_optional_inventory(self):
+        import xml.etree.ElementTree as ET
+        from excel_source_batch import _equipment
+        from att51_fsa.resources import ResourceCatalog
+        resources = ResourceCatalog.from_rows(
+            devices=[
+                {"id": "1", "mguid": "G1", "name": "Шумомер",
+                 "factory_num": "ABC-001", "inventory_num": "INV-91",
+                 "reg_num": "РЕГ-41"},
+                {"id": "2", "mguid": "G2", "name": "Виброметр",
+                 "factory_num": "2204", "reg_num": "РЕГ-52"},
+            ], people=[], normative=[], links=[])
+        factor = ET.fromstring('<factor>'
+            '<si_guids><si_guid guid="G1" num="ABC-001"/>'
+            '<si_guid guid="G2" num="2204"/></si_guids>'
+            '<si_guids_dop><si_guid guid="G1" num="ABC-001"/></si_guids_dop>'
+            '</factor>')
+        result = _equipment(factor, resources)
+        self.assertEqual(
+            result, "Шумомер (зав. № ABC-001; инв. № INV-91); "
+                    "Виброметр (зав. № 2204)")
+        self.assertNotIn("РЕГ-", result)
+        self.assertEqual(result.count("Шумомер"), 1)
+
+    def test_equipment_keeps_xml_factory_without_resource_mapping(self):
+        import xml.etree.ElementTree as ET
+        from excel_source_batch import _equipment
+        factor = ET.fromstring('<factor><si_guids>'
+            '<si_guid guid="notfound" num="S-342" name="Измеритель"/>'
+            '</si_guids></factor>')
+        self.assertEqual(_equipment(factor, None), "Измеритель (зав. № S-342)")
+
+    def test_missing_factory_is_visible_and_reported_not_invented(self):
+        import xml.etree.ElementTree as ET
+        from excel_source_batch import _equipment
+        factor = ET.fromstring('<factor><si_guids>'
+            '<si_guid guid="notfound" name="Измеритель"/>'
+            '</si_guids></factor>')
+        warnings = []
+        result = _equipment(factor, None, warnings, "Протокол 1")
+        self.assertEqual(result, "Измеритель (зав. № НЕТ ДАННЫХ)")
+        self.assertTrue(any("заводской номер" in item for item in warnings))
+
+    def test_factory_discrepancy_preserves_protocol_number_and_warns(self):
+        import xml.etree.ElementTree as ET
+        from excel_source_batch import _equipment
+        from att51_fsa.resources import ResourceCatalog
+        resources = ResourceCatalog.from_rows(
+            devices=[{"id": "1", "mguid": "G1", "name": "Прибор",
+                      "factory_num": "SOURCE-2"}],
+            people=[], normative=[], links=[])
+        factor = ET.fromstring('<factor><si_guids>'
+            '<si_guid guid="G1" num="PROTOCOL-1"/>'
+            '</si_guids></factor>')
+        warnings = []
+        result = _equipment(factor, resources, warnings, "РМ 1")
+        self.assertEqual(result, "Прибор (зав. № PROTOCOL-1)")
+        self.assertTrue(any("не совпадает" in item for item in warnings))
+
     def test_gui_uses_raw_path_and_xml_keeps_strict_path(self):
         source = (ROOT / "app.py").read_text(encoding="utf-8")
         self.assertIn("prepare_excel_sources(files[", source)
