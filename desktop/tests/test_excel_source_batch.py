@@ -156,6 +156,39 @@ class RawExcelTests(unittest.TestCase):
             without_word, _ = _measurements(doc)
             self.assertTrue(all(row[2] == EMPTY for row in without_word))
 
+
+    def test_exact_normative_oa_method_is_used_without_fgis_id(self):
+        import xml.etree.ElementTree as ET
+        from excel_source_batch import _measurements
+        from att51_fsa.resources import ResourceCatalog
+        doc = ET.fromstring(
+            '<Document><factor facid="12"/>'
+            '<nd_data><nd name="МИ 2048-2025" action="1"/></nd_data>'
+            '<izm_data><zone><param name="Освещённость, лк" fact="200"/>'
+            '</zone></izm_data></Document>'
+        )
+        catalog = ResourceCatalog.from_rows(
+            devices=[], people=[], links=[],
+            normative=[{"id": "11", "mguid": "ND_GUID",
+                        "factor_id": "12", "name": "МИ 2048-2025"}],
+            nd_info=[{"nd_id": "11", "dop5": "Инструментальный {321}"}],
+        )
+        rows, issues = _measurements(doc, catalog=catalog)
+        self.assertEqual(rows[0][2], "лк")
+        self.assertEqual(rows[0][3], "МИ 2048-2025")
+        self.assertEqual(rows[0][4], "Инструментальный")
+        catalog_ambiguous = ResourceCatalog.from_rows(
+            devices=[], people=[], links=[],
+            normative=[{"id": "11", "mguid": "ND_GUID",
+                        "factor_id": "12", "name": "МИ 2048-2025"},
+                       {"id": "12", "mguid": "ND_GUID2",
+                        "factor_id": "12", "name": "МИ 2048-2025"}],
+            nd_info=[{"nd_id": "11", "dop5": "Инструментальный {321}"},
+                     {"nd_id": "12", "dop5": "Визуальный {999}"}],
+        )
+        unknown, _ = _measurements(doc, catalog=catalog_ambiguous)
+        self.assertEqual(unknown[0][4], EMPTY)
+
     def test_multiple_methods_do_not_create_unverified_parameter_link(self):
         from excel_source_batch import _measurements
         import xml.etree.ElementTree as ET

@@ -145,8 +145,26 @@ def _protocol_methods(doc: ET.Element) -> tuple[str, ...]:
     ))
 
 
+
+def _confirmed_oa_method(catalog: ResourceCatalog | None,
+                         method_name: str, factor_id: str) -> str:
+    """Exact original ND/factor -> DIC_ND_INFO.dop5, never fuzzy matching."""
+    if catalog is None or not method_name or not factor_id:
+        return ""
+    candidates = [
+        nd for nd in catalog.normative
+        if nd.factor_id == factor_id and
+        nd.name.strip().casefold() == method_name.strip().casefold()
+    ]
+    if len(candidates) != 1:
+        return ""
+    # The original source_snapshot also strips the numeric FGIS component.
+    return re.sub(r"\{\s*\d+\s*\}", "", candidates[0].oa_method).strip()
+
+
 def _measurements(
     doc: ET.Element, *, word: Path | None = None,
+    catalog: ResourceCatalog | None = None,
 ) -> tuple[list[tuple[str, str, str, str, str]], list[str]]:
     """Selected original results only: no calculator inputs or empty headings."""
     factor = doc.find("./factor")
@@ -198,9 +216,21 @@ def _measurements(
         if not unit and facid == "13" and position_unit and attr(node, "bm").startswith("bm_5_"):
             unit = position_unit  # Literally written in this XML group's heading.
         method = attr(node, "method_name", "method")
-        if not method and len(original_methods) == 1:
-            method = original_methods[0]
+        if not method:
+            nd_ref = attr(node, "nd_izm1")
+            if nd_ref:
+                matched = tuple(dict.fromkeys(
+                    attr(nd, "name") for nd in doc.findall("./nd_data/nd")
+                    if attr(nd, "id") == nd_ref and attr(nd, "action") == "1"
+                    and attr(nd, "name")
+                ))
+                if len(matched) == 1:
+                    method = matched[0]
+            if not method and len(original_methods) == 1:
+                method = original_methods[0]
         technique = attr(node, "oa_method", "method_oa")
+        if not technique:
+            technique = _confirmed_oa_method(catalog, method, facid)
         rows.append((
             word_or_missing(name),
             value_or_missing(fact),
@@ -299,7 +329,8 @@ def prepare_excel_sources(database: Path, resources: Path, ini: Path | None,
             except (FsaSourceError, OSError, ValueError) as exc:
                 warnings.append(context + ": XML не прочитан: " + str(exc))
         measurements, notes = (
-            _measurements(doc, word=Path(item["word"]) if item.get("word") else None)
+            _measurements(doc, word=Path(item["word"]) if item.get("word") else None,
+                          catalog=catalog)
             if doc is not None else ([], [])
         )
         warnings.extend(context + ": " + note for note in notes)
