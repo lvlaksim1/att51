@@ -25,6 +25,18 @@ def main() -> None:
     try:
         if not parser.detect_vba_macros():
             raise RuntimeError("No Word VBA macros detected")
+        # Across every original module: look only for explicit inventory
+        # field names and nearby labels; do not infer custom column meaning.
+        inventory_tokens = ("инвентар", "инв. №", "инв.№", "inventory",
+                            "inventory_num", "inv_num", "заводской")
+        for _source, _stream, fname, contents in parser.extract_macros():
+            macro_name = Path(fname).stem
+            matches = [(index, line) for index, line in enumerate(contents.splitlines(), 1)
+                       if any(term.casefold() in line.casefold() for term in inventory_tokens)]
+            for index, line in matches[:25]:
+                print(f"INVENTORY_EVIDENCE {macro_name} {index:5d} {line[:260]}")
+            if matches:
+                print(f"INVENTORY_MODULE_COUNT {macro_name} {len(matches)}")
         for _fn, _stream, fname, content in parser.extract_macros():
             name = Path(fname).stem.lower()
             if name not in TARGETS:
