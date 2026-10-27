@@ -1,0 +1,57 @@
+name: One-time OCB large and binary remainder scan
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/ocb-remainder-audit-20261027.yml"]
+permissions:
+  contents: write
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan all previously excluded tracked files
+        run: |
+          python - <<'PY'
+          import json, re, subprocess
+          from pathlib import Path
+          paths=subprocess.run(["git","ls-files","-z"],capture_output=True).stdout.decode("utf8","replace").split("\0")
+          pattern=re.compile(rb"(?<![A-Za-z])OCB(?:3|_BACKOFF)?(?![A-Za-z])|OpenAI.s safety checks",re.I)
+          russian=["три попытки","трех попыток","трёх попыток"]
+          out={"date":"2026-10-27","excluded_files_read":0,"large_files":0,"binary_files":0,"all_paths_examined":0,"hits":[],"failures":[]}
+          for path in filter(None,paths):
+              fp=Path(path)
+              if not fp.is_file():continue
+              out["all_paths_examined"]+=1
+              try:
+                  sz=fp.stat().st_size
+                  if sz<=4000000:
+                      with fp.open("rb") as f:sample=f.read(1024)
+                      if b"\0" not in sample:
+                          try:fp.read_text(encoding="utf8")
+                          except UnicodeError:pass
+                          else:continue
+                  raw=fp.read_bytes()
+                  out["excluded_files_read"]+=1
+                  if sz>4000000:out["large_files"]+=1
+                  else:out["binary_files"]+=1
+                  counts=[len(pattern.findall(raw))]
+                  counts.extend(raw.count(word.encode("utf8")) for word in russian)
+                  if any(counts):out["hits"].append({"path":path,"size":sz,"match_counts":counts})
+              except Exception as exc:
+                  out["failures"].append({"path":path,"error":str(exc)[:200]})
+          Path("reports").mkdir(exist_ok=True)
+          Path("reports/OCB-AUDIT-2026-10-27-REMAINDER.json").write_text(json.dumps(out,ensure_ascii=False,indent=2)+"\n",encoding="utf8")
+          print("REMAINDER",out["all_paths_examined"],"paths",out["excluded_files_read"],"excluded",out["large_files"],"large",out["binary_files"],"binary",len(out["hits"]),"hits",len(out["failures"]),"failures")
+          for item in out["hits"][:30]:print("MATCH",item)
+          PY
+      - name: Publish remainder report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/OCB-AUDIT-2026-10-27-REMAINDER.json
+          if ! git diff --cached --quiet; then
+            git commit -m "audit: scan previously excluded OCB file contents"
+            git push origin HEAD:main
+          fi
