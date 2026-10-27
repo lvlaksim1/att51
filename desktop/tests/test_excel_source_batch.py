@@ -371,10 +371,10 @@ class RawExcelTests(unittest.TestCase):
             '</izm_data></Document>')
         with TemporaryDirectory() as folder:
             ini = Path(folder) / "fgis_ra.ini"
-            ini.write_text("[Measurements]\\nid1_16 = 292\\n", encoding="utf-8")
+            ini.write_text(chr(10).join(("[Measurements]", "id1_16 = 292", "")), encoding="utf-8")
             rows, _ = _measurements(doc, ini=ini)
             self.assertEqual(rows[0][2], "Процент (id 292)")
-            ini.write_text("[Measurements]\\nid1_16 = 999999\\n", encoding="utf-8")
+            ini.write_text(chr(10).join(("[Measurements]", "id1_16 = 999999", "")), encoding="utf-8")
             rows, _ = _measurements(doc, ini=ini)
             self.assertEqual(rows[0][2], "")
 
