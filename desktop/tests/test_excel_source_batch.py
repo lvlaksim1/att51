@@ -154,7 +154,7 @@ class RawExcelTests(unittest.TestCase):
             self.assertEqual(measures[3][0], "Эквивалентный корректированный уровень — ОСЬ X")
             self.assertFalse(warnings)
             without_word, _ = _measurements(doc)
-            self.assertTrue(all(row[2] == "" for row in without_word))
+            self.assertTrue(all(row[2] == "—" for row in without_word))
 
 
     def test_exact_normative_oa_method_is_used_without_fgis_id(self):
