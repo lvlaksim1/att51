@@ -137,4 +137,6 @@ class OriginalUnits:
         if not label:
             # An unknown overridden/special ID does not establish its label.
             return original_text
+        if original_text.strip() == "% смены" and code == "292":
+            label = "% смены"  # Explicitly written in this source group heading.
         return f"{label} (id {code})"

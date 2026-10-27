@@ -23,7 +23,7 @@ from source_settings import SourceSettings, SOURCE_KEYS
 from whole_base_reports import create_index, create_details
 from fgis_export import create_fgis_export
 from excel_export import create_excel_export
-from excel_source_batch import prepare_excel_sources
+from excel_source_batch import prepare_excel_sources, list_excel_object_names
 from export_batch import prepare_batch
 from com_workers import run_with_com
 from organization_sources import unique_organization, customer_for_excel
@@ -317,24 +317,85 @@ class DesktopApp:
                    kind="report_file")
 
     def _create_excel(self):
-        """Export original protocol data immediately, without an options dialog.
-
-        Customer fields come from the unique original STRUCT_ORG record and
-        its linked adv_data.xml. FGIS-only options do not affect Excel.
-        """
+        """Discover selectable source object names before writing any XLS."""
         try:
             files, ini = self._report_inputs()
         except (ValueError, OSError) as error:
             messagebox.showerror(APP_NAME, human_error(error))
             return
 
-        def export():
+        def discover():
             customer = customer_for_excel(files["mdb"])
-            return create_excel_export(
-                prepare_excel_sources(files["mdb"], files["resources"], ini, customer)
-            )
+            names = list_excel_object_names(files["mdb"])
+            if not names:
+                raise FsaSourceError("В проекте нет протоколов для Excel")
+            return files, ini, customer, names
 
-        self._work(export, title="Формирование Excel", kind="excel_result")
+        self._work(discover, title="Поиск наименований объектов",
+                   kind="excel_objects")
+
+    def _open_excel_objects(self, selection):
+        """Modal list of original full names; all ticked by default."""
+        files, ini, customer, names = selection
+        popup = tk.Toplevel(self.root)
+        popup.title("Выбор объектов для Excel")
+        popup.transient(self.root)
+        popup.geometry("690x530")
+        popup.minsize(490, 320)
+        popup.columnconfigure(0, weight=1)
+        popup.rowconfigure(1, weight=1)
+        ttk.Label(popup, text="Полное наименование объекта — выберите протоколы для выгрузки:",
+                  wraplength=640).grid(row=0, column=0, sticky="w", padx=14, pady=(12, 6))
+        outer = ttk.Frame(popup)
+        outer.grid(row=1, column=0, sticky="nsew", padx=14, pady=4)
+        outer.rowconfigure(0, weight=1)
+        outer.columnconfigure(0, weight=1)
+        canvas = tk.Canvas(outer, highlightthickness=0)
+        scroll = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scroll.set)
+        canvas.grid(row=0, column=0, sticky="nsew")
+        scroll.grid(row=0, column=1, sticky="ns")
+        inner = ttk.Frame(canvas)
+        frame_id = canvas.create_window((0, 0), window=inner, anchor="nw")
+        inner.bind("<Configure>", lambda event: canvas.configure(
+            scrollregion=canvas.bbox("all")))
+        canvas.bind("<Configure>", lambda event: canvas.itemconfigure(
+            frame_id, width=event.width))
+        flags = [(name, tk.BooleanVar(value=True)) for name in names]
+        for index, (name, flag) in enumerate(flags):
+            ttk.Checkbutton(inner, text=name if name else "(наименование отсутствует)",
+                            variable=flag).grid(row=index, column=0,
+                                                sticky="w", padx=5, pady=3)
+        controls = ttk.Frame(popup)
+        controls.grid(row=2, column=0, sticky="ew", padx=14, pady=(5, 14))
+
+        def select_all(value):
+            for _, flag in flags:
+                flag.set(value)
+
+        def run():
+            selected = frozenset(name for name, flag in flags if flag.get())
+            if not selected:
+                messagebox.showwarning(APP_NAME, "Выберите хотя бы одно наименование.",
+                                       parent=popup)
+                return
+            popup.grab_release()
+            popup.destroy()
+            self._work(lambda: create_excel_export(
+                prepare_excel_sources(files["mdb"], files["resources"],
+                                      ini, customer, selected)),
+                title="Формирование Excel", kind="excel_result")
+
+        ttk.Button(controls, text="Выделить всё",
+                   command=lambda: select_all(True)).pack(side="left", padx=(0, 8))
+        ttk.Button(controls, text="Снять выделение",
+                   command=lambda: select_all(False)).pack(side="left")
+        ttk.Button(controls, text="Отмена", command=popup.destroy).pack(
+            side="right", padx=(8, 0))
+        ttk.Button(controls, text="Сформировать Excel", command=run).pack(side="right")
+        popup.bind("<Escape>", lambda event: popup.destroy())
+        popup.grab_set()
+        popup.focus_set()
 
     def _open_excel_result(self, result):
         self.status.set(
@@ -347,7 +408,7 @@ class DesktopApp:
             "1.0", "Excel XLS создан:\n" + str(result.file) +
             "\nПротоколов: " + str(result.protocol_count) +
             "\nСтрок с показателями: " + str(result.indicator_count) +
-            "\nТолько исходные сведения, без ID ФГИС." +
+            "\nИсходные сведения; единицы по оригинальному алгоритму XML ФГИС (с ID при подтверждении)." +
             ("\nНеполные сведения: " + str(len(result.issues)) +
              "\nОтчёт: " + str(result.warning_file)
              if result.issues else ""))
@@ -582,7 +643,7 @@ class DesktopApp:
         try:
             while True:
                 kind, value = self.results.get_nowait()
-                if kind in ("report_file", "fgis_result", "excel_result", "error"):
+                if kind in ("report_file", "fgis_result", "excel_result", "excel_objects", "error"):
                     self.busy = False
                     for b in self.buttons:
                         b.state(["!disabled"])
@@ -592,6 +653,8 @@ class DesktopApp:
                         self._open_fgis_result(value)
                     elif kind == "excel_result":
                         self._open_excel_result(value)
+                    elif kind == "excel_objects":
+                        self._open_excel_objects(value)
                     else:
                         self.status.set(str(value))
                         messagebox.showerror(APP_NAME, str(value))

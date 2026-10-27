@@ -102,7 +102,7 @@ class RawExcelTests(unittest.TestCase):
         )
         measures, warnings = _measurements(doc)
         self.assertEqual(measures, [("Эквивалентный уровень звука, дБА",
-                                    "75", "дБА", "Исходная методика", "")])
+                                    "75", "дБА (id 650)", "Исходная методика", "")])
         self.assertEqual(_shared(doc, {"factor_name": "Шум"}, self.customer)[1:3],
                          ("2026-10-20", "2026-10-20"))
         self.assertFalse(warnings)
@@ -121,7 +121,7 @@ class RawExcelTests(unittest.TestCase):
         )
         measures, warnings = _measurements(doc)
         self.assertEqual(len(measures), 2)
-        self.assertEqual(measures[0][:3], ("Свободная", "90", "% смены"))
+        self.assertEqual(measures[0][:3], ("Свободная", "90", "% смены (id 292)"))
         self.assertEqual(measures[1][:3], ("Перенос груза (кг)", "12", "кг"))
         self.assertNotIn("99", str(measures))
 
@@ -150,7 +150,7 @@ class RawExcelTests(unittest.TestCase):
             )
             measures, warnings = _measurements(doc, word=word)
             self.assertEqual(len(measures), 6)
-            self.assertTrue(all(row[2] == "дБ" for row in measures))
+            self.assertTrue(all(row[2] == "дБ (id 429)" for row in measures))
             self.assertEqual(measures[3][0], "Эквивалентный корректированный уровень — ОСЬ X")
             self.assertFalse(warnings)
             without_word, _ = _measurements(doc)
@@ -334,6 +334,93 @@ class RawExcelTests(unittest.TestCase):
         rows, issues = _measurements(doc)
         self.assertEqual(rows[0], ("Освещённость, лк", "", "лк", "", ""))
         self.assertEqual(rows[1][1], "120")
+
+
+    def test_original_factor_specific_units_and_ids(self):
+        from xml.etree import ElementTree as ET
+        from excel_source_batch import _measurements
+
+        scenarios = (
+            ("4", '<Level bm="Lekv" name="Эквивалентный уровень" fact="75"/>',
+             "дБА (id 650)", "level"),
+            ("12", '<zone><param bm="osv_1" name="Освещённость" fact="100"/></zone>',
+             "Люкс (id 64)", "zone"),
+            ("11", '<zone><param bm="t_1" name="Температура" fact="23"/></zone>',
+             "Градус Цельсия (id 61)", "zone"),
+            ("3", '<zone><param bm="ko1x" name="Вещество" fact="0.7"/></zone>',
+             "Миллиграмм на кубический метр (id 533)", "zone"),
+            ("14", '<zone><param bm_id="n_bm1_4" name="Голосовая нагрузка" fact="5"/></zone>',
+             "Час (id 98)", "zone"),
+            ("26", '<zone><param bm="ufinewA1" name="УФ-А" fact="7"/></zone>',
+             "Вт/м² (id 532)", "zone"),
+        )
+        for factor, measured, expected, _ in scenarios:
+            with self.subTest(factor=factor):
+                doc = ET.fromstring(
+                    f'<Document><factor facid="{factor}"/>'
+                    f'<izm_data>{measured}</izm_data></Document>')
+                rows, warnings = _measurements(doc)
+                self.assertEqual(rows[0][2], expected)
+
+    def test_working_ini_override_and_unknown_id_are_not_guessed(self):
+        from xml.etree import ElementTree as ET
+        from excel_source_batch import _measurements
+        doc = ET.fromstring(
+            '<Document><factor facid="12"/>'
+            '<izm_data><zone><param bm="osv_1" name="Освещённость" fact="101"/></zone>'
+            '</izm_data></Document>')
+        with TemporaryDirectory() as folder:
+            ini = Path(folder) / "fgis_ra.ini"
+            ini.write_text("[Measurements]\\nid1_16 = 292\\n", encoding="utf-8")
+            rows, _ = _measurements(doc, ini=ini)
+            self.assertEqual(rows[0][2], "Процент (id 292)")
+            ini.write_text("[Measurements]\\nid1_16 = 999999\\n", encoding="utf-8")
+            rows, _ = _measurements(doc, ini=ini)
+            self.assertEqual(rows[0][2], "")
+
+    def test_unique_objects_filter_only_selected_protocols(self):
+        from excel_source_batch import list_excel_object_names
+        with TemporaryDirectory() as folder:
+            root = Path(folder)
+            items = []
+            for i, name in enumerate(("Объект А", "Объект Б", "Объект А"), 1):
+                path = root / f"{i}.xml"
+                path.write_text(
+                    f'<Document num_doc="P{i}" rm_id="{i}"'
+                    f' full_name_object="{name}"><factor facid="4"/>'
+                    '<izm_data><Level name="Измерение" fact="12"/></izm_data></Document>',
+                    encoding="utf-8")
+                items.append({"xml": path, "rm_id": str(i), "factor_id": "4",
+                              "factor_name": "Шум", "word": None})
+            items.append({"xml": None, "rm_id": "4", "factor_id": "26",
+                          "factor_name": "Без XML", "word": None})
+            with patch("excel_source_batch.read_inventory",
+                       return_value=([], items, root)), \
+                 patch("excel_source_batch.ResourceCatalog.from_mdb",
+                       return_value=None):
+                names = list_excel_object_names(root / "db.mdb")
+                self.assertEqual(set(names), {"Объект А", "Объект Б", "Без XML"})
+                batch = prepare_excel_sources(root / "db.mdb", root / "res.mdb",
+                                             None, self.customer,
+                                             frozenset(("Объект А",)))
+                self.assertEqual(batch.total, 2)
+                self.assertEqual(len(batch.excel_rows), 2)
+                self.assertTrue(all(row[10] == "Объект А" for row in batch.excel_rows))
+                self.assertFalse(any("отсутствует исходный XML" in w for w in batch.issues))
+                with self.assertRaisesRegex(Exception, "нет протоколов"):
+                    prepare_excel_sources(root / "db.mdb", root / "res.mdb",
+                                          None, self.customer,
+                                          frozenset(("Отсутствующий объект",)))
+
+    def test_object_type_always_production_environment(self):
+        from excel_source_batch import _shared
+        from xml.etree import ElementTree as ET
+        doc = ET.fromstring('<Document object_type_name="Другое">'
+                            '<factor facid="4"/></Document>')
+        self.assertEqual(
+            _shared(doc, {"factor_name": "Шум"}, self.customer)[9],
+            "Производственная среда",
+        )
 
     def test_gui_uses_raw_path_and_xml_keeps_strict_path(self):
         source = (ROOT / "app.py").read_text(encoding="utf-8")

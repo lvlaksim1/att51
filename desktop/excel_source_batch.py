@@ -18,6 +18,7 @@ from att51_fsa.source_snapshot import (
 )
 from att51_fsa.sources import FsaSourceError, parse_xml
 from whole_base_reports import read_inventory
+from original_excel_units import OriginalUnits
 
 
 @dataclass(frozen=True)
@@ -165,13 +166,15 @@ def _confirmed_oa_method(catalog: ResourceCatalog | None,
 def _measurements(
     doc: ET.Element, *, word: Path | None = None,
     catalog: ResourceCatalog | None = None,
+    ini: Path | None = None,
 ) -> tuple[list[tuple[str, str, str, str, str]], list[str]]:
     """Selected original results only: no calculator inputs or empty headings."""
     factor = doc.find("./factor")
     facid = attr(factor, "facid")
     original_methods = _protocol_methods(doc)
     notes = []
-    word_unit = facid == "8" and _word_contains_vibration_unit(word)
+    word_unit = facid in ("7", "8") and _word_contains_vibration_unit(word)
+    unit_resolver = OriginalUnits(doc, ini)
     if facid == "4":
         nodes = doc.findall("./izm_data/Level")
     elif facid == "8":
@@ -218,6 +221,8 @@ def _measurements(
             unit = "дБ"  # Directly verified in this record's paired Word DOCX.
         if not unit and facid == "13" and position_unit and attr(node, "bm").startswith("bm_5_"):
             unit = position_unit  # Literally written in this XML group's heading.
+        unit = unit_resolver.display(node, unit, facid=facid,
+                                     vibration_confirmed=bool(word_unit and (fact or name)))
         method = attr(node, "method_name", "method")
         if not method:
             nd_ref = attr(node, "nd_izm1")
@@ -269,15 +274,44 @@ def _source_attr(node: ET.Element | None, *names: str) -> str:
     return attr(node, *names) if node is not None else ""
 
 
+def _object_name(doc: ET.Element | None, item: dict) -> str:
+    """Same exact full name in chooser and Excel."""
+    factor = doc.find("./factor") if doc is not None else None
+    obj = doc.find("./object") if doc is not None else None
+    nodes = tuple(n for n in (obj, doc, factor) if n is not None)
+    return (first(nodes, "object_name", "full_name_object", "factor_name") or
+            str(item.get("factor_name") or "")).strip()
+
+
+def list_excel_object_names(database: Path) -> tuple[str, ...]:
+    """List unique object names actually present in project source records."""
+    _, items, _ = read_inventory(Path(database))
+    names: set[str] = set()
+    for item in items:
+        doc = None
+        path = item.get("xml")
+        if path is not None and Path(path).is_file():
+            try:
+                original = parse_xml(Path(path))
+                candidate = original if original.tag == "Document" else original.find(".//Document")
+                factor = candidate.find("./factor") if candidate is not None else None
+                if (factor is not None and attr(factor, "facid") == str(item["factor_id"])
+                    and (not attr(candidate, "rm_id")
+                         or attr(candidate, "rm_id") == str(item["rm_id"]))):
+                    doc = candidate
+            except (FsaSourceError, OSError, ValueError):
+                pass
+        names.add(_object_name(doc, item))
+    return tuple(sorted(names, key=lambda name: (not bool(name), name.casefold(), name)))
+
+
 def _shared(doc: ET.Element | None, item: dict,
             customer: CustomerSettings) -> tuple[str, ...]:
     factor = doc.find("./factor") if doc is not None else None
     object_node = doc.find("./object") if doc is not None else None
     nodes = tuple(node for node in (object_node, doc, factor) if node is not None)
     address, address_type = _address(customer)
-    object_name = first(nodes, "object_name", "full_name_object", "factor_name")
-    if not object_name:
-        object_name = str(item.get("factor_name") or "")
+    object_name = _object_name(doc, item)
     return (
         _source_attr(doc, "num_doc"),
         _source_attr(factor, "start_date", "date_begin", "izm_date"),
@@ -288,7 +322,7 @@ def _shared(doc: ET.Element | None, item: dict,
         address,
         customer.inn,
         customer.ogrn,
-        first(nodes, "object_type_name", "object_type"),
+        "Производственная среда",  # original VBA TypeObjectId=10
         object_name,
     )
 
@@ -324,7 +358,8 @@ def _additional(doc: ET.Element | None, customer: CustomerSettings,
 
 
 def prepare_excel_sources(database: Path, resources: Path, ini: Path | None,
-                          customer: CustomerSettings) -> ExcelSourceBatch:
+                          customer: CustomerSettings,
+                          selected_objects: frozenset[str] | None = None) -> ExcelSourceBatch:
     """Keep every protocol, even if its factor/ND/resource has no FGIS mapping."""
     # The optional INI affects FGIS ID transformations, not raw Excel.
     _, items, _ = read_inventory(Path(database))
@@ -343,31 +378,37 @@ def prepare_excel_sources(database: Path, resources: Path, ini: Path | None,
         warnings.append("Справочник оборудования и сотрудников: " + str(exc))
     result = []
     indicators = 0
+    accepted = 0
     for index, item in enumerate(items, 1):
         context = f"Протокол {index}, РМ {item['rm_id']}, фактор {item['factor_id']}"
         doc = None
+        protocol_warnings = []
         path = item.get("xml")
         if path is None or not Path(path).is_file():
-            warnings.append(context + ": отсутствует исходный XML; строка сохранена")
+            protocol_warnings.append(context + ": отсутствует исходный XML; строка сохранена")
         else:
             try:
                 original = parse_xml(Path(path))
                 doc = original if original.tag == "Document" else original.find(".//Document")
                 if doc is None:
-                    warnings.append(context + ": нет Document; строка сохранена")
+                    protocol_warnings.append(context + ": нет Document; строка сохранена")
                 else:
                     factor = doc.find("./factor")
                     if factor is None or attr(factor, "facid") != str(item["factor_id"]):
-                        warnings.append(context + ": фактор в XML не совпадает с MDB")
+                        protocol_warnings.append(context + ": фактор в XML не совпадает с MDB")
                         doc = None
                     elif attr(doc, "rm_id") and attr(doc, "rm_id") != str(item["rm_id"]):
-                        warnings.append(context + ": идентификатор рабочего места не совпадает")
+                        protocol_warnings.append(context + ": идентификатор рабочего места не совпадает")
                         doc = None
             except (FsaSourceError, OSError, ValueError) as exc:
-                warnings.append(context + ": XML не прочитан: " + str(exc))
+                protocol_warnings.append(context + ": XML не прочитан: " + str(exc))
+        if selected_objects is not None and _object_name(doc, item) not in selected_objects:
+            continue
+        warnings.extend(protocol_warnings)
+        accepted += 1
         measurements, notes = (
             _measurements(doc, word=Path(item["word"]) if item.get("word") else None,
-                          catalog=catalog)
+                          catalog=catalog, ini=ini)
             if doc is not None else ([], [])
         )
         warnings.extend(context + ": " + note for note in notes)
@@ -385,5 +426,7 @@ def prepare_excel_sources(database: Path, resources: Path, ini: Path | None,
                           + (extra if i == 0 else ("",) * 11))
     if len(result) > 65535:
         raise FsaSourceError("В формате XLS не более 65 535 строк данных")
-    return ExcelSourceBatch(len(items), tuple(result), indicators,
+    if not accepted:
+        raise FsaSourceError("Для выбранных наименований объекта нет протоколов")
+    return ExcelSourceBatch(accepted, tuple(result), indicators,
                             tuple(dict.fromkeys(warnings)))
