@@ -205,6 +205,17 @@ def main() -> None:
                     for i in range(start-1,min(stop,len(lines))):
                         print(f"FACTOR_NAME {i+1:5d} {lines[i][:310]}")
             if name == "v52_exp_fgis_ra_syn3":
+                # Investigate the source of parameter.norm used as optional
+                # UniqueMeasurement comment; do not assume it is a unit dictionary.
+                for i, line in enumerate(lines):
+                    if re.match(r"(?i)^\\s*(?:(?:public|private)\\s+)?(?:Function|Sub)\\s+(?:init_coll|get_param_by_id)\\b", line):
+                        print(f"UNIT_COLLECTION_START {i+1}")
+                        for j in range(i,min(i+180,len(lines))):
+                            print(f"UNIT_COLLECTION {j+1:5d} {lines[j][:330]}")
+                            if j>i and re.match(r"(?i)^\\s*End (?:Function|Sub)\\s*$",lines[j]):
+                                break
+                        print("UNIT_COLLECTION_END")
+            if name == "v52_exp_fgis_ra_syn3":
                 # Final step of units: how the export decides whether to
                 # print UniqueMeasurement in addition to numeric MeasurementId.
                 for i, line in enumerate(lines):
