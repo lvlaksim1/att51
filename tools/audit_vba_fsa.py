@@ -54,6 +54,14 @@ def main() -> None:
             if matches:
                 print(f"INVENTORY_MODULE_COUNT {macro_name} {len(matches)}")
         for _fn, _stream, fname, content in parser.extract_macros():
+            if "get_measurement" in content.casefold():
+                lines_search = content.splitlines()
+                mname = Path(fname).stem
+                matches = [i for i, line in enumerate(lines_search)
+                           if "get_measurement" in line.casefold()]
+                for i in matches[:10]:
+                    for j in range(max(0,i-4),min(len(lines_search),i+16)):
+                        print(f"UNIT_HELPER {mname} {j+1:5d} {lines_search[j][:300]}")
             name = Path(fname).stem.lower()
             if name not in TARGETS:
                 continue
@@ -84,7 +92,7 @@ def main() -> None:
                 if any(term.casefold() in line.casefold() for term in TERMS):
                     selected.update(range(max(0, i-5), min(len(lines),i+9)))
             if name == "v52_exp_fgis_ra2025":
-                target_procs = ("read_tyag_params_direct", "read_tyag_params_itog", "read_napr_params", "read_fact_coll")
+                target_procs = ("read_tyag_params_direct", "read_tyag_params_itog", "read_napr_params", "read_fact_coll", "read_vibr_loc_params", "read_vibr_gen_params", "read_ufi_params", "read_osv_params")
                 for proc in target_procs:
                     found_start = None
                     for i, line in enumerate(lines):
