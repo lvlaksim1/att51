@@ -11,7 +11,7 @@ import queue
 import sys
 import threading
 import tkinter as tk
-from tkinter import filedialog, messagebox, scrolledtext, ttk
+from tkinter import filedialog, messagebox, ttk
 
 if not getattr(sys, "frozen", False):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "fsa_xml_module"))
@@ -19,7 +19,7 @@ if not getattr(sys, "frozen", False):
 from updater import Release, UpdateError, fetch_latest, newer
 from install_guard import InstallationMutex
 from source_discovery import discover_installations
-from source_settings import SourceSettings, SOURCE_KEYS
+from source_settings import SourceSettings, SOURCE_KEYS, application_data_dir
 from whole_base_reports import create_index, create_details
 from fgis_export import create_fgis_export
 from excel_export import create_excel_export
@@ -30,7 +30,7 @@ from organization_sources import unique_organization, customer_for_excel
 from att51_fsa.export_2025 import CustomerSettings
 from att51_fsa.labour_2025 import LabourOptions
 from att51_fsa.aerosol_2025 import ChemicalOptions
-from att51_fsa.sources import FsaSourceError
+from att51_fsa.sources import FsaSourceError, files_directory
 from version import VERSION
 
 APP_NAME = "Att51_export"
@@ -53,7 +53,7 @@ class DesktopApp:
         self.busy = False
         self.latest: Release | None = None
         self.fields = {name: tk.StringVar(value="") for name in
-                       ("mdb", "resources", "ini")}
+                       ("mdb", "resources", "ini", "xml_dir", "docx_dir", "output_dir")}
         self.source_settings = SourceSettings()
         self._save_after_id = None
         self._settings_load_warning = ""
@@ -65,108 +65,104 @@ class DesktopApp:
         for key, path in previous_paths.items():
             if key in self.fields:
                 self.fields[key].set(path)
-        self.status = tk.StringVar(value="Готово. Выберите XML или Excel для самостоятельной выгрузки.")
-        self.update_status = tk.StringVar(value="Обновления: проверка не выполнена")
+        self.status = tk.StringVar(value="Готово.")
         root.title(f"{APP_NAME} — v{VERSION}")
-        root.geometry("1050x700")
-        root.minsize(780, 510)
+        root.geometry("990x340")
+        root.minsize(750, 280)
         icon = included_file("assets/app.ico")
         if icon.exists():
             try:
                 root.iconbitmap(str(icon))
             except tk.TclError:
                 pass
+        # Derive project document roots automatically, but retain previously
+        # saved manual choices. Both default to ARMv51_files.
+        self._last_automatic_document_root = ""
+        self._sync_document_folders()
+        if not self.fields["output_dir"].get().strip():
+            self.fields["output_dir"].set(str(application_data_dir().parent / "reports"))
         self._build_ui()
+        self.fields["mdb"].trace_add("write", self._mdb_changed)
         for key in self.fields:
             self.fields[key].trace_add("write", self._paths_changed)
         root.protocol("WM_DELETE_WINDOW", self._close)
         if self._settings_load_warning:
             self.status.set(self._settings_load_warning)
         root.after(100, self._pump)
-        root.after(350, self._auto_ini)
         root.after(1200, lambda: self._check_updates(manual=False))
+
+    def _sync_document_folders(self):
+        """Fill both from the MDB; don't replace a manual override."""
+        mdb = self.fields["mdb"].get().strip()
+        if not mdb:
+            return
+        root = str(files_directory(Path(mdb)))
+        prior = self._last_automatic_document_root
+        for key in ("xml_dir", "docx_dir"):
+            current = self.fields[key].get().strip()
+            if not current or (prior and current == prior):
+                self.fields[key].set(root)
+        self._last_automatic_document_root = root
+
+    def _mdb_changed(self, *_args):
+        self._sync_document_folders()
 
     def _build_ui(self):
         style = ttk.Style(self.root)
         if "vista" in style.theme_names():
             style.theme_use("vista")
         self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(2, weight=1)
 
-        heading = ttk.Frame(self.root, padding=(15, 12, 15, 8))
-        heading.grid(row=0, column=0, sticky="ew")
-        ttk.Label(heading, text=f"Att51_export  ·  v{VERSION}",
-                  font=("Segoe UI", 17, "bold")).pack(anchor="w")
-        ttk.Label(
-            heading,
-            text="Независимое чтение данных «Аттестация-5.1» для ФГИС ФСА · испытательная версия",
-            foreground="#456280",
-        ).pack(anchor="w", pady=(3, 0))
-
-        pane = ttk.LabelFrame(
-            self.root, text="Источники данных (только чтение)", padding=12)
-        pane.grid(row=1, column=0, padx=14, pady=(0, 8), sticky="ew")
-        pane.columnconfigure(1, weight=1)
-        labels = (
-            ("mdb", "База организации / рабочих мест (.mdb)", [("Access MDB", "*.mdb")]),
-            ("resources", "База ресурсов res_orgs.mdb", [("Access MDB", "*.mdb")]),
-            ("ini", "fgis_ra.ini (необязательно)", [("INI", "*.ini")]),
+        update_bar = ttk.Frame(self.root, padding=(12, 11, 14, 0))
+        update_bar.grid(row=0, column=0, sticky="ew")
+        self.check_btn = ttk.Button(
+            update_bar, text="Проверить обновление",
+            command=self._check_or_install_update,
         )
-        for row, (key, label, extensions) in enumerate(labels):
-            ttk.Label(pane, text=label, width=38).grid(
-                row=row, column=0, sticky="w", pady=3)
-            ttk.Entry(pane, textvariable=self.fields[key]).grid(
-                row=row, column=1, sticky="ew", padx=8, pady=3)
-            ttk.Button(pane, text="Обзор…", width=11,
-                       command=lambda k=key, ext=extensions: self._browse(k, ext)
-                       ).grid(row=row, column=2, pady=3)
-        ttk.Button(pane, text="Авто", width=9,
-                   command=lambda: self._auto_ini(interactive=True)
-                   ).grid(row=2, column=3, padx=(8, 0))
-        ttk.Label(pane, text="Excel не требует ID ФГИС; настройки ФГИС используются для XML. "
-                             "Выбранные пути сохраняются.",
-                  foreground="#456280").grid(
-                      row=3, column=0, columnspan=4, sticky="w", pady=(5, 0))
-
-        report = ttk.LabelFrame(
-            self.root, text="Выгрузка сведений", padding=(10, 8))
-        report.grid(row=2, column=0, padx=14, sticky="nsew")
-        report.columnconfigure(0, weight=1)
-        report.rowconfigure(1, weight=1)
-        actions = ttk.Frame(report)
-        actions.grid(row=0, column=0, sticky="ew")
-        self.buttons = []
-        for label, command in (
-            ("Выгрузить XML", self._create_fgis_xml),
-            ("Выгрузить Excel", self._create_excel),
-        ):
-            b = ttk.Button(actions, text=label, command=command)
-            b.pack(side="left", padx=(0, 10), pady=(0, 6))
-            self.buttons.append(b)
-        self.report = scrolledtext.ScrolledText(
-            report, wrap="word", font=("Segoe UI", 10), undo=False)
-        self.report.grid(row=1, column=0, sticky="nsew", pady=(8, 0))
-        self.report.insert("1.0",
-            "XML: подготовка данных с проверкой соответствий ФГИС и исходной XSD.\n"
-            "Excel: все исходные протоколы, без требований к готовности XML ФГИС.\n"
-            "Каждый показатель занимает отдельную строку, а общие сведения — только первую.\n"
-            "Результаты: %ProgramData%\\Att51_export\\reports\\.\n"
-            "Кнопки работают независимо, предварительные отчёты не нужны.")
-        self.report.config(state="disabled")
-
-        bottom = ttk.Frame(self.root, padding=(15, 10, 15, 14))
-        bottom.grid(row=3, column=0, sticky="ew")
-        ttk.Label(bottom, textvariable=self.status, foreground="#6d4a10").pack(anchor="w")
-        bar = ttk.Frame(bottom)
-        bar.pack(fill="x", pady=(8, 0))
-        ttk.Label(bar, textvariable=self.update_status).pack(side="left")
-        self.install_btn = ttk.Button(bar, text="Обновить",
-                                      command=self._install_update)
-        self.install_btn.pack(side="right", padx=(6, 0))
-        self.install_btn.state(["disabled"])
-        self.check_btn = ttk.Button(bar, text="Проверить обновления",
-                                    command=lambda: self._check_updates(manual=True))
         self.check_btn.pack(side="right")
+
+        pane = ttk.Frame(self.root, padding=(14, 10, 14, 4))
+        pane.grid(row=1, column=0, sticky="ew")
+        pane.columnconfigure(1, weight=1)
+        fields = (
+            ("resources", "База данных res_orgs.mdb", "mdb"),
+            ("mdb", "База данных ARMv51.MDB", "mdb"),
+            ("xml_dir", "Папка XML", "folder"),
+            ("docx_dir", "Папка DOCX", "folder"),
+            ("output_dir", "Папка сохранения Excel", "folder"),
+        )
+        for row, (key, label, kind) in enumerate(fields):
+            ttk.Label(pane, text=label, width=30).grid(
+                row=row, column=0, sticky="w", pady=5)
+            ttk.Entry(pane, textvariable=self.fields[key]).grid(
+                row=row, column=1, sticky="ew", padx=8, pady=5)
+            ttk.Button(pane, text="Обзор…", width=10,
+                       command=lambda k=key, t=kind: self._browse_source(k, t)
+                       ).grid(row=row, column=2, pady=5)
+
+        footer = ttk.Frame(self.root, padding=(14, 10, 14, 12))
+        footer.grid(row=2, column=0, sticky="ew")
+        footer.columnconfigure(0, weight=1)
+        self.status_label = ttk.Label(footer, textvariable=self.status,
+                                      foreground="#6d4a10")
+        self.status_label.grid(row=0, column=0, sticky="w")
+        self.excel_btn = ttk.Button(
+            footer, text="Сформировать Excel", command=self._create_excel)
+        self.excel_btn.grid(row=0, column=1, sticky="e")
+        self.buttons = [self.excel_btn]
+
+    def _browse_source(self, name: str, kind: str):
+        if kind == "folder":
+            selected = filedialog.askdirectory(
+                parent=self.root,
+                title="Выберите папку",
+                initialdir=self.fields[name].get().strip() or None)
+        else:
+            selected = filedialog.askopenfilename(
+                parent=self.root, title="Выберите базу данных",
+                filetypes=[("База Access", "*.mdb"), ("Все файлы", "*.*")])
+        if selected:
+            self.fields[name].set(selected)
 
     def _paths_changed(self, *_args):
         if self._save_after_id is not None:
@@ -291,10 +287,24 @@ class DesktopApp:
 
     def _report_inputs(self):
         source = self._required("mdb", "resources")
-        ini = self.fields["ini"].get().strip()
-        if ini:
-            source.update(self._required("ini"))
-        return source, source.get("ini")
+        for key in ("xml_dir", "docx_dir"):
+            value = self.fields[key].get().strip()
+            if not value or not Path(value).is_dir():
+                raise ValueError(f"Не найдена папка {key}: {value or '(не указана)'}")
+            source[key] = Path(value)
+        output = self.fields["output_dir"].get().strip()
+        if not output:
+            raise ValueError("Не указана папка сохранения Excel.")
+        if Path(output).exists() and not Path(output).is_dir():
+            raise ValueError("Путь сохранения Excel не является папкой: " + output)
+        source["output_dir"] = Path(output)
+
+        # fgis_ra.ini is deliberately absent from the main UI, but original
+        # stored settings or an actual sibling INI may still customize unit IDs.
+        saved_ini = self.fields["ini"].get().strip()
+        candidate = Path(saved_ini) if saved_ini else source["mdb"].parent / "fgis_ra.ini"
+        ini = candidate if candidate.is_file() else None
+        return source, ini
 
     def _create_index(self):
         try:
@@ -326,7 +336,9 @@ class DesktopApp:
 
         def discover():
             customer = customer_for_excel(files["mdb"])
-            names = list_excel_object_names(files["mdb"])
+            names = list_excel_object_names(files["mdb"],
+                                            xml_root=files["xml_dir"],
+                                            docx_root=files["docx_dir"])
             if not names:
                 raise FsaSourceError("В проекте нет протоколов для Excel")
             return files, ini, customer, names
@@ -340,14 +352,14 @@ class DesktopApp:
         popup = tk.Toplevel(self.root)
         popup.title("Выбор объектов для Excel")
         popup.transient(self.root)
-        popup.geometry("690x530")
-        popup.minsize(490, 320)
+        popup.geometry("570x360")
+        popup.minsize(430, 250)
         popup.columnconfigure(0, weight=1)
         popup.rowconfigure(1, weight=1)
-        ttk.Label(popup, text="Полное наименование объекта — выберите протоколы для выгрузки:",
-                  wraplength=640).grid(row=0, column=0, sticky="w", padx=14, pady=(12, 6))
+        ttk.Label(popup, text="Выберите полные наименования объектов:",
+                  wraplength=500).grid(row=0, column=0, sticky="w", padx=10, pady=(8, 3))
         outer = ttk.Frame(popup)
-        outer.grid(row=1, column=0, sticky="nsew", padx=14, pady=4)
+        outer.grid(row=1, column=0, sticky="nsew", padx=10, pady=2)
         outer.rowconfigure(0, weight=1)
         outer.columnconfigure(0, weight=1)
         canvas = tk.Canvas(outer, highlightthickness=0)
@@ -365,13 +377,9 @@ class DesktopApp:
         for index, (name, flag) in enumerate(flags):
             ttk.Checkbutton(inner, text=name if name else "(наименование отсутствует)",
                             variable=flag).grid(row=index, column=0,
-                                                sticky="w", padx=5, pady=3)
+                                                sticky="w", padx=3, pady=1)
         controls = ttk.Frame(popup)
-        controls.grid(row=2, column=0, sticky="ew", padx=14, pady=(5, 14))
-
-        def select_all(value):
-            for _, flag in flags:
-                flag.set(value)
+        controls.grid(row=2, column=0, sticky="ew", padx=10, pady=(4, 8))
 
         def run():
             selected = frozenset(name for name, flag in flags if flag.get())
@@ -383,16 +391,15 @@ class DesktopApp:
             popup.destroy()
             self._work(lambda: create_excel_export(
                 prepare_excel_sources(files["mdb"], files["resources"],
-                                      ini, customer, selected)),
+                                      ini, customer, selected,
+                                      xml_root=files["xml_dir"],
+                                      docx_root=files["docx_dir"]),
+                directory=files["output_dir"], customer_inn=customer.inn),
                 title="Формирование Excel", kind="excel_result")
 
-        ttk.Button(controls, text="Выделить всё",
-                   command=lambda: select_all(True)).pack(side="left", padx=(0, 8))
-        ttk.Button(controls, text="Снять выделение",
-                   command=lambda: select_all(False)).pack(side="left")
         ttk.Button(controls, text="Отмена", command=popup.destroy).pack(
             side="right", padx=(8, 0))
-        ttk.Button(controls, text="Сформировать Excel", command=run).pack(side="right")
+        ttk.Button(controls, text="Сформировать", command=run).pack(side="right")
         popup.bind("<Escape>", lambda event: popup.destroy())
         popup.grab_set()
         popup.focus_set()
@@ -400,24 +407,14 @@ class DesktopApp:
     def _open_excel_result(self, result):
         self.status.set(
             "Excel создан: " + str(result.protocol_count) +
-            " протоколов, " + str(result.indicator_count) + " исходных значений; " +
-            str(len(result.issues)) + " замечаний")
-        self.report.config(state="normal")
-        self.report.delete("1.0", "end")
-        self.report.insert(
-            "1.0", "Excel XLS создан:\n" + str(result.file) +
-            "\nПротоколов: " + str(result.protocol_count) +
-            "\nСтрок с показателями: " + str(result.indicator_count) +
-            "\nИсходные сведения; единицы по оригинальному алгоритму XML ФГИС (с ID при подтверждении)." +
-            ("\nНеполные сведения: " + str(len(result.issues)) +
-             "\nОтчёт: " + str(result.warning_file)
-             if result.issues else ""))
-        self.report.config(state="disabled")
+            " протоколов; " + str(result.indicator_count) + " показателей."
+            + (" Замечаний: " + str(len(result.issues)) + "."
+               if result.issues else ""))
         try:
             if sys.platform == "win32":
                 os.startfile(str(result.file))
         except OSError as error:
-            messagebox.showwarning(APP_NAME, "Excel создан, но не удалось открыть:\n"
+            messagebox.showwarning(APP_NAME, "Excel создан, но не удалось открыть:\\n"
                                    + str(error))
 
     def _create_fgis_xml(self):
@@ -583,11 +580,17 @@ class DesktopApp:
                 APP_NAME, "Отчёт сохранён, но не удалось открыть текстовый файл:\n"
                 + str(filename) + "\n" + human_error(exc))
 
+    def _check_or_install_update(self):
+        if self.latest is not None and newer(self.latest, VERSION) and self.latest.verified:
+            self._install_update()
+        else:
+            self._check_updates(manual=True)
+
     def _check_updates(self, *, manual: bool):
         if self.check_btn.instate(["disabled"]):
             return
         self.check_btn.state(["disabled"])
-        self.update_status.set("Проверка выпуска на GitHub…")
+        self.status.set("Проверка обновлений…")
         def worker():
             try:
                 self.results.put(("update", fetch_latest()))
@@ -662,18 +665,19 @@ class DesktopApp:
                     info = value
                     self.latest = info
                     self.check_btn.state(["!disabled"])
-                    if newer(info, VERSION):
-                        self.update_status.set(
-                            f"Доступна {info.tag}" +
-                            ("" if info.verified else " (только ручная установка)")
-                        )
-                        if info.verified:
-                            self.install_btn.state(["!disabled"])
+                    if newer(info, VERSION) and info.verified:
+                        self.check_btn.configure(text=f"Обновить до {info.tag}")
+                        self.status.set(f"Доступна версия {info.tag}.")
+                    elif newer(info, VERSION):
+                        self.check_btn.configure(text="Проверить обновление")
+                        self.status.set(f"Доступна {info.tag}; автоматическое обновление недоступно.")
                     else:
-                        self.update_status.set(f"Установлена актуальная версия {VERSION}.")
+                        self.check_btn.configure(text="Проверить обновление")
+                        self.status.set(f"Установлена актуальная версия {VERSION}.")
                 elif kind == "update_error":
                     self.check_btn.state(["!disabled"])
-                    self.update_status.set("Проверка обновлений недоступна: " + str(value))
+                    self.check_btn.configure(text="Проверить обновление")
+                    self.status.set("Проверка обновлений недоступна: " + str(value))
         except queue.Empty:
             pass
         self.root.after(100, self._pump)

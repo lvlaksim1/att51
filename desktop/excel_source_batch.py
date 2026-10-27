@@ -283,9 +283,10 @@ def _object_name(doc: ET.Element | None, item: dict) -> str:
             str(item.get("factor_name") or "")).strip()
 
 
-def list_excel_object_names(database: Path) -> tuple[str, ...]:
+def list_excel_object_names(database: Path, *, xml_root: Path | None = None,
+                            docx_root: Path | None = None) -> tuple[str, ...]:
     """List unique object names actually present in project source records."""
-    _, items, _ = read_inventory(Path(database))
+    _, items, _ = read_inventory(Path(database), xml_root=xml_root, docx_root=docx_root)
     names: set[str] = set()
     for item in items:
         doc = None
@@ -359,10 +360,12 @@ def _additional(doc: ET.Element | None, customer: CustomerSettings,
 
 def prepare_excel_sources(database: Path, resources: Path, ini: Path | None,
                           customer: CustomerSettings,
-                          selected_objects: frozenset[str] | None = None) -> ExcelSourceBatch:
+                          selected_objects: frozenset[str] | None = None,
+                          *, xml_root: Path | None = None,
+                          docx_root: Path | None = None) -> ExcelSourceBatch:
     """Keep every protocol, even if its factor/ND/resource has no FGIS mapping."""
     # The optional INI affects FGIS ID transformations, not raw Excel.
-    _, items, _ = read_inventory(Path(database))
+    _, items, _ = read_inventory(Path(database), xml_root=xml_root, docx_root=docx_root)
     if not items:
         raise FsaSourceError("В рабочей MDB нет протоколов для Excel")
     warnings = []

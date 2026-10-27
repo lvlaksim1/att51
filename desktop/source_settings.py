@@ -11,7 +11,7 @@ from pathlib import Path
 import sys
 import tempfile
 
-SOURCE_KEYS = ("mdb", "resources", "xml", "ini")
+SOURCE_KEYS = ("mdb", "resources", "xml", "ini", "xml_dir", "docx_dir", "output_dir")
 FORMAT_VERSION = 1
 FILE_NAME = "source-paths.json"
 

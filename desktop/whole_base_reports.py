@@ -58,20 +58,34 @@ def _workplace_name(row: dict[str, Any]) -> str:
                   "profession", "dolgnost", "post", "job", "work_name")
 
 
-def _xml_path(root: Path, record: dict[str, Any]) -> tuple[str, Path | None, str]:
+def _xml_path(root: Path, record: dict[str, Any], *,
+              xml_root: Path | None = None,
+              docx_root: Path | None = None) -> tuple[str, Path | None, str]:
     relative = _field(record, "file")
     if not relative:
         return "", None, "Ссылка на документ отсутствует в sout_factors.file"
     try:
-        word = resolve_relative_file(root, relative)
+        # Resolve original sout_factors.file separately in the selected
+        # Word and XML project roots. Never use a loose filename-only match:
+        # different workplaces can have identically named documents.
+        original = resolve_relative_file(root, relative)
+        word = resolve_relative_file(Path(docx_root) if docx_root is not None else root,
+                                     relative)
         if word.suffix.casefold() not in (".doc", ".docx"):
             return str(word), None, "Указанный документ не имеет расширения DOC/DOCX"
-        return str(word), word.parent / "xml" / (word.stem + ".xml"), ""
+        if xml_root is None:
+            xml = word.parent / "xml" / (word.stem + ".xml")
+        else:
+            original_relative = original.relative_to(root)
+            xml_relative = original_relative.parent / "xml" / (word.stem + ".xml")
+            xml = Path(xml_root) / xml_relative
+        return str(word), xml, ""
     except (FsaSourceError, ValueError, OSError) as exc:
         return relative, None, "Небезопасная или неверная ссылка: " + str(exc)
 
 
-def read_inventory(database: Path) -> tuple[list[dict], list[dict], Path]:
+def read_inventory(database: Path, *, xml_root: Path | None = None,
+                   docx_root: Path | None = None) -> tuple[list[dict], list[dict], Path]:
     """Read raw MDB rows without the legacy supported-factor filter."""
     database = Path(database)
     root = files_directory(database)
@@ -99,7 +113,7 @@ def read_inventory(database: Path) -> tuple[list[dict], list[dict], Path]:
                                w["id"]))
     protocols: list[dict] = []
     for row in factor_rows:
-        word, xml, problem = _xml_path(root, row)
+        word, xml, problem = _xml_path(root, row, xml_root=xml_root, docx_root=docx_root)
         protocols.append({
             "rm_id": _field(row, "rm_id"),
             "factor_id": _field(row, "factor_id"),

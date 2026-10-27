@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, date
 import os
+import re
 from pathlib import Path
 import tempfile
 
@@ -162,7 +163,9 @@ def _save_excel97(path: Path, rows: list[list[str]]) -> None:
         Path(temporary).unlink(missing_ok=True)
 
 
-def create_excel_export(batch, *, directory: Path | None = None, writer=None) -> ExcelResult:
+def create_excel_export(batch, *, directory: Path | None = None, writer=None,
+                        customer_inn: str | None = None,
+                        created_at: datetime | None = None) -> ExcelResult:
     """Format an already-prepared common batch, no original-file reads."""
     if isinstance(batch, ExcelSourceBatch):
         rows, count, indicators = (
@@ -171,8 +174,15 @@ def create_excel_export(batch, *, directory: Path | None = None, writer=None) ->
     else:
         rows, count, indicators = prepared_batch_rows(batch)
         issues = ()
+    filename = FILENAME
+    if customer_inn is not None:
+        if not re.fullmatch(r"(?:[0-9]{10}|[0-9]{12})", customer_inn):
+            raise FsaSourceError("Не указан корректный ИНН заказчика для имени Excel-файла")
+        clock = created_at if created_at is not None else datetime.now()
+        filename = (f"Att51_export_{customer_inn}_"
+                    f"{clock:%d%m%y}_{clock:%H%M}.xls")
     target = (Path(directory) if directory is not None else
-              application_data_dir().parent / "reports") / FILENAME
+              application_data_dir().parent / "reports") / filename
     (writer or _save_excel97)(target, rows)
     warning_file = None
     report = target.parent / "Проблемы_источников_Excel.txt"

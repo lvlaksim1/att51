@@ -191,34 +191,36 @@ class SharedExportTests(unittest.TestCase):
             self.assertEqual(output.file.suffix, ".xls")
             self.assertEqual(written[0][1], expected)
 
-    def test_excel_prompts_only_for_original_object_names(self):
+    def test_compact_excel_object_dialog_and_selected_path_use(self):
         app = (DESKTOP / "app.py").read_text(encoding="utf-8")
-        actions = app.split("for label, command in (", 1)[1].split("):", 1)[0]
-        self.assertEqual(actions.count('("Выгрузить'), 2)
         start = app.split("    def _create_excel(self):", 1)[1].split(
             "    def _open_excel_result(self", 1)[0]
-        self.assertIn('self._report_inputs()', start)
-        self.assertIn('customer_for_excel(files["mdb"])', start)
-        self.assertIn('list_excel_object_names(files["mdb"])', start)
+        self.assertIn('list_excel_object_names(files["mdb"]', start)
+        self.assertIn('xml_root=files["xml_dir"]', start)
+        self.assertIn('docx_root=files["docx_dir"]', start)
+        self.assertIn('directory=files["output_dir"]', start)
+        self.assertIn('customer_inn=customer.inn', start)
         self.assertIn('kind="excel_objects"', start)
         self.assertIn("tk.Toplevel(self.root)", start)
+        self.assertIn('popup.geometry("570x360")', start)
         self.assertIn("tk.BooleanVar(value=True)", start)
-        self.assertIn("selected = frozenset", start)
-        self.assertIn("prepare_excel_sources(files[", start)
-        self.assertIn('kind="excel_result"', start)
+        self.assertIn('text="Сформировать", command=run', start)
+        self.assertIn('text="Отмена", command=popup.destroy', start)
+        self.assertNotIn("Выделить всё", start)
+        self.assertNotIn("Снять выделение", start)
         self.assertNotIn("LabourOptions", start)
         self.assertNotIn("ChemicalOptions", start)
         self.assertIn('elif kind == "excel_objects":', app)
-        self.assertIn("run_with_com(task)", app)
-        self.assertIn("def _create_fgis_xml", app)
-        self.assertIn("labour=labour, chemical=chemical", app)
 
     def test_excel_button_discovers_objects_before_writing(self):
         from app import DesktopApp
         from unittest.mock import MagicMock
         mdb, resources = Path("original.mdb"), Path("resources.mdb")
+        xml, docx, output = Path("xml"), Path("docx"), Path("output")
         dummy = SimpleNamespace(
-            _report_inputs=lambda: ({"mdb": mdb, "resources": resources}, None),
+            _report_inputs=lambda: ({"mdb": mdb, "resources": resources,
+                                     "xml_dir": xml, "docx_dir": docx,
+                                     "output_dir": output}, None),
             _work=MagicMock(),
         )
         with patch("app.customer_for_excel", return_value=self.client) as customer, \
@@ -233,8 +235,25 @@ class SharedExportTests(unittest.TestCase):
             self.assertEqual(names, ("Объект А", "Объект Б"))
             self.assertEqual(owner, self.client)
             customer.assert_called_once_with(mdb)
-            discover.assert_called_once_with(mdb)
+            discover.assert_called_once_with(
+                mdb, xml_root=xml, docx_root=docx)
             excel.assert_not_called()
+
+    def test_filename_uses_customer_inn_local_date_and_time(self):
+        with TemporaryDirectory() as tmp:
+            batch = ExcelSourceBatch(1, (("",) * 27,), 0, ())
+            writer = lambda path, rows: path.write_bytes(b"TEST XLS")
+            from datetime import datetime
+            outcome = create_excel_export(
+                batch, directory=Path(tmp), writer=writer,
+                customer_inn="9722052050",
+                created_at=datetime(2026, 10, 27, 15, 30))
+            self.assertEqual(
+                outcome.file.name, "Att51_export_9722052050_271026_1530.xls")
+            with self.assertRaisesRegex(FsaSourceError, "ИНН"):
+                create_excel_export(
+                    batch, directory=Path(tmp), writer=writer,
+                    customer_inn="bad")
 
     def test_excel_output_modules_do_not_read_any_source_files(self):
         for path in ("excel_shared_source.py", "excel_export.py"):

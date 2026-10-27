@@ -160,21 +160,47 @@ class WholeBaseReportTests(unittest.TestCase):
 
 
 class GUIContractTests(unittest.TestCase):
-    def test_only_two_export_buttons_and_three_file_inputs(self):
+    def test_single_excel_export_and_five_visible_paths(self):
         c = (DESKTOP / "app.py").read_text(encoding="utf-8")
-        self.assertIn('("Выгрузить XML", self._create_fgis_xml)', c)
-        self.assertIn('("Выгрузить Excel", self._create_excel)', c)
-        self.assertNotIn("1. Перечень рабочих мест и протоколов", c)
-        self.assertNotIn("2. Подробные сведения всех протоколов", c)
-        # Low-level diagnostic functions still support internal CLI checks.
+        self.assertIn('text="Сформировать Excel", command=self._create_excel', c)
+        self.assertNotIn('text="Выгрузить XML"', c)
+        self.assertNotIn('text="Выгрузка сведений"', c)
+        self.assertNotIn('self.report = scrolledtext.ScrolledText', c)
+        self.assertNotIn('Att51_export  ·  v{VERSION}', c)
+        self.assertNotIn('fgis_ra.ini (необязательно)', c)
+        self.assertIn('text="Проверить обновление"', c)
+        self.assertIn('text=f"Обновить до {info.tag}"', c)
+        self.assertIn('kind="excel_result"', c)
+        self.assertIn('self.buttons = [self.excel_btn]', c)
+        self.assertLess(c.index('("resources", "База данных res_orgs.mdb"'),
+                        c.index('("mdb", "База данных ARMv51.MDB"'))
+        self.assertLess(c.index('("mdb", "База данных ARMv51.MDB"'),
+                        c.index('("xml_dir", "Папка XML"'))
+        self.assertLess(c.index('("xml_dir", "Папка XML"'),
+                        c.index('("docx_dir", "Папка DOCX"'))
+        self.assertLess(c.index('("docx_dir", "Папка DOCX"'),
+                        c.index('("output_dir", "Папка сохранения Excel"'))
         self.assertIn("create_index(", c)
         self.assertIn("create_details(", c)
-        self.assertIn('("mdb", "resources", "ini")', c)
-        self.assertIn('text="Авто"', c)
-        for gone in ("Параметры диагностики", "Сопоставить один XML",
-                     "Найти по настройкам", "Указать папку Аттестации",
-                     "Сопоставить все XML (6 факторов)"):
-            self.assertNotIn(gone, c)
+
+    def test_xml_and_docx_roots_are_independently_configurable(self):
+        from whole_base_reports import _xml_path
+        with TemporaryDirectory() as folder:
+            base = Path(folder)
+            source = base / "ARMv51_files"
+            docx = base / "DOCX_root"
+            xml = base / "XML_root"
+            record = {"file": r"RM_01\\Docs\\Protocol.docx"}
+            word, sidecar, warning = _xml_path(
+                source, record, xml_root=xml, docx_root=docx)
+            self.assertEqual(Path(word), docx / "RM_01" / "Docs" / "Protocol.docx")
+            self.assertEqual(sidecar, xml / "RM_01" / "Docs" / "xml" / "Protocol.xml")
+            self.assertFalse(warning)
+            original_word, original_xml, _ = _xml_path(source, record)
+            self.assertEqual(Path(original_word),
+                             source / "RM_01" / "Docs" / "Protocol.docx")
+            self.assertEqual(original_xml,
+                             source / "RM_01" / "Docs" / "xml" / "Protocol.xml")
 
     def test_reports_stay_in_application_folder(self):
         c = (DESKTOP / "whole_base_reports.py").read_text(encoding="utf-8")

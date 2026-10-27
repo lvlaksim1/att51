@@ -32,6 +32,9 @@ class SettingsTests(unittest.TestCase):
             "resources": r"C:\Program Files (x86)\Аттестация-5.1\res_orgs.mdb",
             "xml": r"\\server\lab\xml\Тяжесть.xml",
             "ini": "",
+            "xml_dir": r"Z:\\Lab\\ARMv51_files",
+            "docx_dir": r"D:\\Documents\\Originals",
+            "output_dir": r"E:\\Exports\\Excel",
         }
         self.settings.save(sample)
         self.assertEqual(self.settings.load(), {k: v for k,v in sample.items() if v})
