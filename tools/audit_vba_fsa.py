@@ -59,6 +59,25 @@ def main() -> None:
                 continue
             found.add(name)
             lines = content.splitlines()
+            # 27.10.2026: exact provenance of original FGIS MeasurementId
+            # codes, any optional override, and uniqueness fallback.
+            if name in ("v52_exp_fgis_ra2025", "v52_exp_fgis_ra"):
+                unit_markers = (
+                    "measurementid", "uniquemeasurement", "measurement_id",
+                    "\"measurements\"", "[measurements]", "единиц",
+                    "ед. изм", "ед_изм", "едизм", "ism_unit",
+                    "fgis_measurement", "unit_id",
+                )
+                chosen_unit = set()
+                for index, line in enumerate(lines):
+                    if any(k in line.casefold() for k in unit_markers):
+                        chosen_unit.update(range(max(0, index - 6),
+                                                 min(len(lines), index + 6)))
+                for index in sorted(chosen_unit)[:2500]:
+                    raw = lines[index].rstrip()
+                    if re.search(r"(?i)(password|passwd|token|secret|authorization|Bearer)\\s*=", raw):
+                        raw = "[redacted]"
+                    print(f"UNIT_PROVENANCE {name} {index+1:5d} {raw[:340]}")
             print(f"MODULE {name} lines={len(lines)}")
             selected = set()
             for i, line in enumerate(lines):
