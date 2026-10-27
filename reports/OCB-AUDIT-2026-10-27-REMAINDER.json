@@ -1,0 +1,70 @@
+{
+  "date": "2026-10-27",
+  "excluded_files_read": 3141,
+  "large_files": 24,
+  "binary_files": 3117,
+  "all_paths_examined": 3754,
+  "hits": [
+    {
+      "path": "extracted/app/Attestation51.dot",
+      "size": 20122624,
+      "match_counts": [
+        4,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "path": "extracted/app/NPA5/GOST/ГОСТ Р ИСО 9612-2013/ГОСТ Р ИСО 9612-2013_files/19.gif",
+      "size": 41265,
+      "match_counts": [
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "path": "extracted/app/dopl_prg.dot",
+      "size": 157696,
+      "match_counts": [
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "path": "extracted/app/risk_doc_prg01.dot",
+      "size": 588800,
+      "match_counts": [
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "path": "extracted/app/vibr_loc_prg2019_sout .dot",
+      "size": 810496,
+      "match_counts": [
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "path": "extracted/app/Руководство пользователя.doc",
+      "size": 11073536,
+      "match_counts": [
+        1,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "failures": []
+}
