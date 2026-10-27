@@ -241,6 +241,7 @@ class SharedExportTests(unittest.TestCase):
 
     def test_filename_uses_customer_inn_local_date_and_time(self):
         with TemporaryDirectory() as tmp:
+            from excel_source_batch import ExcelSourceBatch
             batch = ExcelSourceBatch(1, (("",) * 27,), 0, ())
             writer = lambda path, rows: path.write_bytes(b"TEST XLS")
             from datetime import datetime
