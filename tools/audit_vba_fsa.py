@@ -208,7 +208,7 @@ def main() -> None:
                 # Investigate the source of parameter.norm used as optional
                 # UniqueMeasurement comment; do not assume it is a unit dictionary.
                 for i, line in enumerate(lines):
-                    if re.match(r"(?i)^\\s*(?:(?:public|private)\\s+)?(?:Function|Sub)\\s+(?:init_coll|get_param_by_id)\\b", line):
+                    if line.strip().casefold().startswith(("private sub init_coll", "public sub init_coll", "private function get_param_by_id", "public function get_param_by_id")):
                         print(f"UNIT_COLLECTION_START {i+1}")
                         for j in range(i,min(i+180,len(lines))):
                             print(f"UNIT_COLLECTION {j+1:5d} {lines[j][:330]}")
