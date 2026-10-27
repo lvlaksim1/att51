@@ -26,7 +26,7 @@ from excel_export import create_excel_export
 from excel_source_batch import prepare_excel_sources
 from export_batch import prepare_batch
 from com_workers import run_with_com
-from organization_sources import unique_organization
+from organization_sources import unique_organization, customer_for_excel
 from att51_fsa.export_2025 import CustomerSettings
 from att51_fsa.labour_2025 import LabourOptions
 from att51_fsa.aerosol_2025 import ChemicalOptions
@@ -317,9 +317,24 @@ class DesktopApp:
                    kind="report_file")
 
     def _create_excel(self):
-        # Same input selection, customer information and factor options as XML.
-        # The format changes only AFTER the common XML measurement selector.
-        self._create_fgis_xml(target="excel")
+        """Export original protocol data immediately, without an options dialog.
+
+        Customer fields come from the unique original STRUCT_ORG record and
+        its linked adv_data.xml. FGIS-only options do not affect Excel.
+        """
+        try:
+            files, ini = self._report_inputs()
+        except (ValueError, OSError) as error:
+            messagebox.showerror(APP_NAME, human_error(error))
+            return
+
+        def export():
+            customer = customer_for_excel(files["mdb"])
+            return create_excel_export(
+                prepare_excel_sources(files["mdb"], files["resources"], ini, customer)
+            )
+
+        self._work(export, title="Формирование Excel", kind="excel_result")
 
     def _open_excel_result(self, result):
         self.status.set(
@@ -344,7 +359,7 @@ class DesktopApp:
             messagebox.showwarning(APP_NAME, "Excel создан, но не удалось открыть:\n"
                                    + str(error))
 
-    def _create_fgis_xml(self, *, target="xml"):
+    def _create_fgis_xml(self):
         try:
             files, ini = self._report_inputs()
         except (ValueError, OSError) as error:
@@ -366,8 +381,7 @@ class DesktopApp:
             "full_name": source_org.name if source_org else "",
         }
         popup=tk.Toplevel(self.root)
-        popup.title("Данные заказчика и параметры выгрузки " +
-                    ("Excel" if target == "excel" else "ФГИС"))
+        popup.title("Данные заказчика и параметры выгрузки ФГИС")
         popup.transient(self.root)
         popup.grab_set()
         popup.resizable(False,False)
@@ -412,7 +426,7 @@ class DesktopApp:
         for index,(title,variable) in enumerate(chem_rows,9):
             ttk.Checkbutton(controls,text=title,variable=variable).grid(
                 row=index,column=0,columnspan=2,sticky="w",pady=2)
-        address_choice = tk.IntVar(value=2 if target == "excel" and source_org and source_org.address2 else 1)
+        address_choice = tk.IntVar(value=1)
         ttk.Label(controls, text="Адрес проведения измерений (из STRUCT_ORG)").grid(
             row=14, column=0, columnspan=2, sticky="w", pady=(8, 2))
         address_candidates = (
@@ -424,7 +438,6 @@ class DesktopApp:
                 controls,
                 text=f"Вариант {variant}: {original_address or 'НЕТ ДАННЫХ'}",
                 variable=address_choice, value=variant,
-                state="disabled" if target == "excel" else "normal",
             ).grid(row=14+variant, column=0, columnspan=2, sticky="w", pady=2)
         source_msg = ("Реквизиты найдены в исходных STRUCT_ORG и adv_data.xml. Проверьте их."
                       if source_org else
@@ -456,7 +469,7 @@ class DesktopApp:
                 messagebox.showerror(APP_NAME,"Тип заказчика должен быть числом: "+str(exc))
                 return
             validation = customer.validate()
-            if validation and target != "excel":
+            if validation:
                 messagebox.showerror(APP_NAME, "Исправьте исходные данные:\n"
                                      + "\n".join(validation), parent=popup)
                 return
@@ -469,18 +482,12 @@ class DesktopApp:
                 omit_point_measurements=chem_omit_points.get(),
             )
             popup.destroy()
-            if target == "excel":
-                self._work(lambda: create_excel_export(
-                    prepare_excel_sources(files["mdb"], files["resources"], ini, customer)),
-                    title="Подготовка исходных сведений Excel",
-                    kind="excel_result")
-            else:
-                self._work(lambda: create_fgis_export(
-                    files["mdb"], files["resources"], ini, customer,
-                    included_file("assets/fileProtocolLoad_v4.xsd"),
-                    labour=labour, chemical=chemical),
-                    title="Проверка и формирование итогового XML",
-                    kind="fgis_result")
+            self._work(lambda: create_fgis_export(
+                files["mdb"], files["resources"], ini, customer,
+                included_file("assets/fileProtocolLoad_v4.xsd"),
+                labour=labour, chemical=chemical),
+                title="Проверка и формирование итогового XML",
+                kind="fgis_result")
         ttk.Button(footer,text="Проверить и сформировать",command=begin).pack(side="right")
         popup.focus_set()
 

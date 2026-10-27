@@ -191,15 +191,46 @@ class SharedExportTests(unittest.TestCase):
             self.assertEqual(output.file.suffix, ".xls")
             self.assertEqual(written[0][1], expected)
 
-    def test_two_buttons_share_one_options_form(self):
+    def test_excel_starts_without_customer_or_fgis_options_dialog(self):
         app = (DESKTOP / "app.py").read_text(encoding="utf-8")
         actions = app.split("for label, command in (", 1)[1].split("):", 1)[0]
         self.assertEqual(actions.count('("Выгрузить'), 2)
-        self.assertIn('self._create_fgis_xml(target="excel")', app)
-        self.assertIn('if target == "excel":', app)
-        self.assertIn('kind="excel_result"', app)
-        self.assertIn("address_choice", app)
+        start = app.split("    def _create_excel(self):", 1)[1].split(
+            "    def _open_excel_result(self", 1)[0]
+        self.assertIn('self._report_inputs()', start)
+        self.assertIn('customer_for_excel(files["mdb"])', start)
+        self.assertIn('prepare_excel_sources(files["mdb"]', start)
+        self.assertIn('kind="excel_result"', start)
+        self.assertIn("self._work(export", start)
+        self.assertNotIn("tk.Toplevel", start)
+        self.assertNotIn("_create_fgis_xml", start)
+        self.assertNotIn("LabourOptions", start)
+        self.assertNotIn("ChemicalOptions", start)
         self.assertIn("run_with_com(task)", app)
+        # XML remains a separate explicit pipeline with its original choices.
+        self.assertIn("def _create_fgis_xml", app)
+        self.assertIn("labour=labour, chemical=chemical", app)
+
+    def test_one_click_excel_uses_original_customer_without_popup(self):
+        from app import DesktopApp
+        from unittest.mock import MagicMock
+        mdb, resources = Path("original.mdb"), Path("resources.mdb")
+        dummy = SimpleNamespace(
+            _report_inputs=lambda: ({"mdb": mdb, "resources": resources}, None),
+            _work=MagicMock(),
+        )
+        # No Tk root/Toplevel is available: the click must still succeed.
+        with patch("app.customer_for_excel", return_value=self.client) as customer, \
+             patch("app.prepare_excel_sources", return_value="prepared") as prepare, \
+             patch("app.create_excel_export", return_value="created") as export:
+            DesktopApp._create_excel(dummy)
+            dummy._work.assert_called_once()
+            task = dummy._work.call_args.args[0]
+            self.assertEqual(dummy._work.call_args.kwargs["kind"], "excel_result")
+            self.assertEqual(task(), "created")
+            customer.assert_called_once_with(mdb)
+            prepare.assert_called_once_with(mdb, resources, None, self.client)
+            export.assert_called_once_with("prepared")
 
     def test_excel_output_modules_do_not_read_any_source_files(self):
         for path in ("excel_shared_source.py", "excel_export.py"):

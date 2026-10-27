@@ -331,6 +331,11 @@ def prepare_excel_sources(database: Path, resources: Path, ini: Path | None,
     if not items:
         raise FsaSourceError("В рабочей MDB нет протоколов для Excel")
     warnings = []
+    if customer.customer_kind not in (1, 2, 4):
+        warnings.append(
+            "Тип заказчика не указан в исходных данных. "
+            "Тип адреса физического лица без подтверждения не определяется."
+        )
     try:
         catalog = ResourceCatalog.from_mdb(Path(resources))
     except (FsaSourceError, OSError, ValueError) as exc:
