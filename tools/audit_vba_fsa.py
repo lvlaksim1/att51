@@ -197,6 +197,17 @@ def main() -> None:
                     for i in range(start-1,min(stop,len(lines))):
                         print(f"FACTOR_NAME {i+1:5d} {lines[i][:310]}")
             if name == "v52_exp_fgis_ra_syn3":
+                # Final step of units: how the export decides whether to
+                # print UniqueMeasurement in addition to numeric MeasurementId.
+                for i, line in enumerate(lines):
+                    if re.search(r"(?i)^\\s*(?:(?:public|private)\\s+)?(?:Function|Sub)\\s+get_measurement\\b", line):
+                        print(f"MEASUREMENT_FUNCTION_BEGIN {i+1}")
+                        for j in range(i, min(i+140, len(lines))):
+                            print(f"MEASUREMENT_FUNCTION {j+1:5d} {lines[j][:350]}")
+                            if j>i and re.match(r"(?i)^\\s*End (?:Function|Sub)\\s*$", lines[j]):
+                                break
+                        print("MEASUREMENT_FUNCTION_END")
+            if name == "v52_exp_fgis_ra_syn3":
                 for i, line in enumerate(lines):
                     if re.match(r"(?i)^\s*(?:(?:public|private)\s+)?(?:Function|Sub)\s+(?:get_matter|read|fill|init|check_matter)\b", line):
                         print(f"CHEM_SYN_BEGIN {i+1}")
