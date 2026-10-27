@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 DESKTOP = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(DESKTOP))
-from source_settings import SourceSettings, SOURCE_KEYS, application_data_dir
+from source_settings import SourceSettings, WindowSettings, SOURCE_KEYS, application_data_dir
 
 
 class SettingsTests(unittest.TestCase):
@@ -34,6 +34,7 @@ class SettingsTests(unittest.TestCase):
             "ini": "",
             "xml_dir": r"Z:\\Lab\\ARMv51_files",
             "docx_dir": r"D:\\Documents\\Originals",
+            "protocols_dir": r"Z:\\Lab\\ARMv51_files",
             "output_dir": r"E:\\Exports\\Excel",
         }
         self.settings.save(sample)
@@ -67,6 +68,24 @@ class SettingsTests(unittest.TestCase):
         persisted = self.settings.path.read_text(encoding="utf-8")
         self.assertNotIn("password", persisted)
         self.assertNotIn("very private", persisted)
+
+    def test_window_dimensions_saved_and_restored_without_positions(self):
+        state = WindowSettings(self.directory)
+        self.assertEqual(state.load(), {})
+        state.save({"main": "880x330", "objects": "310x320",
+                    "unrelated": "600x500"})
+        self.assertEqual(state.load(), {"main": "880x330", "objects": "310x320"})
+        self.assertNotIn("unrelated", state.path.read_text(encoding="utf-8"))
+        state.save({"main": "880x330+400+200", "objects": "260x220"})
+        self.assertEqual(state.load(), {"objects": "260x220"})
+        state.path.write_text("not json", encoding="utf-8")
+        self.assertEqual(state.load(), {})
+
+    def test_legacy_separate_roots_migration_is_source_only(self):
+        app = (DESKTOP / "app.py").read_text(encoding="utf-8")
+        self.assertIn('previous_paths.get("docx_dir") or previous_paths.get("xml_dir")', app)
+        self.assertIn('self._last_automatic_document_root', app)
+        self.assertIn('self.window_settings.save(self.window_sizes)', app)
 
     def test_frozen_settings_are_within_program_dir(self):
         with patch.object(sys, "frozen", True, create=True):

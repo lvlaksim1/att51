@@ -19,7 +19,7 @@ if not getattr(sys, "frozen", False):
 from updater import Release, UpdateError, fetch_latest, newer
 from install_guard import InstallationMutex
 from source_discovery import discover_installations
-from source_settings import SourceSettings, SOURCE_KEYS, application_data_dir
+from source_settings import SourceSettings, WindowSettings, SOURCE_KEYS, application_data_dir
 from whole_base_reports import create_index, create_details
 from fgis_export import create_fgis_export
 from excel_export import create_excel_export
@@ -53,7 +53,7 @@ class DesktopApp:
         self.busy = False
         self.latest: Release | None = None
         self.fields = {name: tk.StringVar(value="") for name in
-                       ("mdb", "resources", "ini", "xml_dir", "docx_dir", "output_dir")}
+                       ("mdb", "resources", "ini", "protocols_dir", "output_dir")}
         self.source_settings = SourceSettings()
         self._save_after_id = None
         self._settings_load_warning = ""
@@ -62,22 +62,29 @@ class DesktopApp:
         except ValueError as exc:
             previous_paths = {}
             self._settings_load_warning = str(exc)
+        # Migrate the v0.1.27 separate folders to one shared protocol root.
+        if not previous_paths.get("protocols_dir"):
+            previous_paths["protocols_dir"] = (
+                previous_paths.get("docx_dir") or previous_paths.get("xml_dir") or "")
+        self.window_settings = WindowSettings()
+        self.window_sizes = self.window_settings.load()
         for key, path in previous_paths.items():
             if key in self.fields:
                 self.fields[key].set(path)
         self.status = tk.StringVar(value="Готово.")
         root.title(f"{APP_NAME} — v{VERSION}")
-        root.geometry("990x340")
-        root.minsize(750, 280)
+        root.geometry(self.window_sizes.get("main", "890x310"))
+        root.minsize(700, 255)
         icon = included_file("assets/app.ico")
         if icon.exists():
             try:
                 root.iconbitmap(str(icon))
             except tk.TclError:
                 pass
-        # Derive project document roots automatically, but retain previously
-        # saved manual choices. Both default to ARMv51_files.
-        self._last_automatic_document_root = ""
+        # Preserve manually entered protocol folders on MDB changes.
+        selected_db = self.fields["mdb"].get().strip()
+        self._last_automatic_document_root = (
+            str(files_directory(Path(selected_db))) if selected_db else "")
         self._sync_document_folders()
         if not self.fields["output_dir"].get().strip():
             self.fields["output_dir"].set(str(application_data_dir().parent / "reports"))
@@ -92,17 +99,26 @@ class DesktopApp:
         root.after(1200, lambda: self._check_updates(manual=False))
 
     def _sync_document_folders(self):
-        """Fill both from the MDB; don't replace a manual override."""
+        """Derive ARMv51_files from MDB, without replacing manual selections."""
         mdb = self.fields["mdb"].get().strip()
         if not mdb:
             return
-        root = str(files_directory(Path(mdb)))
-        prior = self._last_automatic_document_root
-        for key in ("xml_dir", "docx_dir"):
-            current = self.fields[key].get().strip()
-            if not current or (prior and current == prior):
-                self.fields[key].set(root)
-        self._last_automatic_document_root = root
+        detected = str(files_directory(Path(mdb)))
+        current = self.fields["protocols_dir"].get().strip()
+        if not current or current == self._last_automatic_document_root:
+            self.fields["protocols_dir"].set(detected)
+        self._last_automatic_document_root = detected
+
+    def _save_window_size(self, key: str, window):
+        """Keep only user-visible dimensions; no coordinate restoration."""
+        try:
+            width = window.winfo_width()
+            height = window.winfo_height()
+            if width >= 250 and height >= 150:
+                self.window_sizes[key] = f"{width}x{height}"
+                self.window_settings.save(self.window_sizes)
+        except (OSError, ValueError, tk.TclError) as exc:
+            self.status.set("Не удалось сохранить размер окна: " + human_error(exc))
 
     def _mdb_changed(self, *_args):
         self._sync_document_folders()
@@ -127,8 +143,7 @@ class DesktopApp:
         fields = (
             ("resources", "База данных res_orgs.mdb", "mdb"),
             ("mdb", "База данных ARMv51.MDB", "mdb"),
-            ("xml_dir", "Папка XML", "folder"),
-            ("docx_dir", "Папка DOCX", "folder"),
+            ("protocols_dir", "Папка с протоколами", "folder"),
             ("output_dir", "Папка сохранения Excel", "folder"),
         )
         for row, (key, label, kind) in enumerate(fields):
@@ -188,6 +203,7 @@ class DesktopApp:
             APP_NAME, "Пути не удалось сохранить. Закрыть без сохранения?"
         ):
             return
+        self._save_window_size("main", self.root)
         self.root.destroy()
 
     def _browse(self, name: str, extensions: list[tuple[str, str]]):
@@ -287,11 +303,11 @@ class DesktopApp:
 
     def _report_inputs(self):
         source = self._required("mdb", "resources")
-        for key in ("xml_dir", "docx_dir"):
-            value = self.fields[key].get().strip()
-            if not value or not Path(value).is_dir():
-                raise ValueError(f"Не найдена папка {key}: {value or '(не указана)'}")
-            source[key] = Path(value)
+        value = self.fields["protocols_dir"].get().strip()
+        if not value or not Path(value).is_dir():
+            raise ValueError("Не найдена папка с протоколами: "
+                             + (value or "(не указана)"))
+        source["protocols_dir"] = Path(value)
         output = self.fields["output_dir"].get().strip()
         if not output:
             raise ValueError("Не указана папка сохранения Excel.")
@@ -337,8 +353,8 @@ class DesktopApp:
         def discover():
             customer = customer_for_excel(files["mdb"])
             names = list_excel_object_names(files["mdb"],
-                                            xml_root=files["xml_dir"],
-                                            docx_root=files["docx_dir"])
+                                            xml_root=files["protocols_dir"],
+                                            docx_root=files["protocols_dir"])
             if not names:
                 raise FsaSourceError("В проекте нет протоколов для Excel")
             return files, ini, customer, names
@@ -352,12 +368,17 @@ class DesktopApp:
         popup = tk.Toplevel(self.root)
         popup.title("Выбор объектов для Excel")
         popup.transient(self.root)
-        popup.geometry("570x360")
-        popup.minsize(430, 250)
+        # Size follows actual item count and text, not the old wide default.
+        caption_width = max((len(name) for name in names), default=0)
+        default_width = max(310, min(480, 70 + caption_width * 7))
+        default_height = max(205, min(510, 94 + len(names) * 23))
+        popup.geometry(self.window_sizes.get(
+            "objects", f"{default_width}x{default_height}"))
+        popup.minsize(280, 200)
         popup.columnconfigure(0, weight=1)
         popup.rowconfigure(1, weight=1)
         ttk.Label(popup, text="Выберите полные наименования объектов:",
-                  wraplength=500).grid(row=0, column=0, sticky="w", padx=10, pady=(8, 3))
+                  wraplength=430).grid(row=0, column=0, sticky="w", padx=10, pady=(8, 3))
         outer = ttk.Frame(popup)
         outer.grid(row=1, column=0, sticky="nsew", padx=10, pady=2)
         outer.rowconfigure(0, weight=1)
@@ -381,26 +402,31 @@ class DesktopApp:
         controls = ttk.Frame(popup)
         controls.grid(row=2, column=0, sticky="ew", padx=10, pady=(4, 8))
 
+        def close_popup():
+            self._save_window_size("objects", popup)
+            popup.grab_release()
+            popup.destroy()
+
         def run():
             selected = frozenset(name for name, flag in flags if flag.get())
             if not selected:
                 messagebox.showwarning(APP_NAME, "Выберите хотя бы одно наименование.",
                                        parent=popup)
                 return
-            popup.grab_release()
-            popup.destroy()
+            close_popup()
             self._work(lambda: create_excel_export(
                 prepare_excel_sources(files["mdb"], files["resources"],
                                       ini, customer, selected,
-                                      xml_root=files["xml_dir"],
-                                      docx_root=files["docx_dir"]),
+                                      xml_root=files["protocols_dir"],
+                                      docx_root=files["protocols_dir"]),
                 directory=files["output_dir"], customer_inn=customer.inn),
                 title="Формирование Excel", kind="excel_result")
 
-        ttk.Button(controls, text="Отмена", command=popup.destroy).pack(
+        ttk.Button(controls, text="Отмена", command=close_popup).pack(
             side="right", padx=(8, 0))
         ttk.Button(controls, text="Сформировать", command=run).pack(side="right")
-        popup.bind("<Escape>", lambda event: popup.destroy())
+        popup.bind("<Escape>", lambda event: close_popup())
+        popup.protocol("WM_DELETE_WINDOW", close_popup)
         popup.grab_set()
         popup.focus_set()
 

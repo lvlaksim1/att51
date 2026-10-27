@@ -196,16 +196,17 @@ class SharedExportTests(unittest.TestCase):
         start = app.split("    def _create_excel(self):", 1)[1].split(
             "    def _open_excel_result(self", 1)[0]
         self.assertIn('list_excel_object_names(files["mdb"]', start)
-        self.assertIn('xml_root=files["xml_dir"]', start)
-        self.assertIn('docx_root=files["docx_dir"]', start)
+        self.assertIn('xml_root=files["protocols_dir"]', start)
+        self.assertIn('docx_root=files["protocols_dir"]', start)
         self.assertIn('directory=files["output_dir"]', start)
         self.assertIn('customer_inn=customer.inn', start)
         self.assertIn('kind="excel_objects"', start)
         self.assertIn("tk.Toplevel(self.root)", start)
-        self.assertIn('popup.geometry("570x360")', start)
+        self.assertIn('popup.geometry(self.window_sizes.get(', start)
+        self.assertIn('self._save_window_size("objects", popup)', start)
         self.assertIn("tk.BooleanVar(value=True)", start)
         self.assertIn('text="Сформировать", command=run', start)
-        self.assertIn('text="Отмена", command=popup.destroy', start)
+        self.assertIn('text="Отмена", command=close_popup', start)
         self.assertNotIn("Выделить всё", start)
         self.assertNotIn("Снять выделение", start)
         self.assertNotIn("LabourOptions", start)
@@ -216,10 +217,10 @@ class SharedExportTests(unittest.TestCase):
         from app import DesktopApp
         from unittest.mock import MagicMock
         mdb, resources = Path("original.mdb"), Path("resources.mdb")
-        xml, docx, output = Path("xml"), Path("docx"), Path("output")
+        protocols, output = Path("protocols"), Path("output")
         dummy = SimpleNamespace(
             _report_inputs=lambda: ({"mdb": mdb, "resources": resources,
-                                     "xml_dir": xml, "docx_dir": docx,
+                                     "protocols_dir": protocols,
                                      "output_dir": output}, None),
             _work=MagicMock(),
         )
@@ -236,8 +237,21 @@ class SharedExportTests(unittest.TestCase):
             self.assertEqual(owner, self.client)
             customer.assert_called_once_with(mdb)
             discover.assert_called_once_with(
-                mdb, xml_root=xml, docx_root=docx)
+                mdb, xml_root=protocols, docx_root=protocols)
             excel.assert_not_called()
+
+    def test_missing_unit_in_every_written_excel_row_is_a_dash(self):
+        from excel_source_batch import ExcelSourceBatch
+        with TemporaryDirectory() as folder:
+            batch = ExcelSourceBatch(2, (("",) * 27, ("",) * 27), 0, ())
+            written = []
+            def capture(path, rows):
+                written.extend(rows)
+                path.write_bytes(b"TEST XLS")
+            create_excel_export(batch, directory=Path(folder), writer=capture)
+            self.assertEqual(len(written), 2)
+            self.assertTrue(all(row[13] == "—" for row in written))
+            self.assertTrue(all(len(row) == 27 for row in written))
 
     def test_filename_uses_customer_inn_local_date_and_time(self):
         with TemporaryDirectory() as tmp:

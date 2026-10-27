@@ -89,13 +89,14 @@ class BatchProtocolTests(unittest.TestCase):
 
 
 class SourcePanelLayoutTests(unittest.TestCase):
-    def test_excel_only_panel_has_five_ordered_paths(self):
+    def test_excel_only_panel_has_four_ordered_paths(self):
         source = (DESKTOP / "app.py").read_text(encoding="utf-8")
         self.assertIn('("resources", "База данных res_orgs.mdb"', source)
         self.assertIn('("mdb", "База данных ARMv51.MDB"', source)
-        self.assertIn('("xml_dir", "Папка XML"', source)
-        self.assertIn('("docx_dir", "Папка DOCX"', source)
+        self.assertIn('("protocols_dir", "Папка с протоколами"', source)
         self.assertIn('("output_dir", "Папка сохранения Excel"', source)
+        self.assertNotIn('("xml_dir", "Папка XML"', source)
+        self.assertNotIn('("docx_dir", "Папка DOCX"', source)
         self.assertNotIn('("ini", "fgis_ra.ini (необязательно)"', source)
         self.assertNotIn('text="Выгрузить XML"', source)
         self.assertNotIn("Найти по настройкам", source)

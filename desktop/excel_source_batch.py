@@ -109,8 +109,10 @@ def _equipment(
 # Extract only literal textual units from the original measurement caption,
 # never an assumed mapping from FGIS IDs, factor numbers or measurement codes.
 _UNIT_SUFFIX = re.compile(
-    r"(?:,\s*|\(\s*)(дБА|дБ|лк|мг/м[³3]|Вт/м[²2]|мкг/м[³3]|"
-    r"м/с[²2]|кг|мм|см|м\.?|г|с|мин|ч|раз|ед\.?|%)(?:\s*\)|\s*)$",
+    r"(?:,\s*|\(\s*)(дБА|дБ|лк|Люкс|мг/м[³3]|Вт/м[²2]|Вт/см[²2]|"
+    r"мкг/м[³3]|м/с[²2]|ион/см[³3]|мкЗв/ч|°C|°С|"
+    r"кг|км|мм|см|м\.?|г|с|мин|ч|раз|ед\.?|%\s*смены|%)"
+    r"(?:\s*\)|\s*)$",
     re.IGNORECASE,
 )
 
@@ -118,6 +120,12 @@ _UNIT_SUFFIX = re.compile(
 def _unit_from_caption(name: str) -> str:
     found = _UNIT_SUFFIX.search(name)
     return found.group(1) if found else ""
+
+
+def _indicator_without_unit_suffix(name: str) -> str:
+    """Remove only a separate terminal unit token, keep all other source text."""
+    match = _UNIT_SUFFIX.search(name)
+    return name[:match.start()].rstrip() if match else name
 
 
 def _word_contains_vibration_unit(word: Path | None) -> bool:
@@ -223,6 +231,8 @@ def _measurements(
             unit = position_unit  # Literally written in this XML group's heading.
         unit = unit_resolver.display(node, unit, facid=facid,
                                      vibration_confirmed=bool(word_unit and (fact or name)))
+        name = _indicator_without_unit_suffix(name)
+        unit = unit or "—"
         method = attr(node, "method_name", "method")
         if not method:
             nd_ref = attr(node, "nd_izm1")
@@ -417,7 +427,7 @@ def prepare_excel_sources(database: Path, resources: Path, ini: Path | None,
         warnings.extend(context + ": " + note for note in notes)
         if not measurements:
             warnings.append(context + ": измеренные значения в исходном XML не установлены")
-            measurements = [("",) * 5]
+            measurements = [("", "", "—", "", "")]
         else:
             indicators += len(measurements)
         shared = _shared(doc, item, customer)

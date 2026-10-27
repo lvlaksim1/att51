@@ -160,7 +160,7 @@ class WholeBaseReportTests(unittest.TestCase):
 
 
 class GUIContractTests(unittest.TestCase):
-    def test_single_excel_export_and_five_visible_paths(self):
+    def test_single_excel_export_and_four_visible_paths(self):
         c = (DESKTOP / "app.py").read_text(encoding="utf-8")
         self.assertIn('text="Сформировать Excel", command=self._create_excel', c)
         self.assertNotIn('text="Выгрузить XML"', c)
@@ -175,11 +175,13 @@ class GUIContractTests(unittest.TestCase):
         self.assertLess(c.index('("resources", "База данных res_orgs.mdb"'),
                         c.index('("mdb", "База данных ARMv51.MDB"'))
         self.assertLess(c.index('("mdb", "База данных ARMv51.MDB"'),
-                        c.index('("xml_dir", "Папка XML"'))
-        self.assertLess(c.index('("xml_dir", "Папка XML"'),
-                        c.index('("docx_dir", "Папка DOCX"'))
-        self.assertLess(c.index('("docx_dir", "Папка DOCX"'),
+                        c.index('("protocols_dir", "Папка с протоколами"'))
+        self.assertLess(c.index('("protocols_dir", "Папка с протоколами"'),
                         c.index('("output_dir", "Папка сохранения Excel"'))
+        self.assertNotIn('("xml_dir", "Папка XML"', c)
+        self.assertNotIn('("docx_dir", "Папка DOCX"', c)
+        self.assertIn('_save_window_size("main", self.root)', c)
+        self.assertIn('_save_window_size("objects", popup)', c)
         self.assertIn("create_index(", c)
         self.assertIn("create_details(", c)
 

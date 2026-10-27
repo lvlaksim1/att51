@@ -181,6 +181,11 @@ def create_excel_export(batch, *, directory: Path | None = None, writer=None,
         clock = created_at if created_at is not None else datetime.now()
         filename = (f"Att51_export_{customer_inn}_"
                     f"{clock:%d%m%y}_{clock:%H%M}.xls")
+    # The Excel unit column (N) must never be empty, including protocols
+    # whose original XML has no measured rows.
+    for row in rows:
+        if not str(row[13]).strip():
+            row[13] = "—"
     target = (Path(directory) if directory is not None else
               application_data_dir().parent / "reports") / filename
     (writer or _save_excel97)(target, rows)

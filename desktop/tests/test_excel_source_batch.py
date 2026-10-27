@@ -53,7 +53,7 @@ class RawExcelTests(unittest.TestCase):
             self.assertEqual(output.excel_rows[1][14], "Исходная методика")
             self.assertEqual(output.excel_rows[1][13], "кг")
             self.assertEqual(output.excel_rows[2][10], "Фактор 26")
-            self.assertEqual(output.excel_rows[2][11:16], ("",) * 5)
+            self.assertEqual(output.excel_rows[2][11:16], ("", "", "—", "", ""))
             self.assertTrue(any("отсутствует исходный XML" in s for s in output.issues))
 
     def test_missing_original_text_is_never_guessed(self):
@@ -72,7 +72,7 @@ class RawExcelTests(unittest.TestCase):
                 data = prepare_excel_sources(root / "db.mdb", root / "r.mdb",
                                              None, self.customer)
             self.assertEqual(data.excel_rows[0][11:16],
-                             ("", "17", "", "", ""))
+                             ("", "17", "—", "", ""))
             self.assertEqual(data.excel_rows[0][10], "Первый фактор")
 
     def test_issues_are_written_after_xls(self):
@@ -101,7 +101,7 @@ class RawExcelTests(unittest.TestCase):
             '</Document>'
         )
         measures, warnings = _measurements(doc)
-        self.assertEqual(measures, [("Эквивалентный уровень звука, дБА",
+        self.assertEqual(measures, [("Эквивалентный уровень звука",
                                     "75", "дБА (id 650)", "Исходная методика", "")])
         self.assertEqual(_shared(doc, {"factor_name": "Шум"}, self.customer)[1:3],
                          ("2026-10-20", "2026-10-20"))
@@ -122,7 +122,7 @@ class RawExcelTests(unittest.TestCase):
         measures, warnings = _measurements(doc)
         self.assertEqual(len(measures), 2)
         self.assertEqual(measures[0][:3], ("Свободная", "90", "% смены (id 292)"))
-        self.assertEqual(measures[1][:3], ("Перенос груза (кг)", "12", "кг"))
+        self.assertEqual(measures[1][:3], ("Перенос груза", "12", "кг"))
         self.assertNotIn("99", str(measures))
 
     def test_vibration_both_axis_groups_use_verified_paired_word(self):
@@ -332,9 +332,25 @@ class RawExcelTests(unittest.TestCase):
                             '<param name="Другой показатель" fact="120"/>'
                             '</zone></izm_data></Document>')
         rows, issues = _measurements(doc)
-        self.assertEqual(rows[0], ("Освещённость, лк", "", "лк", "", ""))
+        self.assertEqual(rows[0], ("Освещённость", "", "лк", "", ""))
         self.assertEqual(rows[1][1], "120")
 
+
+    def test_names_have_no_redundant_terminal_units_and_missing_unit_is_dash(self):
+        from xml.etree import ElementTree as ET
+        from excel_source_batch import _measurements
+        doc = ET.fromstring(
+            '<Document><factor facid="1"/><izm_data><zone>'
+            '<param name="Массовая концентрация, мг/м³" fact="4.2"/>'
+            '<param name="Содержание влаги (метод А)" fact="1.3"/>'
+            '<param name="Масса (кг)" fact="2.1"/>'
+            '</zone></izm_data></Document>')
+        rows, issues = _measurements(doc)
+        self.assertEqual([row[0] for row in rows],
+                         ["Массовая концентрация", "Содержание влаги (метод А)",
+                          "Масса"])
+        self.assertEqual([row[2] for row in rows], ["мг/м³", "—", "кг"])
+        self.assertTrue(all(row[2].strip() for row in rows))
 
     def test_original_factor_specific_units_and_ids(self):
         from xml.etree import ElementTree as ET
@@ -376,7 +392,7 @@ class RawExcelTests(unittest.TestCase):
             self.assertEqual(rows[0][2], "Процент (id 292)")
             ini.write_text(chr(10).join(("[Measurements]", "id1_16 = 999999", "")), encoding="utf-8")
             rows, _ = _measurements(doc, ini=ini)
-            self.assertEqual(rows[0][2], "")
+            self.assertEqual(rows[0][2], "—")
 
     def test_unique_objects_filter_only_selected_protocols(self):
         from excel_source_batch import list_excel_object_names
